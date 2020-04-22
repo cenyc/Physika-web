@@ -1,0 +1,43 @@
+{
+  "name": "Physika-web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/view/index.mjs",
+  "scripts": {
+    "build": "webpack --mode development",
+    "build:debug": "webpack --display-modules",
+    "build:release": "webpack --mode production",
+    "start": "webpack-dev-server",
+    "commit": "git cz",
+    "semantic-release": "semantic-release"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/preset-react": "^7.9.4",
+    "bootstrap": "^4.4.1",
+    "core-js": "^2.4.0",
+    "css-loader": "^2.1.1",
+    "ejs": "^3.0.2",
+    "express": "^4.17.1",
+    "express-generator": "^4.16.1",
+    "fs": "0.0.1-security",
+    "hammerjs": "^2.0.8",
+    "jsdom": "^16.2.2",
+    "kw-web-suite": "^9.0.0",
+    "monologue.js": "^0.3.5",
+    "mout": "^1.2.2",
+    "normalize.css": "^8.0.1",
+    "paraviewweb": "^3.2.12",
+    "react": "^16.13.1",
+    "react-bootstrap": "^1.0.0",
+    "react-dom": "^16.13.1",
+    "vtk.js": "^13.15.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.5",
+    "@babel/register": "^7.9.0"
+  }
+}
