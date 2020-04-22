@@ -224,12 +224,12 @@ function init() {
         viewer.setAttribute("class", "d-flex flex-column")
         container.appendChild(viewer);
         render(<GeoViewer />, viewer);
-        let geoViewer = document.getElementById("geoViewer");
-        let componentA = render(<ImageRenderer />, geoViewer);
-        componentA.renderImage({
-            url:
-                'http://www.paraview.org/wp-content/uploads/2015/03/LANL_ClimateExample.jpg',
-        });
+        // let geoViewer = document.getElementById("geoViewer");
+        // let componentA = render(<ImageRenderer />, geoViewer);
+        // componentA.renderImage({
+        //     url:
+        //         'http://www.paraview.org/wp-content/uploads/2015/03/LANL_ClimateExample.jpg',
+        // });
 
         // let geoViewer = document.getElementById("geoViewer");
         // render(<GeoViewer />, geoViewer);

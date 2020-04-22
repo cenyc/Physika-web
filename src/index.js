@@ -1,2 +1,2 @@
-var start = require('./view/mudule');
+var start = require('./view/module');
 start.index.init();
