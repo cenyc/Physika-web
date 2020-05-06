@@ -12,6 +12,12 @@ import PipelineState from "paraviewweb/src/Common/State/PipelineState";
 import QueryDataModel from "paraviewweb/src/IO/Core/QueryDataModel";
 import ImageRenderer from "paraviewweb/src/React/Renderers/ImageRenderer";
 
+//
+import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
+import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
+import vtkActor from "vtk.js/Sources/Rendering/Core/Actor";
+import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
+
 // require('bootstrap/dist/css/bootstrap.custom.min.css');
 // var React = require('react');
 // var Component = React.Component;
@@ -213,6 +219,7 @@ class GeoViewer extends Component{
         </div>;
     }
 }
+
 function init() {
     window.onload = function() {
         //首页左边布局
@@ -224,137 +231,39 @@ function init() {
         viewer.setAttribute("class", "d-flex flex-column")
         container.appendChild(viewer);
         render(<GeoViewer />, viewer);
-        // let geoViewer = document.getElementById("geoViewer");
-        // let componentA = render(<ImageRenderer />, geoViewer);
-        // componentA.renderImage({
-        //     url:
-        //         'http://www.paraview.org/wp-content/uploads/2015/03/LANL_ClimateExample.jpg',
-        // });
 
-        // let geoViewer = document.getElementById("geoViewer");
-        // render(<GeoViewer />, geoViewer);
+        let geoViewer = document.getElementById("geoViewer");
+        const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+            background: [0, 0, 0],
+            rootContainer: geoViewer,
+            containerStyle: { height: '100%', width: '100%', position: 'absolute' },
+        });
+        const renderer = fullScreenRenderer.getRenderer();
+        const renderWindow = fullScreenRenderer.getRenderWindow();
+
+        const objReader = vtkOBJReader.newInstance();
+
+        objReader.setUrl('/static/geo/mujia.obj').then(() => {
+            console.log(objReader.getNumberOfOutputPorts());
+
+            const source = objReader.getOutputData(0);
+            const mapper = vtkMapper.newInstance();
+            const actor = vtkActor.newInstance();
+
+            actor.setMapper(mapper);
+            mapper.setInputData(source);
+            renderer.addActor(actor);
+
+            renderer.resetCamera();
+            renderWindow.render();
+        });
 
 
-        var lutMgr = new LookupTableManager();
-        var geometryDataModel = new GeometryDataModel('/static/geo/');
-        var vtkGeometryDataModel = new VTKGeometryDataModel('/static/geo/');
-        // function aa() {console.log("this is aa")};
-        // vtkGeometryDataModel.onGeometryReady(aa);
-        // vtkGeometryDataModel.geometryReady(aa);
-        vtkGeometryDataModel.loadField('mujia.obj', 'mujia');
-
-        // let vtkGeometryBuilder = new VTKGeometryBuilder(lutMgr, geometryDataModel, pipelineState, );
-
-        // var json_a = {
-        //     "CompositePipeline": {
-        //         "layers": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"],
-        //         "dimensions": [ 500, 500 ],
-        //         "fields": {
-        //             "A": "salinity",
-        //             "B": "temperature",
-        //             "C": "bottomDepth"
-        //         },
-        //         "layer_fields": {
-        //             "A": [ "C" ],
-        //             "B": [ "B", "A" ],
-        //             "C": [ "B", "A" ],
-        //             "D": [ "B", "A" ],
-        //             "E": [ "B", "A" ],
-        //             "F": [ "B", "A" ],
-        //             "G": [ "B", "A" ],
-        //             "H": [ "B", "A" ],
-        //             "I": [ "B", "A" ],
-        //             "J": [ "B", "A" ],
-        //             "K": [ "B", "A" ]
-        //         },
-        //         "offset": {
-        //             "AC": 1,  "BA": 3,  "BB": 2,  "CA": 5,  "CB": 4,  "DA": 7,  "DB": 6,
-        //             "EA": 9,  "EB": 8,  "FA": 11, "FB": 10, "GA": 13, "GB": 12, "HA": 15,
-        //             "HB": 14, "IA": 17, "IB": 16, "JA": 19, "JB": 18, "KA": 21, "KB": 20
-        //             "pipeline": [
-        //                 {
-        //                     "ids": [ "A" ],
-        //                     "name": "Earth core",
-        //                     "type": "layer"
-        //                 },
-        //                 {
-        //                     "children": [
-        //                         {
-        //                             "ids": [ "B" ],
-        //                             "name": "t=5.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "C" ],
-        //                             "name": "t=10.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "D" ],
-        //                             "name": "t=15.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "E" ],
-        //                             "name": "t=20.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "F" ],
-        //                             "name": "t=25.0",
-        //                             "type": "layer"
-        //                         }
-        //                     ],
-        //                     "ids": [ "B", "C", "D", "E", "F" ],
-        //                     "name": "Contour by temperature",
-        //                     "type": "directory"
-        //                 },
-        //                 {
-        //                     "children": [
-        //                         {
-        //                             "ids": [ "G" ],
-        //                             "name": "s=34.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "H" ],
-        //                             "name": "s=35.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "I" ],
-        //                             "name": "s=35.5",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "J" ],
-        //                             "name": "s=36.0",
-        //                             "type": "layer"
-        //                         },
-        //                         {
-        //                             "ids": [ "K" ],
-        //                             "name": "s=36.5",
-        //                             "type": "layer"
-        //                         }
-        //                     ],
-        //                     "ids": [ "G", "H", "I", "J", "K" ],
-        //                     "name": "Contour by salinity",
-        //                     "type": "directory"
-        //                 }
-        //             ]
-        //         }
-        //     }};
-        // var pipelineState = new PipelineState(json_a);
-
-        // var geometryDataModel = new GeometryDataModel('./static/geo/mujia.obj');
-        // let vtkGeometryBuilder = new VTKGeometryBuilder(lutMgr, geometryDataModel, pipelineState, );
-
-        // geometryDataModel.geometryReady(function(){
-        //
-        //
-        //     console.log("geometryDataModelCounterAA: ");
-        // });
-        // render(<GeometryRenderer geometryBuilder={vtkGeometryBuilder}/>, geoViewer);
+        // objReader.readAsText('/static/geo/mujia.obj');
+        // fileReader.onload = function(event) {
+        //     console.log('this is onload event');
+        // };
+        // fileReader.readAsText('/static/geo/mujia.obj');
     }
 }
 
