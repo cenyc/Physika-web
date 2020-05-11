@@ -32,11 +32,11 @@ var pipeline_node = [];
 class LeftNav extends Component {
     render() {
         return <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"
-                    style={{backgroundColor: "rgb(77, 114, 223)"}}>
+                    style={{backgroundColor: "rgb(174, 188, 197)"}}>
             <div className="container-fluid d-flex flex-column p-0">
                 <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
                     <div className="sidebar-brand-icon rotate-n-15"></div>
-                    <div className="sidebar-brand-text mx-3"><span>Physika-web</span></div>
+                    <div className="sidebar-brand-text mx-3"><span>Physika Web</span></div>
                 </a>
                 <hr className="sidebar-divider my-0"/>
                 <div className="container">
