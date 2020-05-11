@@ -3,6 +3,9 @@ import 'react-bootstrap';
 import React, {Component} from 'react';
 import ReactDOM, { render } from 'react-dom';
 import 'normalize.css';
+
+// import paraviewweb lib
+import GitTreeWidget from 'paraviewweb/src/React/Widgets/GitTreeWidget';
 import GeometryRenderer from "paraviewweb/src/React/Renderers/GeometryRenderer";
 import GeometryDataModel from "paraviewweb/src/IO/Core/GeometryDataModel";
 import VTKGeometryDataModel from "paraviewweb/src/IO/Core/VTKGeometryDataModel";
@@ -24,6 +27,8 @@ import file from "paraviewweb/src/IO/Girder/CoreEndpoints/file";
 // var Component = React.Component;
 // var render = require('react-dom');
 
+var pipeline_node = [];
+
 class LeftNav extends Component {
     render() {
         return <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"
@@ -34,18 +39,10 @@ class LeftNav extends Component {
                     <div className="sidebar-brand-text mx-3"><span>Physika-web</span></div>
                 </a>
                 <hr className="sidebar-divider my-0"/>
-                <ul className="nav navbar-nav text-light" id="accordionSidebar">
-                    <li className="nav-item" role="presentation"><a className="nav-link active" href="index.html"><i
-                        className="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
-                    <li className="nav-item" role="presentation"><a className="nav-link" href="profile.html"><i
-                        className="fas fa-user"></i><span>Profile</span></a></li>
-                    <li className="nav-item" role="presentation"><a className="nav-link" href="table.html"><i
-                        className="fas fa-table"></i><span>Table</span></a></li>
-                    <li className="nav-item" role="presentation"><a className="nav-link" href="login.html"><i
-                        className="far fa-user-circle"></i><span>Login</span></a></li>
-                    <li className="nav-item" role="presentation"><a className="nav-link" href="register.html"><i
-                        className="fas fa-user-circle"></i><span>Register</span></a></li>
-                </ul>
+                <div className="container">
+                    <div id="pipeline">
+                    </div>
+                </div>
                 <div className="text-center d-none d-md-inline">
                     <button className="btn rounded-circle border-0" id="sidebarToggle" type="button"></button>
                 </div>
@@ -53,7 +50,7 @@ class LeftNav extends Component {
         </nav>;
     }
 }
-// //
+
 class GeoViewer extends Component{
     render() {
         return <div id="content">
@@ -107,6 +104,29 @@ function load(fullScreenRenderer, options) {
             console.log('rendering geo...'+options.file.name)
             renderer.resetCamera();
             renderWindow.render();
+
+            const pipeline_node_length = pipeline_node.length;
+            let node;
+            // if (pipeline_node_length == 0) {
+            //     node = { name: options.file.name, visible: true, id: '1', parent: '0' };
+            // }else {
+            //     node = { name: options.file.name, visible: true, id: pipeline_node_length+1, parent: pipeline_node_length-1 };
+            // }
+            const object_id = typeof(pipeline_node_length)=="undefined"? 1:pipeline_node_length+1;
+            if (object_id == 1) {
+                node = { name: options.file.name, visible: true, id: object_id, parent: '0' };
+            }else {
+                node = { name: options.file.name, visible: true, id: object_id, parent: object_id-1 };
+            }
+
+            function onChange(event) {
+                console.log(event);
+            }
+            pipeline_node.push(node);
+            render(
+                <GitTreeWidget nodes={pipeline_node} onChange={onChange}/>,
+                document.querySelector('#pipeline')
+            );
         };
         reader.readAsText(options.file);
     }
@@ -127,31 +147,26 @@ function init() {
         container.appendChild(viewer);
         render(<GeoViewer />, viewer);
 
+        //Todo 待优化 start
+        // function onChange(event) {
+        //     console.log(event);
+        // }
+        function onChange(event) {
+            console.log(event);
+        }
+        render(
+            <GitTreeWidget nodes={pipeline_node} onChange={onChange}/>,
+            document.querySelector('#pipeline')
+        );
+        //end 待优化
+
+
         let geoViewer = document.getElementById("geoViewer");
         const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
             containerStyle: { height: '100%', width: '100%', position: 'absolute' },
         });
-        // const renderer = fullScreenRenderer.getRenderer();
-        // const renderWindow = fullScreenRenderer.getRenderWindow();
-
-        // const objReader = vtkOBJReader.newInstance();
-        //
-        // objReader.setUrl('/static/geo/mujia.obj').then(() => {
-        //     console.log(objReader.getNumberOfOutputPorts());
-        //
-        //     const source = objReader.getOutputData(0);
-        //     const mapper = vtkMapper.newInstance();
-        //     const actor = vtkActor.newInstance();
-        //
-        //     actor.setMapper(mapper);
-        //     mapper.setInputData(source);
-        //     renderer.addActor(actor);
-        //
-        //     renderer.resetCamera();
-        //     renderWindow.render();
-        // });
 
         let sq_btn = document.getElementById('sidebarToggle');
         sq_btn.innerHTML = `<input type="file" accept=".zip,.obj" style="display: none;"/>`;

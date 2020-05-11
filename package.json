@@ -25,6 +25,7 @@
     "express-generator": "^4.16.1",
     "fs": "0.0.1-security",
     "hammerjs": "^2.0.8",
+    "jquery": "^3.5.1",
     "jsdom": "^16.2.2",
     "kw-web-suite": "^9.0.0",
     "light-viz": "^1.18.1",
