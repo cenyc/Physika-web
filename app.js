@@ -18,8 +18,13 @@ var app = express();
 //     Action.execute(req, res);
 // });
 
-app.get('/aa', function (req, res) {
-    res.send("this is aa");
+app.get('/python', function (req, res) {
+    const execSync = require('child_process').execSync;
+
+    const output = execSync('python src/test.py')
+    console.log('sync: ' + output.toString())
+    console.log('over')
+    res.send('sync: ' + output.toString());
 });
 
 // 设置views路径和模板

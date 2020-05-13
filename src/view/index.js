@@ -160,7 +160,6 @@ function init() {
         );
         //end 待优化
 
-
         let geoViewer = document.getElementById("geoViewer");
         const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
@@ -183,6 +182,8 @@ function init() {
         //     console.log('this is onload event');
         // };
         // fileReader.readAsText('/static/geo/mujia.obj');
+
+
     }
 }
 
