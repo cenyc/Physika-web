@@ -37,8 +37,14 @@ app.engine('html', ejs.renderFile);
 app.use('/static', express.static(path.join(__dirname, 'static')));
 app.use('/dist', express.static(path.join(__dirname, 'dist')));
 
+// app.use('/', function (req, res, next) {
+//     console.log('app get');
+//     next();
+// });
+
 // 对所有(/)URL或路由返回index.html
 app.get('/', function (req, res) {
+    console.log('index...');
     // const view = require('./static/view/index.html');
     res.render('index');
 });

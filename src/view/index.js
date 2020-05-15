@@ -1,4 +1,3 @@
-import 'bootstrap/dist/css/bootstrap.custom.min.css';
 import 'react-bootstrap';
 import React, {Component} from 'react';
 import ReactDOM, { render } from 'react-dom';
@@ -166,7 +165,7 @@ function init() {
             rootContainer: geoViewer,
             containerStyle: { height: '100%', width: '100%', position: 'absolute' },
         });
-
+        console.log('123');
         let sq_btn = document.getElementById('sidebarToggle');
         sq_btn.innerHTML = `<input type="file" accept=".zip,.obj" style="display: none;"/>`;
         let input_geo_file = sq_btn.querySelector('input');
