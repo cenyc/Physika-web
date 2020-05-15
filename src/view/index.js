@@ -2,6 +2,8 @@ import 'react-bootstrap';
 import React, {Component} from 'react';
 import ReactDOM, { render } from 'react-dom';
 import 'normalize.css';
+import $ from 'jquery';
+import 'ajax';
 
 // import paraviewweb lib
 import GitTreeWidget from 'paraviewweb/src/React/Widgets/GitTreeWidget';
@@ -66,7 +68,7 @@ class GeoViewer extends Component{
  * @param fullScreenRenderer
  */
 function input_geo_file_handle(event, fullScreenRenderer) {
-    event.preventDefault();
+    // event.preventDefault();
     const geo_file = event.target.files;
 
     if (geo_file.length == 1) {
@@ -74,6 +76,7 @@ function input_geo_file_handle(event, fullScreenRenderer) {
         console.log('loading geometry file successfully, is name '+geo_file[0].name+' and ext is '+ext+'.');
         load(fullScreenRenderer, {file: geo_file[0], ext});
     }
+    console.log(geo_file);
 }
 
 /**
@@ -88,6 +91,21 @@ function load(fullScreenRenderer, options) {
         console.log('loading obj... '+options.file.name);
         const reader = new FileReader();
         reader.onload = function (event) {
+
+            $.ajax({
+                url: '/upload',
+                type: 'POST',
+                data: new FormData($('#uploadForm')[0]),
+                processData: false,
+                contentType: false
+            }).done(function (response) {
+                console.log('success');
+            }).fail(function (response) {
+                console.log('failed');
+            });
+
+
+
             const objReader = vtkOBJReader.newInstance();
             objReader.parseAsText(reader.result);
             const nbOutputs = objReader.getNumberOfOutputPorts();
@@ -165,9 +183,8 @@ function init() {
             rootContainer: geoViewer,
             containerStyle: { height: '100%', width: '100%', position: 'absolute' },
         });
-        console.log('123');
         let sq_btn = document.getElementById('sidebarToggle');
-        sq_btn.innerHTML = `<input type="file" accept=".zip,.obj" style="display: none;"/>`;
+        sq_btn.innerHTML = `<form id="uploadForm" enctype="multipart/form-data"><input type="file" accept=".zip,.obj" style="display: none;" name="file" value=""/></form>`;
         let input_geo_file = sq_btn.querySelector('input');
         input_geo_file.addEventListener('change', function (event) {
             if (!event)
@@ -175,6 +192,7 @@ function init() {
             input_geo_file_handle(event, fullScreenRenderer)
         });
         sq_btn.addEventListener('click', (e) => input_geo_file.click());
+
 
         // objReader.readAsText('/static/geo/mujia.obj');
         // fileReader.onload = function(event) {

@@ -4,19 +4,28 @@ var path = require('path');
 var ejs = require('ejs');
 var app = express();
 
-// 测试ES6
-// import express from 'express';
-// import path from 'path';
-// import ejs from 'ejs';
-// var app = express();
-// const __dirname = path.resolve();
+//引入multer
+const multer = require('multer');
 
-// 新增接口路由
-// app.get('/data/:module', function (req, res, next) {
-//     var c_path = req.params.module;
-//     var Action = require('./server/action/data/' + c_path);
-//     Action.execute(req, res);
-// });
+const storage = multer.diskStorage({
+    // destination:'public/uploads/'+new Date().getFullYear() + (new Date().getMonth()+1) + new Date().getDate(),
+    destination: './uploads/' + new Date().getFullYear() + (new Date().getMonth() + 1) + new Date().getDate(),
+    filename(req, file, cb) {
+        const filenameArr = file.originalname.split('.');
+        cb(null, Date.now() + '.' + filenameArr[filenameArr.length - 1]);
+    }
+});
+
+const upload = multer({storage});
+
+app.use('/upload',upload.any());
+//在req.files中获取文件数据
+app.post('/upload',function(req, res){
+
+    console.log(req.files)
+
+    res.send('上传成功')
+})
 
 app.get('/python', function (req, res) {
     const execSync = require('child_process').execSync;
@@ -26,6 +35,26 @@ app.get('/python', function (req, res) {
     console.log('over')
     res.send('sync: ' + output.toString());
 });
+
+// app.post('/upload', function (req, res) {
+//     console.log(req);  // 上传的文件信息
+//
+//     var des_file = __dirname + "/" + req.files[0].originalname;
+//     fs.readFile( req.files[0].path, function (err, data) {
+//         fs.writeFile(des_file, data, function (err) {
+//             if( err ){
+//                 console.log( err );
+//             }else{
+//                 response = {
+//                     message:'File uploaded successfully',
+//                     filename:req.files[0].originalname
+//                 };
+//             }
+//             console.log( response );
+//             res.end( JSON.stringify( response ) );
+//         });
+//     });
+// });
 
 // 设置views路径和模板
 app.set('views', './static/view');
