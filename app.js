@@ -21,8 +21,9 @@ const upload = multer({storage});
 app.use('/upload',upload.any());
 //在req.files中获取文件数据
 app.post('/upload',function(req, res){
-
-    console.log(req.files)
+    const path = '/home/cenyc/'+req.files[0].path
+    const execSync = require('child_process').execSync;
+    const output = execSync('python src/test.py -p '+path)
 
     res.send('上传成功')
 })
@@ -35,26 +36,6 @@ app.get('/python', function (req, res) {
     console.log('over')
     res.send('sync: ' + output.toString());
 });
-
-// app.post('/upload', function (req, res) {
-//     console.log(req);  // 上传的文件信息
-//
-//     var des_file = __dirname + "/" + req.files[0].originalname;
-//     fs.readFile( req.files[0].path, function (err, data) {
-//         fs.writeFile(des_file, data, function (err) {
-//             if( err ){
-//                 console.log( err );
-//             }else{
-//                 response = {
-//                     message:'File uploaded successfully',
-//                     filename:req.files[0].originalname
-//                 };
-//             }
-//             console.log( response );
-//             res.end( JSON.stringify( response ) );
-//         });
-//     });
-// });
 
 // 设置views路径和模板
 app.set('views', './static/view');
