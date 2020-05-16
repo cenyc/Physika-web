@@ -1,8 +1,27 @@
 # Physika-web  
 
 # 配置安装
-//Todo d
-
+把项目clone到本地目录
+```shell script
+git clone https://github.com/cenyc/Physika-web.git
+```
+进入clone文件目录
+```shell script
+cd Physika-web
+```
+安装所需到node_modules
+```shell script
+npm install
+```
+使用webpack打包项目
+```shell script
+npm run build
+```
+运行项目
+```shell script
+node app.js
+```
+在浏览器访问http://localhost:8888 即可
 # 问题记录
 
 ## API
