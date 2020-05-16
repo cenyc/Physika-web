@@ -1,4 +1,4 @@
-# Physika-web  
+# Physika Web  
 
 # 配置安装
 把项目clone到本地目录
