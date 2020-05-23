@@ -62,6 +62,10 @@ class GeoViewer extends Component{
     }
 }
 
+class select_simulation extends Component {
+    
+}
+
 /**
  * 加载模型响应事件
  * @param event
@@ -192,7 +196,6 @@ function init() {
             input_geo_file_handle(event, fullScreenRenderer)
         });
         sq_btn.addEventListener('click', (e) => input_geo_file.click());
-
 
         // objReader.readAsText('/static/geo/mujia.obj');
         // fileReader.onload = function(event) {

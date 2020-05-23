@@ -21,10 +21,10 @@ const upload = multer({storage});
 app.use('/upload',upload.any());
 //在req.files中获取文件数据
 app.post('/upload',function(req, res){
-    const path = '/home/cenyc/'+req.files[0].path
+    const path = '/home/cenyc/Sources/Physika-web/'+req.files[0].path
     const execSync = require('child_process').execSync;
-    const output = execSync('python src/test.py -p '+path)
-
+    const output = execSync('cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
+	console.log('sync: ' + 'cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
     res.send('上传成功')
 })
 
@@ -60,7 +60,7 @@ app.get('/', function (req, res) {
 });
 
 // 启动一个服务，监听从8888端口进入的所有连接请求
-var server = app.listen(8888, function(){
+var server = app.listen(8899, function(){
     var host = server.address().address;
     var port = server.address().port;
     console.log('Listening at http://localhost:%s', port);
