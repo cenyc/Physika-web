@@ -1,4 +1,5 @@
 import 'react-bootstrap';
+import 'bootstrap';
 import React, {Component} from 'react';
 import ReactDOM, { render } from 'react-dom';
 import 'normalize.css';
@@ -29,8 +30,72 @@ import file from "paraviewweb/src/IO/Girder/CoreEndpoints/file";
 // var render = require('react-dom');
 
 var pipeline_node = [];
+var fullScreenRenderer
+class ClothSimulation extends Component {
+
+
+    componentWillMount() {
+        console.log('App-页面即将加载')
+    }
+
+    componentDidMount() {
+        console.log('App-页面加载完成')
+        let sq_btn = document.getElementById('add_scene_btn');
+        // sq_btn.innerHTML = `<form id="uploadForm" enctype="multipart/form-data"><input type="file" accept=".zip,.obj" style="display: none;" name="file" value=""/></form>`;
+        // let input_geo_file = sq_btn.querySelector('input');
+        let input_geo_file = document.getElementById('input_geo_file_a')
+        // input_geo_file.addEventListener('change', function (event) {
+        //     if (!event)
+        //         event = window.event;
+        //     input_geo_file_handle(event, fullScreenRenderer)
+        // });
+        sq_btn.addEventListener('click', (e) => input_geo_file.click());
+    }
+
+    aa(event) {
+       console.log(event.target) 
+       input_geo_file_handle(event, fullScreenRenderer)
+    }
+
+    render() {
+        return (<div className="w-100">
+            <div className="card border rounded-0"><span className="text-center m-1">布料仿真根结点</span>
+                <hr className="m-0" />
+                <form id="uploadForm_a" style={{display: "none"}} encType="multipart/form-data"><input id="input_geo_file_a" type="file" accept=".zip,.obj" name="file" value="" onChange={this.aa.bind(this)}/></form>
+                <div className="card-body pt-2">
+                    <button id="add_scene_btn" className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">➕场景</span></button>
+                    <div id="scene_tree" className="pt-2"></div>
+                    <button className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">➕材料属性</span></button>
+                    <button className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">➕边界条件</span></button>
+                </div>
+            </div>
+        </div>);
+    }
+}
 
 class LeftNav extends Component {
+
+    /**
+     * 创建仿真按钮触发事件
+     */
+    click_create_simulation() {
+        $("#myModal").modal();
+    }
+
+    /**
+     * 选择仿真场景触发事件
+     */
+    click_select_simulation() {
+        let index=$("#simSelect option:selected").val();
+        if(index==1){
+            console.log("布料仿真")
+            render(<ClothSimulation />, document.getElementById("createTree"))
+        }
+        else if(index==2){
+            console.log("流体模拟");
+        }
+    }
+
     render() {
         return <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"
                     style={{backgroundColor: "rgb(174, 188, 197)"}}>
@@ -41,8 +106,39 @@ class LeftNav extends Component {
                 </a>
                 <hr className="sidebar-divider my-0"/>
                 <div className="container">
-                    <div id="pipeline">
+                    <div className = "modal fade" id="myModal" role="dialog">
+                        <div className = "modal-dialog">
+                            <div className = "modal-content">
+                                <div className = "modal-header">
+                                    <h4 className = "modal-title">选择仿真情景</h4>
+                                    <button type="button" className = "close" data-dismiss="modal">&times;</button>
+                                </div>
+                            <div className = "modal-body">
+                                <form role="form">
+                                    <div className = "form-group">
+                                        <select className = "form-control" id="simSelect">
+                                            <option value="1">布料仿真</option>
+                                            <option value="2">流体模拟</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div className = "modal-footer">
+                                <button type="button" className = "btn btn-default" data-dismiss="modal" onClick={this.click_select_simulation}>确定</button>
+                            </div>
+                            </div>
+                        </div>
                     </div>
+                    
+                </div>
+                    <div className="container p-2">
+                        <button className="btn btn-danger btn-sm btn-lg btn-block" type="button" onClick={this.click_create_simulation}>创建仿真</button>
+                    </div>
+                    <div id="createTree" className = "container p-2"></div>
+                
+                <div className="container">
+                    <button className ="btn btn-danger btn-sm btn-lg btn-block" type="button">执行仿真</button>
+                    <div id="performTree" ></div>
                 </div>
                 <div className="text-center d-none d-md-inline">
                     <button className="btn rounded-circle border-0" id="sidebarToggle" type="button"></button>
@@ -54,17 +150,14 @@ class LeftNav extends Component {
 
 class GeoViewer extends Component{
     render() {
-        return <div id="content">
-            <div className="container-fluid p-0" id={"geoViewer"}>
-
+        return (
+            <div id="content">
+                <div className = "container-fluid p-0" id={"geoViewer"}></div>
             </div>
-        </div>;
+            );
     }
 }
 
-class select_simulation extends Component {
-    
-}
 
 /**
  * 加载模型响应事件
@@ -146,12 +239,14 @@ function load(fullScreenRenderer, options) {
             pipeline_node.push(node);
             render(
                 <GitTreeWidget nodes={pipeline_node} onChange={onChange}/>,
-                document.querySelector('#pipeline')
+                document.querySelector('#scene_tree')
             );
         };
         reader.readAsText(options.file);
     }
 }
+
+
 
 /**
  * 首页初始化
@@ -168,21 +263,22 @@ function init() {
         container.appendChild(viewer);
         render(<GeoViewer />, viewer);
 
+        //-------------
         //Todo 待优化 start
         // function onChange(event) {
         //     console.log(event);
         // }
-        function onChange(event) {
-            console.log(event);
-        }
-        render(
-            <GitTreeWidget nodes={pipeline_node} onChange={onChange}/>,
-            document.querySelector('#pipeline')
-        );
+        // function onChange(event) {
+        //     console.log(event);
+        // }
+        // render(
+        //     <GitTreeWidget nodes={pipeline_node} onChange={onChange}/>,
+        //     document.querySelector('#')
+        // );
         //end 待优化
 
         let geoViewer = document.getElementById("geoViewer");
-        const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+        fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
             containerStyle: { height: '100%', width: '100%', position: 'absolute' },
@@ -196,7 +292,10 @@ function init() {
             input_geo_file_handle(event, fullScreenRenderer)
         });
         sq_btn.addEventListener('click', (e) => input_geo_file.click());
-
+        //-------------
+        //render(<CreatDialog />);
+        //模态控制
+        
         // objReader.readAsText('/static/geo/mujia.obj');
         // fileReader.onload = function(event) {
         //     console.log('this is onload event');
