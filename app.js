@@ -21,13 +21,15 @@ const upload = multer({storage});
 app.use('/upload',upload.any());
 //在req.files中获取文件数据
 app.post('/upload',function(req, res){
+    /*
     const path = '/home/cenyc/Sources/Physika-web/'+req.files[0].path
     const execSync = require('child_process').execSync;
     const output = execSync('cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
-	console.log('sync: ' + 'cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
+    console.log('sync: ' + 'cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
+    */
     res.send('上传成功')
 })
-
+/*
 app.get('/python', function (req, res) {
     const execSync = require('child_process').execSync;
 
@@ -36,7 +38,7 @@ app.get('/python', function (req, res) {
     console.log('over')
     res.send('sync: ' + output.toString());
 });
-
+*/
 // 设置views路径和模板
 app.set('views', './static/view');
 app.set('view engine', 'html');
@@ -60,7 +62,7 @@ app.get('/', function (req, res) {
 });
 
 // 启动一个服务，监听从8888端口进入的所有连接请求
-var server = app.listen(8899, function(){
+var server = app.listen(8888, function(){
     var host = server.address().address;
     var port = server.address().port;
     console.log('Listening at http://localhost:%s', port);
