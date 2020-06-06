@@ -141,6 +141,7 @@ class ClothSimulation extends React.Component {
 
         }
         else if (index == 2) {
+            /*
             this.setState({
                 renderer: fullScreenRenderer.getRenderer(),
                 renderWindow: fullScreenRenderer.getRenderWindow(),
@@ -154,6 +155,17 @@ class ClothSimulation extends React.Component {
                 this.state.renderer.resetCamera();
                 console.log(this.state.renderWindow);
                 this.state.renderWindow.render();
+
+            });
+*/
+            this.setState({
+                renderer: null,
+                renderWindow: null,
+                source: null,
+                mapper: null,
+                actor: null
+            }, () => {
+                console.log("xiaoshi")
 
             });
         }
@@ -170,7 +182,7 @@ class ClothSimulation extends React.Component {
 
 
         this.state.renderWindow.getInteractor().onRightButtonPress((callData) => {
-            
+
             if (this.state.renderer !== callData.pokedRenderer) {
                 return;
             }
@@ -208,6 +220,60 @@ class ClothSimulation extends React.Component {
                         <div id="scene_tree" className="pt-2"></div>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">材料属性</span></button>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.cellPicker}><span className="glyphicon glyphicon-plus">边界条件</span></button>
+
+                        <div class="accordion" id="accordionExample">
+                            <div class="card">
+                                <div id="headingOne">
+                                    <button class="btn btn-danger btn-sm p-0 btn-block" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                        场景
+                                    </button>
+                                </div>
+
+                                <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionExample">
+                                    <div class="card-body">
+                                        <form>
+                                            <div className="row">
+                                                <div className="col">
+                                                    <input type="text" class="form-control" placeholder="x_begin" />
+                                                    <input type="text" class="form-control" placeholder="y_begin" />
+                                                    <input type="text" class="form-control" placeholder="z_begin" />
+                                                </div>
+                                                <div className="col">
+                                                    <input type="text" class="form-control" placeholder="x_end" />
+                                                    <input type="text" class="form-control" placeholder="y_end" />
+                                                    <input type="text" class="form-control" placeholder="z_end" />
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card border rounded-0" id="headingTwo">
+                                    <button class="btn btn-outline-primary btn-sm p-0 btn-block" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                        属性
+                                        </button>
+                                </div>
+                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                                    <div class="card-body">
+                                        bb
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card border rounded-0" id="headingThree">
+                                    <button class="btn btn-outline-success" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                        交互
+                                        </button>
+                                </div>
+                                <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionExample">
+                                    <div class="card-body">
+                                        cc
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div className="container">
@@ -398,113 +464,6 @@ function load(fullScreenRenderer, options) {
         };
         reader.readAsText(options.file);
     }
-}
-
-//****************/
-function cellPicker(fullScreenRenderer) {
-    // ----------------------------------------------------------------------------
-    // Standard rendering code setup
-    // ----------------------------------------------------------------------------
-
-    const renderer = fullScreenRenderer.getRenderer();
-    const renderWindow = fullScreenRenderer.getRenderWindow();
-
-    // ----------------------------------------------------------------------------
-    // Add a cone source
-    // ----------------------------------------------------------------------------
-    /*
-    const cone = vtkConeSource.newInstance();
-    const mapper = vtkMapper.newInstance();
-    mapper.setInputData(cone.getOutputData());
-    const actor = vtkActor.newInstance();
-    actor.setMapper(mapper);
-    actor.getProperty().setColor(0.0, 0.0, 1.0);
-
-    renderer.addActor(actor);
-    renderer.resetCamera();
-    renderWindow.render();
-    */
-    //-------------------
-    // Add a cubic
-    //-------------------
-    const cubeSource = vtkCubeSource.newInstance();
-    const mapper = vtkMapper.newInstance();
-    mapper.setInputData(cubeSource.getOutputData());
-    const actor = vtkActor.newInstance();
-    actor.setMapper(mapper);
-
-    renderer.addActor(actor);
-    renderer.resetCamera();
-    console.log(renderWindow);
-    renderWindow.render();
-
-
-    // ----------------------------------------------------------------------------
-    // Setup picking interaction
-    // ----------------------------------------------------------------------------
-
-    const picker = vtkCellPicker.newInstance();
-    picker.setPickFromList(1);
-    picker.setTolerance(0);
-    picker.initializePickList();
-    picker.addPickList(actor);
-
-
-
-    // Pick on mouse right click
-    renderWindow.getInteractor().onRightButtonPress((callData) => {
-        if (renderer !== callData.pokedRenderer) {
-            return;
-        }
-
-        const pos = callData.position;
-        const point = [pos.x, pos.y, 0.0];
-        console.log(`Pick at: ${point}`);
-        picker.pick(point, renderer);
-
-        if (picker.getActors().length === 0) {
-            const pickedPoint = picker.getPickPosition();
-            console.log(`No cells picked, default: ${pickedPoint}`);
-            const sphere = vtkSphereSource.newInstance();
-            sphere.setCenter(pickedPoint);
-            sphere.setRadius(0.01);
-            const sphereMapper = vtkMapper.newInstance();
-            sphereMapper.setInputData(sphere.getOutputData());
-            const sphereActor = vtkActor.newInstance();
-            sphereActor.setMapper(sphereMapper);
-            sphereActor.getProperty().setColor(1.0, 0.0, 0.0);
-            renderer.addActor(sphereActor);
-        } else {
-            const pickedCellId = picker.getCellId();
-            console.log('Picked cell: ', pickedCellId);
-
-            //const ids=vtkDataArray.newInstance();
-            //const selectionNode=vtkSelectionNode.newInstance();
-
-            console.log(cubeSource);
-
-
-
-            const pickedPoints = picker.getPickedPositions();
-            for (let i = 0; i < pickedPoints.length; i++) {
-                const pickedPoint = pickedPoints[i];
-                console.log(`Picked: ${pickedPoint}`);
-
-
-                const sphere = vtkSphereSource.newInstance();
-                sphere.setCenter(pickedPoint);
-                sphere.setRadius(0.01);
-                const sphereMapper = vtkMapper.newInstance();
-                sphereMapper.setInputData(sphere.getOutputData());
-                const sphereActor = vtkActor.newInstance();
-                sphereActor.setMapper(sphereMapper);
-                sphereActor.getProperty().setColor(0.0, 1.0, 0.0);
-                renderer.addActor(sphereActor);
-            }
-
-        }
-        renderWindow.render();
-    });
 }
 
 
