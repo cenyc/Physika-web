@@ -266,7 +266,7 @@ class ClothSimulation extends React.Component {
 
                                 <div id="collapseOne" className="collapse" aria-labelledby="headingOne" data-parent="#accordionExample">
                                     <div className="card-body">
-                                        <form>
+                                        <form className="p-0">
                                             <div className="row">
                                                 <div className="col">
                                                     <input name="x_begin" type="number" className="form-control" placeholder="x_begin" onChange={this.sceneBoundaryCoordinatesChange} />
@@ -371,7 +371,7 @@ class LeftNav extends Component {
     }
 
     render() {
-        return <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"
+        return <div id="sidebar"><nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"
             style={{ backgroundColor: "rgb(174, 188, 197)" }}>
             <div className="container-fluid d-flex flex-column p-0">
                 <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
@@ -415,7 +415,7 @@ class LeftNav extends Component {
                 </div>
                 <div id="performTree" ></div>
             </div>
-        </nav>;
+        </nav></div>;
     }
 }
 
