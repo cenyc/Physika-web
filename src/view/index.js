@@ -112,6 +112,13 @@ class ClothSimulation extends React.Component {
             source: null,
             mapper: null,
             actor: null,
+
+            x_begin:null,
+            y_begin:null,
+            z_begin:null,
+            x_end:null,
+            y_end:null,
+            z_end:null
         };
     }
 
@@ -158,16 +165,6 @@ class ClothSimulation extends React.Component {
 
             });
 */
-            this.setState({
-                renderer: null,
-                renderWindow: null,
-                source: null,
-                mapper: null,
-                actor: null
-            }, () => {
-                console.log("xiaoshi")
-
-            });
         }
     }
 
@@ -208,6 +205,20 @@ class ClothSimulation extends React.Component {
         });
     }
 
+
+    //传入模拟域边界坐标
+    sceneBoundaryCoordinatesChange = (e) => {
+        const target = e.target;
+        const val = target.value;
+        const name = target.name;
+
+        this.setState({
+            [name]: val
+        },()=>{
+            console.log(this.state.x_begin,this.state.y_begin,this.state.z_begin,this.state.x_end,this.state.y_end,this.state.z_end);
+        });
+    }
+
     render() {
         //------
 
@@ -221,53 +232,53 @@ class ClothSimulation extends React.Component {
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">材料属性</span></button>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.cellPicker}><span className="glyphicon glyphicon-plus">边界条件</span></button>
 
-                        <div class="accordion" id="accordionExample">
-                            <div class="card">
+                        <div className="accordion" id="accordionExample">
+                            <div className="card">
                                 <div id="headingOne">
-                                    <button class="btn btn-danger btn-sm p-0 btn-block" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    <button className="btn btn-danger btn-sm p-0 btn-block" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
                                         场景
                                     </button>
                                 </div>
 
-                                <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionExample">
-                                    <div class="card-body">
+                                <div id="collapseOne" className="collapse" aria-labelledby="headingOne" data-parent="#accordionExample">
+                                    <div className="card-body">
                                         <form>
                                             <div className="row">
                                                 <div className="col">
-                                                    <input type="text" class="form-control" placeholder="x_begin" />
-                                                    <input type="text" class="form-control" placeholder="y_begin" />
-                                                    <input type="text" class="form-control" placeholder="z_begin" />
+                                                    <input name="x_begin" type="number" className="form-control" placeholder="x_begin" onChange={this.sceneBoundaryCoordinatesChange} />
+                                                    <input name="y_begin" type="number" className="form-control" placeholder="y_begin" onChange={this.sceneBoundaryCoordinatesChange} />
+                                                    <input name="z_begin" type="number" className="form-control" placeholder="z_begin" onChange={this.sceneBoundaryCoordinatesChange} />
                                                 </div>
                                                 <div className="col">
-                                                    <input type="text" class="form-control" placeholder="x_end" />
-                                                    <input type="text" class="form-control" placeholder="y_end" />
-                                                    <input type="text" class="form-control" placeholder="z_end" />
+                                                    <input name="x_end" type="number" className="form-control" placeholder="x_end" onChange={this.sceneBoundaryCoordinatesChange} />
+                                                    <input name="y_end" type="number" className="form-control" placeholder="y_end" onChange={this.sceneBoundaryCoordinatesChange} />
+                                                    <input name="z_end" type="number" className="form-control" placeholder="z_end" onChange={this.sceneBoundaryCoordinatesChange} />
                                                 </div>
                                             </div>
                                         </form>
                                     </div>
                                 </div>
                             </div>
-                            <div class="card">
-                                <div class="card border rounded-0" id="headingTwo">
-                                    <button class="btn btn-outline-primary btn-sm p-0 btn-block" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            <div className="card">
+                                <div className="card border rounded-0" id="headingTwo">
+                                    <button className="btn btn-outline-primary btn-sm p-0 btn-block" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
                                         属性
                                         </button>
                                 </div>
-                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
-                                    <div class="card-body">
+                                <div id="collapseTwo" className="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                                    <div className="card-body">
                                         bb
                                     </div>
                                 </div>
                             </div>
-                            <div class="card">
-                                <div class="card border rounded-0" id="headingThree">
-                                    <button class="btn btn-outline-success" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            <div className="card">
+                                <div className="card border rounded-0" id="headingThree">
+                                    <button className="btn btn-outline-success" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
                                         交互
                                         </button>
                                 </div>
-                                <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionExample">
-                                    <div class="card-body">
+                                <div id="collapseThree" className="collapse" aria-labelledby="headingThree" data-parent="#accordionExample">
+                                    <div className="card-body">
                                         cc
                                     </div>
                                 </div>
