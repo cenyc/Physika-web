@@ -2,7 +2,38 @@
 var express = require('express');
 var path = require('path');
 var ejs = require('ejs');
+//引入body-parser用于解析post的body
+var bodyParser = require('body-parser');
+
 var app = express();
+
+// create application/json parser
+var jsonParser = bodyParser.json();
+// create application/x-www-form-urlencoded parser
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+/*
+app.post('/login', urlencodedParser, function (req, res) {
+    res.send('welcome, ' + req.body.username)
+})
+*/
+
+app.post('/config', jsonParser, function (req, res) {
+    if(!req.body){
+        return res.sendStatus(400);
+    }
+    else{
+        let data = req.body;
+        console.log(data);
+        let x_begin = data.x_begin;
+        console.log(x_begin);
+        //返回json对象
+        res.json(data);
+    }
+
+})
+
+
 
 //引入multer
 const multer = require('multer');
@@ -48,11 +79,6 @@ app.engine('html', ejs.renderFile);
 //把static设置为静态资源文件夹，可以让浏览器访问
 app.use('/static', express.static(path.join(__dirname, 'static')));
 app.use('/dist', express.static(path.join(__dirname, 'dist')));
-
-// app.use('/', function (req, res, next) {
-//     console.log('app get');
-//     next();
-// });
 
 // 对所有(/)URL或路由返回index.html
 app.get('/', function (req, res) {

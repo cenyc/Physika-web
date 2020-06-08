@@ -148,7 +148,7 @@ class ClothSimulation extends React.Component {
 
         }
         else if (index == 2) {
-            /*
+            
             this.setState({
                 renderer: fullScreenRenderer.getRenderer(),
                 renderWindow: fullScreenRenderer.getRenderWindow(),
@@ -164,7 +164,7 @@ class ClothSimulation extends React.Component {
                 this.state.renderWindow.render();
 
             });
-*/
+
         }
     }
 
@@ -217,6 +217,30 @@ class ClothSimulation extends React.Component {
         },()=>{
             console.log(this.state.x_begin,this.state.y_begin,this.state.z_begin,this.state.x_end,this.state.y_end,this.state.z_end);
         });
+    }
+
+    //上传数据到服务器
+    uploadConfigPara = () => {
+        console.log("开始上传");
+        let config = {
+            x_begin: this.state.x_begin,
+            y_begin: this.state.y_begin,
+            z_begin: this.state.z_begin,
+            x_end: this.state.x_end,
+            y_end: this.state.y_end,
+            z_end: this.state.z_end
+        }
+        
+        fetch('/config',{
+            method: 'POST',
+            body: JSON.stringify(config),
+            headers: new Headers({
+                'Content-Type': 'application/json'
+            })
+        }).then(res => res.json())
+        .catch(error => console.error('Error:', error))
+        .then(res => console.log('Success:', res));
+        //.then(res => res.json())
     }
 
     render() {
@@ -284,6 +308,8 @@ class ClothSimulation extends React.Component {
                                 </div>
                             </div>
                         </div>
+
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.uploadConfigPara}><span className="glyphicon glyphicon-plus">上传</span></button>
 
                     </div>
 
