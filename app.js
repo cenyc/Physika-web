@@ -1,16 +1,18 @@
 // 引入模块
-var express = require('express');
-var path = require('path');
-var ejs = require('ejs');
+const express = require('express');
+const path = require('path');
+const ejs = require('ejs');
 //引入body-parser用于解析post的body
-var bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
+//
+const { spawn } = require('child_process');
 
-var app = express();
+const app = express();
 
 // create application/json parser
-var jsonParser = bodyParser.json();
+const jsonParser = bodyParser.json();
 // create application/x-www-form-urlencoded parser
-var urlencodedParser = bodyParser.urlencoded({ extended: false });
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 /*
 app.post('/login', urlencodedParser, function (req, res) {
@@ -23,12 +25,23 @@ app.post('/config', jsonParser, function (req, res) {
         return res.sendStatus(400);
     }
     else{
-        let data = req.body;
-        console.log(data);
-        let x_begin = data.x_begin;
+        let configData = req.body;
+        console.log(configData);
+        let x_begin = configData.x_begin;
         console.log(x_begin);
         //返回json对象
-        res.json(data);
+        //res.json(configData);
+
+        let getData;
+        const callPython = spawn('python', ['./src/test.py']);
+        callPython.stdout.on('data', function(data){
+            getData = data.toString();
+            console.log(getData);
+        });
+        callPython.on('close',(code) => {
+            console.log(`child process close all stdio with code ${code}`);
+            res.send(getData);
+        });
     }
 
 })

@@ -113,12 +113,14 @@ class ClothSimulation extends React.Component {
             mapper: null,
             actor: null,
 
-            x_begin:null,
-            y_begin:null,
-            z_begin:null,
-            x_end:null,
-            y_end:null,
-            z_end:null
+            x_begin: null,
+            y_begin :null,
+            z_begin: null,
+            x_end: null,
+            y_end: null,
+            z_end: null,
+
+            address: null
         };
     }
 
@@ -237,10 +239,18 @@ class ClothSimulation extends React.Component {
             headers: new Headers({
                 'Content-Type': 'application/json'
             })
-        }).then(res => res.json())
+        }).then(res => res.text())
         .catch(error => console.error('Error:', error))
-        .then(res => console.log('Success:', res));
+        .then(res => {
+            console.log('Success:', res);
+            this.setState({
+                address: res
+            });
+            console.log(this.state.address);
+        });
         //.then(res => res.json())
+
+        
     }
 
     render() {

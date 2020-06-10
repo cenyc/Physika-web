@@ -1,5 +1,4 @@
 # web.py
 import sys
 
-print('web')
-print('aaa')
+print('C:/Users/lenovo/AppData/Roaming/nvm/v10.15.3/Physika-web/uploads/2020610')
