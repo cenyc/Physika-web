@@ -35,9 +35,11 @@ import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkSelectionNode from 'vtk.js/Sources/Common/DataModel/SelectionNode';
 
+import {ClothSimulation2} from './x'
+
 
 var pipeline_node = [];
-var fullScreenRenderer
+//var fullScreenRenderer
 
 /*
 class ClothSimulation extends Component {
@@ -62,9 +64,7 @@ class ClothSimulation extends Component {
     aa(event) {
         //console.log(event.target) 
 
-        //input_geo_file_handle(event, fullScreenRenderer)
-
-        cellPicker(fullScreenRenderer);
+        input_geo_file_handle(event, fullScreenRenderer)
 
         
         $.ajax({
@@ -102,6 +102,7 @@ class ClothSimulation extends Component {
 }
 */
 
+
 //20200531
 class ClothSimulation extends React.Component {
     constructor(props) {
@@ -114,7 +115,7 @@ class ClothSimulation extends React.Component {
             actor: null,
 
             x_begin: null,
-            y_begin :null,
+            y_begin: null,
             z_begin: null,
             x_end: null,
             y_end: null,
@@ -150,7 +151,7 @@ class ClothSimulation extends React.Component {
 
         }
         else if (index == 2) {
-            
+
             this.setState({
                 renderer: fullScreenRenderer.getRenderer(),
                 renderWindow: fullScreenRenderer.getRenderWindow(),
@@ -216,8 +217,8 @@ class ClothSimulation extends React.Component {
 
         this.setState({
             [name]: val
-        },()=>{
-            console.log(this.state.x_begin,this.state.y_begin,this.state.z_begin,this.state.x_end,this.state.y_end,this.state.z_end);
+        }, () => {
+            console.log(this.state.x_begin, this.state.y_begin, this.state.z_begin, this.state.x_end, this.state.y_end, this.state.z_end);
         });
     }
 
@@ -232,25 +233,31 @@ class ClothSimulation extends React.Component {
             y_end: this.state.y_end,
             z_end: this.state.z_end
         }
-        
-        fetch('/config',{
+
+        fetch('/config', {
             method: 'POST',
             body: JSON.stringify(config),
             headers: new Headers({
                 'Content-Type': 'application/json'
             })
         }).then(res => res.text())
-        .catch(error => console.error('Error:', error))
-        .then(res => {
-            console.log('Success:', res);
-            this.setState({
-                address: res
+            .catch(error => console.error('Error:', error))
+            .then(res => {
+                console.log('Success:', res);
+                this.setState({
+                    address: res
+                });
+                load1(fullScreenRenderer,res);
+                
+                /*
+                fetch(this.state.address).then(response => response.blob())
+                .then(res => {
+                    console.log(res);
+                    load2(fullScreenRenderer,res);
+                });
+                */
             });
-            console.log(this.state.address);
-        });
         //.then(res => res.json())
-
-        
     }
 
     render() {
@@ -369,7 +376,7 @@ class LeftNav extends Component {
     /**
      * 选择仿真场景触发事件
      */
-    click_select_simulation() {
+    click_select_simulation = () => {
         let index = $("#simSelect option:selected").val();
         if (index == 1) {
             console.log("布料仿真")
@@ -377,12 +384,14 @@ class LeftNav extends Component {
         }
         else if (index == 2) {
             console.log("流体模拟");
+            render(<ClothSimulation2 fullScreenRenderer={this.props.fullScreenRenderer}/>, document.getElementById("createTree"))
         }
     }
 
     render() {
-        return <div id="sidebar"><nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"
-            style={{ backgroundColor: "rgb(174, 188, 197)" }}>
+        return( 
+        
+            <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"style={{ backgroundColor: "rgb(174, 188, 197)" }}>
             <div className="container-fluid d-flex flex-column p-0">
                 <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
                     <div className="sidebar-brand-icon rotate-n-15"></div>
@@ -425,7 +434,9 @@ class LeftNav extends Component {
                 </div>
                 <div id="performTree" ></div>
             </div>
-        </nav></div>;
+        </nav>
+
+        );
     }
 }
 
@@ -461,7 +472,9 @@ function input_geo_file_handle(event, fullScreenRenderer) {
  * 加载显示几何体
  * @param options
  */
+/*
 function load(fullScreenRenderer, options) {
+    console.log("options",options);
     const renderer = fullScreenRenderer.getRenderer();
     const renderWindow = fullScreenRenderer.getRenderWindow();
     // 加载obj
@@ -476,6 +489,7 @@ function load(fullScreenRenderer, options) {
             console.log('nbOutputs is ' + nbOutputs);
             for (let idx = 0; idx < nbOutputs; idx++) {
                 const source = objReader.getOutputData(idx);
+                console.log("source",source);
                 const mapper = vtkMapper.newInstance();
                 const actor = vtkActor.newInstance();
                 actor.setMapper(mapper);
@@ -510,10 +524,53 @@ function load(fullScreenRenderer, options) {
             );
         };
         reader.readAsText(options.file);
-    }
+    }       
+}
+*/
+
+function load1(fullScreenRenderer, options) {
+
+    const renderer = fullScreenRenderer.getRenderer();
+    const renderWindow = fullScreenRenderer.getRenderWindow();
+
+    const reader = vtkOBJReader.newInstance();
+    reader.setUrl(options).then(() => {
+        const size = reader.getNumberOfOutputPorts();
+        for (let i = 0; i < size; i++) {
+            const polydata = reader.getOutputData(i);
+            const mapper = vtkMapper.newInstance();
+            const actor = vtkActor.newInstance();
+
+            mapper.setInputData(polydata);
+            actor.setMapper(mapper);
+            renderer.addActor(actor);
+        }
+        renderer.resetCamera();
+        renderWindow.render();
+    })
 }
 
+function load2(fullScreenRenderer, options) {
+    const renderer = fullScreenRenderer.getRenderer();
+    const renderWindow = fullScreenRenderer.getRenderWindow();
 
+    const reader = new FileReader();
+    reader.onload = function onLoad(e) {
+        const objReader = vtkOBJReader.newInstance();
+        objReader.parseAsText(reader.result);
+        const nbOutputs = objReader.getNumberOfOutputPorts();
+        for (let idx = 0; idx < nbOutputs; idx++) {
+            const source = objReader.getOutputData(idx);
+            const mapper = vtkMapper.newInstance();
+            const actor = vtkActor.newInstance();
+            actor.setMapper(mapper);
+            mapper.setInputData(source);
+            renderer.addActor(actor);
+        }
+        renderer.resetCamera();
+        renderWindow.render();
+    };
+}
 
 /**
  * 首页初始化
@@ -521,22 +578,28 @@ function load(fullScreenRenderer, options) {
 function init() {
     window.onload = function () {
         //首页左边布局
-        let container = document.getElementById("wrapper");
-        render(<LeftNav />, container);
+        //let container = document.getElementById("wrapper");
+        //let x=document.getElementById("sidebar");
+        //render(<LeftNav />, x);
         //首页右边布局
-        let viewer = document.createElement("div");
-        viewer.id = "content-wrapper";
-        viewer.setAttribute("class", "d-flex flex-column")
-        container.appendChild(viewer);
-        render(<GeoViewer />, viewer);
+        //let viewer = document.createElement("div");
+        //viewer.id = "content-wrapper";
+        //viewer.setAttribute("class", "d-flex flex-column")
+        //container.appendChild(viewer);
+        //render(<GeoViewer />, viewer);
 
+        let right_container = document.getElementById("content-wrapper");
+        render(<GeoViewer />, right_container);
         let geoViewer = document.getElementById("geoViewer");
 
-        fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+        const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
             containerStyle: { height: '100%', width: '100%', position: 'absolute' },
         });
+
+        let left_container = document.getElementById("sidebar");
+        render(<LeftNav fullScreenRenderer={fullScreenRenderer}/>, left_container);
 
 
         /*
