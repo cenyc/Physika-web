@@ -1,7 +1,7 @@
 import 'react-bootstrap';
 import 'bootstrap';
 import React, { Component } from 'react';
-import ReactDOM, { render } from 'react-dom';
+import ReactDOM from 'react-dom';
 import 'normalize.css';
 import $ from 'jquery';
 import 'ajax';
@@ -35,7 +35,7 @@ import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkSelectionNode from 'vtk.js/Sources/Common/DataModel/SelectionNode';
 
-import {ClothSimulation2} from './x'
+import { ClothSimulation2 } from './x'
 
 
 var pipeline_node = [];
@@ -125,6 +125,19 @@ class ClothSimulation extends React.Component {
         };
     }
 
+    componentDidMount() {
+        this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+            background: [0, 0, 0],
+            rootContainer: geoViewer,
+            containerStyle: { height: '100%', width: '100%', position: 'absolute' }
+        });
+        this.renderer = this.fullScreenRenderer.getRenderer();
+        this.renderWindow = this.fullScreenRenderer.getRenderWindow();
+    }
+
+
+
+
     clickAddScene() {
         //console.log(this);
         $("#selectSceneModal").modal();
@@ -134,8 +147,8 @@ class ClothSimulation extends React.Component {
         let index = $("#sceneSelect option:selected").val();
         if (index == 1) {
             this.setState({
-                renderer: fullScreenRenderer.getRenderer(),
-                renderWindow: fullScreenRenderer.getRenderWindow(),
+                renderer: this.fullScreenRenderer.getRenderer(),
+                renderWindow: this.fullScreenRenderer.getRenderWindow(),
                 source: vtkCubeSource.newInstance(),
                 mapper: vtkMapper.newInstance(),
                 actor: vtkActor.newInstance()
@@ -247,8 +260,8 @@ class ClothSimulation extends React.Component {
                 this.setState({
                     address: res
                 });
-                load1(fullScreenRenderer,res);
-                
+                load1(fullScreenRenderer, res);
+
                 /*
                 fetch(this.state.address).then(response => response.blob())
                 .then(res => {
@@ -272,6 +285,7 @@ class ClothSimulation extends React.Component {
                         <div id="scene_tree" className="pt-2"></div>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">材料属性</span></button>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.cellPicker}><span className="glyphicon glyphicon-plus">边界条件</span></button>
+                        <button className="btn btn-danger btn-sm p-0 btn-block"><span className="glyphicon glyphicon-plus">111</span></button>
 
                         <div className="accordion" id="accordionExample">
                             <div className="card">
@@ -293,7 +307,7 @@ class ClothSimulation extends React.Component {
                                                 <div className="col">
                                                     <input name="x_end" type="number" className="form-control" placeholder="x_end" onChange={this.sceneBoundaryCoordinatesChange} />
                                                     <input name="y_end" type="number" className="form-control" placeholder="y_end" onChange={this.sceneBoundaryCoordinatesChange} />
-                                                    <input name="z_end" type="number" className="form-control" placeholder="z_end" onChange={this.sceneBoundaryCoordinatesChange} />
+
                                                 </div>
                                             </div>
                                         </form>
@@ -378,69 +392,80 @@ class LeftNav extends Component {
      */
     click_select_simulation = () => {
         let index = $("#simSelect option:selected").val();
+
+        let right_container = document.getElementById("content-wrapper");
+
         if (index == 1) {
-            console.log("布料仿真")
-            render(<ClothSimulation />, document.getElementById("createTree"))
+            console.log("布料仿真");
+            if (document.getElementById("geoViewer")) {
+                right_container.removeChild(document.getElementById("geoViewer"));
+            }
+            right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
+            ReactDOM.render(<ClothSimulation />, document.getElementById("createTree"));
         }
         else if (index == 2) {
             console.log("流体模拟");
-            render(<ClothSimulation2 fullScreenRenderer={this.props.fullScreenRenderer}/>, document.getElementById("createTree"))
+            if (document.getElementById("geoViewer")) {
+                right_container.removeChild(document.getElementById("geoViewer"));
+            }
+            right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
+            ReactDOM.render(<ClothSimulation2 />, document.getElementById("createTree"));
         }
     }
 
     render() {
-        return( 
-        
-            <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0"style={{ backgroundColor: "rgb(174, 188, 197)" }}>
-            <div className="container-fluid d-flex flex-column p-0">
-                <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
-                    <div className="sidebar-brand-icon rotate-n-15"></div>
-                    <div className="sidebar-brand-text mx-3"><span>Physika Web</span></div>
-                </a>
-                <hr className="sidebar-divider my-0" />
-                <div className="container">
-                    <div className="modal fade" id="selectSimModal" role="dialog">
-                        <div className="modal-dialog">
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <h4 className="modal-title">选择仿真情景</h4>
-                                    <button type="button" className="close" data-dismiss="modal">&times;</button>
-                                </div>
-                                <div className="modal-body">
-                                    <form role="form">
-                                        <div className="form-group">
-                                            <select className="form-control" id="simSelect">
-                                                <option value="1">布料仿真</option>
-                                                <option value="2">流体模拟</option>
-                                            </select>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-default" data-dismiss="modal" onClick={this.click_select_simulation}>确定</button>
+        return (
+
+            <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0" style={{ backgroundColor: "rgb(174, 188, 197)" }}>
+                <div className="container-fluid d-flex flex-column p-0">
+                    <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
+                        <div className="sidebar-brand-icon rotate-n-15"></div>
+                        <div className="sidebar-brand-text mx-3"><span>Physika Web</span></div>
+                    </a>
+                    <hr className="sidebar-divider my-0" />
+                    <div className="container">
+                        <div className="modal fade" id="selectSimModal" role="dialog">
+                            <div className="modal-dialog">
+                                <div className="modal-content">
+                                    <div className="modal-header">
+                                        <h4 className="modal-title">选择仿真情景</h4>
+                                        <button type="button" className="close" data-dismiss="modal">&times;</button>
+                                    </div>
+                                    <div className="modal-body">
+                                        <form role="form">
+                                            <div className="form-group">
+                                                <select className="form-control" id="simSelect">
+                                                    <option value="1">布料仿真</option>
+                                                    <option value="2">流体模拟</option>
+                                                </select>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-default" data-dismiss="modal" onClick={this.click_select_simulation}>确定</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
                     </div>
+                    <div className="container p-2">
+                        <button className="btn btn-danger btn-sm btn-lg btn-block" type="button" onClick={this.click_create_simulation}>创建仿真</button>
+                    </div>
+                    <div id="createTree" className="container p-2"></div>
 
+                    <div className="container p-2">
+                        <button className="btn btn-danger btn-sm btn-lg btn-block" type="button">执行仿真</button>
+                    </div>
+                    <div id="performTree" ></div>
                 </div>
-                <div className="container p-2">
-                    <button className="btn btn-danger btn-sm btn-lg btn-block" type="button" onClick={this.click_create_simulation}>创建仿真</button>
-                </div>
-                <div id="createTree" className="container p-2"></div>
-
-                <div className="container p-2">
-                    <button className="btn btn-danger btn-sm btn-lg btn-block" type="button">执行仿真</button>
-                </div>
-                <div id="performTree" ></div>
-            </div>
-        </nav>
+            </nav>
 
         );
     }
 }
-
-class GeoViewer extends Component {
+/*
+class GeoViewer extends React.Component {
     render() {
         return (
             <div id="content">
@@ -449,7 +474,7 @@ class GeoViewer extends Component {
         );
     }
 }
-
+*/
 
 /**
  * 加载模型响应事件
@@ -588,18 +613,18 @@ function init() {
         //container.appendChild(viewer);
         //render(<GeoViewer />, viewer);
 
-        let right_container = document.getElementById("content-wrapper");
-        render(<GeoViewer />, right_container);
-        let geoViewer = document.getElementById("geoViewer");
-
-        const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-            background: [0, 0, 0],
-            rootContainer: geoViewer,
-            containerStyle: { height: '100%', width: '100%', position: 'absolute' },
-        });
-
+        //let right_container = document.getElementById("content-wrapper");
+        //ReactDOM.render(<GeoViewer />, right_container);
+        //let geoViewer = document.getElementById("geoViewer");
+        /*
+                const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+                    background: [0, 0, 0],
+                    rootContainer: geoViewer,
+                    containerStyle: { height: '100%', width: '100%', position: 'absolute' },
+                });
+        */
         let left_container = document.getElementById("sidebar");
-        render(<LeftNav fullScreenRenderer={fullScreenRenderer}/>, left_container);
+        ReactDOM.render(<LeftNav />, left_container);
 
 
         /*

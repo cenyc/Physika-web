@@ -2,22 +2,20 @@ import 'react-bootstrap';
 import 'bootstrap';
 import React from 'react';
 import $ from 'jquery';
+import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
 //vtkActor用于表示渲染场景中的实体
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 //抽象类，用于指定数据和图形基元之间的接口
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
+import vtkSphereSource from 'vtk.js/Sources/Filters/Sources/SphereSource';
+
+import vtkOutlineFilter from 'vtk.js/Sources/Filters/General/OutlineFilter';
 
 class ClothSimulation2 extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            fullScreenRenderer: this.props.fullScreenRenderer,
-            renderer: null,
-            renderWindow: null,
-            source: null,
-            mapper: null,
-            actor: null,
 
             x_begin: null,
             y_begin: null,
@@ -30,48 +28,52 @@ class ClothSimulation2 extends React.Component {
         };
     }
 
-    clickAddScene = () => {
-        console.log(this.state.fullScreenRenderer);
+    componentDidMount() {
+        this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+            background: [0, 0, 0],
+            rootContainer: geoViewer,
+            containerStyle: { height: '100%', width: '100%', position: 'absolute' }
+        });
+        this.renderer = this.fullScreenRenderer.getRenderer();
+        this.renderWindow = this.fullScreenRenderer.getRenderWindow();
+    }
+    /*
+        componentWillUnmount() {
+            console.log('子组件将卸载');
+        }
+    */
+    clickAddScene() {
         $("#selectSceneModal").modal();
     }
 
     clickSelectScene = () => {
         let index = $("#sceneSelect option:selected").val();
         if (index == 1) {
-            this.setState({
-                renderer: this.state.fullScreenRenderer.getRenderer(),
-                renderWindow: this.state.fullScreenRenderer.getRenderWindow(),
-                source: vtkCubeSource.newInstance(),
-                mapper: vtkMapper.newInstance(),
-                actor: vtkActor.newInstance()
-            }, () => {
-                this.state.mapper.setInputData(this.state.source.getOutputData());
-                this.state.actor.setMapper(this.state.mapper);
-                this.state.renderer.addActor(this.state.actor);
-                this.state.renderer.resetCamera();
-                console.log(this.state.renderWindow);
-                this.state.renderWindow.render();
 
-            });
+            this.cubicSource = vtkCubeSource.newInstance({ xLength: 2.0 });
+            this.cubicMapper = vtkMapper.newInstance();
+            this.cubicActor = vtkActor.newInstance();
+
+            const outlineFileter = vtkOutlineFilter.newInstance();
+            outlineFileter.setInputConnection(this.cubicSource.getOutputPort());
+            this.cubicMapper.setInputConnection(outlineFileter.getOutputPort());
+            this.cubicActor.setMapper(this.cubicMapper);          
+            this.renderer.addActor(this.cubicActor);
+            this.renderer.resetCamera();
+            this.renderWindow.render();
 
         }
         else if (index == 2) {
 
-            this.setState({
-                renderer: fullScreenRenderer.getRenderer(),
-                renderWindow: fullScreenRenderer.getRenderWindow(),
-                source: vtkSphereSource.newInstance(),
-                mapper: vtkMapper.newInstance(),
-                actor: vtkActor.newInstance()
-            }, () => {
-                this.state.mapper.setInputData(this.state.source.getOutputData());
-                this.state.actor.setMapper(this.state.mapper);
-                this.state.renderer.addActor(this.state.actor);
-                this.state.renderer.resetCamera();
-                console.log(this.state.renderWindow);
-                this.state.renderWindow.render();
+            this.sphereSource = vtkSphereSource.newInstance();
+            this.sphereMapper = vtkMapper.newInstance();
+            this.sphereActor = vtkActor.newInstance();
 
-            });
+            this.sphereMapper.setInputConnection(this.sphereSource.getOutputPort());
+            this.sphereActor.setMapper(this.sphereMapper);
+            this.renderer.addActor(this.sphereActor);
+            this.renderer.resetCamera();
+            this.renderWindow.render();
 
         }
     }
@@ -152,8 +154,8 @@ class ClothSimulation2 extends React.Component {
                 this.setState({
                     address: res
                 });
-                load1(fullScreenRenderer,res);
-                
+                load1(fullScreenRenderer, res);
+
                 /*
                 fetch(this.state.address).then(response => response.blob())
                 .then(res => {
@@ -268,4 +270,4 @@ class ClothSimulation2 extends React.Component {
     }
 }
 
-export {ClothSimulation2}
+export { ClothSimulation2 }
