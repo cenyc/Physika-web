@@ -9,6 +9,13 @@ import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
 import vtkSphereSource from 'vtk.js/Sources/Filters/Sources/SphereSource';
+//坐标轴
+import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
+//旋转控制控件
+import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
+
+//面片选取
+import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
 
 import vtkOutlineFilter from 'vtk.js/Sources/Filters/General/OutlineFilter';
 
@@ -36,6 +43,30 @@ class ClothSimulation2 extends React.Component {
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
+
+        /*
+        //添加坐标轴：X：红，Y：黄，Z: 绿
+        this.axesActor = vtkAxesActor.newInstance();
+        this.renderer.addActor(this.axesActor);
+        */
+
+        //添加旋转控制控件
+        this.axesActor = vtkAxesActor.newInstance();
+        const orientationMarkerWidget = vtkOrientationMarkerWidget.newInstance({
+            actor: this.axesActor,
+            interactor: this.renderWindow.getInteractor(),
+        });
+        orientationMarkerWidget.setEnabled(true);
+        orientationMarkerWidget.setViewportCorner(
+            vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT
+        );
+        //控制控件大小
+        orientationMarkerWidget.setViewportSize(0.3);
+        orientationMarkerWidget.setMinPixelSize(100);
+        orientationMarkerWidget.setMaxPixelSize(300);
+
+        this.renderer.resetCamera();
+        this.renderWindow.render();
     }
     /*
         componentWillUnmount() {
@@ -57,10 +88,17 @@ class ClothSimulation2 extends React.Component {
             const outlineFileter = vtkOutlineFilter.newInstance();
             outlineFileter.setInputConnection(this.cubicSource.getOutputPort());
             this.cubicMapper.setInputConnection(outlineFileter.getOutputPort());
-            this.cubicActor.setMapper(this.cubicMapper);          
+            this.cubicActor.setMapper(this.cubicMapper);
             this.renderer.addActor(this.cubicActor);
+
             this.renderer.resetCamera();
             this.renderWindow.render();
+
+            /*
+            this.cubicMapper.setInputConnection(this.cubicSource.getOutputPort());
+            this.cubicActor.setMapper(this.cubicMapper);          
+            this.renderer.addActor(this.cubicActor);
+            */
 
         }
         else if (index == 2) {
@@ -72,8 +110,10 @@ class ClothSimulation2 extends React.Component {
             this.sphereMapper.setInputConnection(this.sphereSource.getOutputPort());
             this.sphereActor.setMapper(this.sphereMapper);
             this.renderer.addActor(this.sphereActor);
+
             this.renderer.resetCamera();
             this.renderWindow.render();
+
 
         }
     }
@@ -85,19 +125,20 @@ class ClothSimulation2 extends React.Component {
         picker.setPickFromList(1);
         picker.setTolerance(0);
         picker.initializePickList();
-        picker.addPickList(this.state.actor);
+        //注意！
+        picker.addPickList(this.cubicActor);
 
 
-        this.state.renderWindow.getInteractor().onRightButtonPress((callData) => {
+        this.renderWindow.getInteractor().onRightButtonPress((callData) => {
 
-            if (this.state.renderer !== callData.pokedRenderer) {
+            if (this.renderer !== callData.pokedRenderer) {
                 return;
             }
 
             const pos = callData.position;
             const point = [pos.x, pos.y, 0.0];
             console.log(`Pick at: ${point}`);
-            picker.pick(point, this.state.renderer);
+            picker.pick(point, this.renderer);
 
             if (picker.getActors().length === 0) {
                 const pickedPoint = picker.getPickPosition();
@@ -111,7 +152,7 @@ class ClothSimulation2 extends React.Component {
                     console.log(`Picked: ${pickedPoint}`);
                 }
             }
-            this.state.renderWindow.render();
+            //this.renderWindow.render();
         });
     }
 
