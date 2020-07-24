@@ -35,7 +35,7 @@ import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkSelectionNode from 'vtk.js/Sources/Common/DataModel/SelectionNode';
 
-import { ClothSimulation2 } from './x'
+import { ClothSimulation2 } from './y'
 
 
 var pipeline_node = [];

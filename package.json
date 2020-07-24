@@ -42,7 +42,7 @@
     "popper.js": "^1.16.1",
     "pvw-visualizer": "^3.2.0",
     "react": "^16.13.1",
-    "react-bootstrap": "^1.0.0",
+    "react-bootstrap": "^1.2.2",
     "react-dom": "^16.13.1",
     "vtk.js": "^13.15.0",
     "webpack": "^4.43.0"

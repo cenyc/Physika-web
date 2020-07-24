@@ -19,6 +19,121 @@ import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
 
 import vtkOutlineFilter from 'vtk.js/Sources/Filters/General/OutlineFilter';
 
+function deepCopy(obj) {
+    var newobj = obj.constructor === Array ? [] : {};
+    if (typeof obj !== 'object') {
+        return;
+    }
+    for (var i in obj) {
+        newobj[i] = typeof obj[i] === 'object' ? copy(obj[i]) : obj[i];
+    }
+    return newobj;
+}
+
+class SceneConfigModal extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            xLength: 1.0,
+            yLength: 1.0,
+
+            scene: { sceneName: "defaultScene" }
+        }
+    }
+
+    //每次打开时按照对应scene初始化组件
+    onModalEnter = () => {
+        console.log("enter");
+        console.log("sceneShow : " + this.props.sceneShow);
+        if (this.props.sceneShow === -1) {
+            let initialScene = {};
+            initialScene['sceneName'] = "defaultScene";
+            //开始判断各种存在的属性来生成对应的控件
+            if (initialScene.hasOwnProperty('sceneObj')) {
+                initialScene['zLength'] = 1.0;
+            }
+            else {
+
+            }
+            this.setState({ scene: initialScene });
+        }
+    }
+
+    //Todo：判断是否添加场景obj，来删除或增添场景名称及属性
+    sceneConfigChange = (e) => {
+        let newScene = this.state.scene;
+
+        const target = e.target;
+        const val = target.value;
+        const name = target.name;
+        console.log(name, val);
+
+        if (name === "sceneName" && val === "1") {
+            newScene['sceneObj'] = "choose a geometry...";
+        }
+        else {
+            newScene[name] = val;
+        }
+
+
+        this.setState({ scene: newScene });
+    }
+
+    render() {
+        const hasSceneObj = this.state.scene.hasOwnProperty('sceneObj');
+
+        return (
+            <Modal show={this.props.show} onHide={this.props.onHide} onEnter={this.onModalEnter}>
+                <Modal.Header closeButton>
+                    <Modal.Title>场景属性设置</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group controlId="sceneNameInput">
+                            <Form.Label>场景名字</Form.Label>
+                            <Form.Control type="text" name="sceneName" value={this.state.scene['sceneName']} onChange={this.sceneConfigChange} />
+                        </Form.Group>
+
+                        {
+                            hasSceneObj &&
+                            <Form.Group controlId="sceneSelect">
+                                <Form.Label>Example select</Form.Label>
+                                <Form.Control as="select" name="sceneObj" value={this.state.scene['sceneObj']} onChange={this.sceneConfigChange}>
+                                    <option disabled>choose a geometry...</option>
+                                    <option value="rectangle">rectangle</option>
+                                    <option value="sphere">sphere</option>
+                                </Form.Control>
+                            </Form.Group>
+                        }
+
+                        <Form.Row>
+                            <Form.Group as={Col} controlId="x">
+                                <Form.Label>x</Form.Label>
+                                <Form.Control name="xLength" onChange={this.sceneConfigChange} value={this.state.xLength} />
+                            </Form.Group>
+
+                            <Form.Group as={Col} controlId="y">
+                                <Form.Label>y</Form.Label>
+                                <Form.Control name="yLength" onChange={this.sceneConfigChange} />
+                            </Form.Group>
+
+                            <Form.Group as={Col} controlId="z">
+                                <Form.Label>z</Form.Label>
+                                <Form.Control name="zLength" onChange={this.sceneConfigChange} />
+                            </Form.Group>
+
+                        </Form.Row>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={this.props.onConfirm}>确认</Button>
+                    <Button onClick={this.props.deleteScene}>删除场景</Button>
+                </Modal.Footer>
+            </Modal>
+        )
+    }
+}
+
 class ClothSimulation2 extends React.Component {
     constructor(props) {
         super(props);
@@ -32,6 +147,13 @@ class ClothSimulation2 extends React.Component {
             z_end: null,
 
             address: null,
+
+            scene: [],
+
+            isSceneConfigModalShow: false,
+            sceneShow: -1,
+            scene_val: []
+
         };
     }
 
@@ -73,15 +195,93 @@ class ClothSimulation2 extends React.Component {
             console.log('子组件将卸载');
         }
     */
-    //点击按钮后打开场景选择模态框
-    clickAddScene() {
-        $("#selectSceneModal").modal();
+
+    //在render中调用事件函数，render()中的this.createSceneButton后面必须加括号!
+    createSceneButton() {
+        return this.state.scene.map((val, i) =>
+            <div key={i}>
+                <button onClick={() => this.showSceneConfigModal(i)}>{val}</button>
+                <button onClick={() => this.deleteSceneClick(i)}>x</button>
+            </div>
+        );
+    }
+
+    //隐藏场景配置模态框
+    hideSceneConfigModalModal() {
+        this.setState({ isSceneConfigModalShow: false });
+    }
+
+    //显示场景配置模态框
+    showSceneConfigModal(i) {
+        if (i === -1) {
+            this.setState({
+                isSceneConfigModalShow: true,
+                sceneShow: -1
+            }, () => {
+                console.log(this.state.sceneShow);
+            });
+        }
+        else {
+            this.setState({
+                isSceneConfigModalShow: true,
+                sceneShow: this.state.scene[i]
+            }, () => {
+                console.log(this.state.sceneShow);
+            });
+        }
+    }
+
+    //主控件接收SceneConfigModal子控件传回的新场景配置
+    setScenceVal() {
+        this.setState({ isSceneConfigModalShow: false });
+
+        //concat返回的是浅拷贝，所以需要先将新scene进行一次深拷贝，否则新的scene会改变旧scene中的值
+        let tmp = deepCopy(this.refs.sceneConfig.state.scene);
+
+        //this.setState(prevState => ({ scene: [...prevState.scene, this.refs.sceneConfig.state.scene['sceneName']] }));
+        //this.setState(prevState => ({ scene_val: prevState.scene_val.concat(tmp) }));
+
+        this.setState(prevState => ({
+            scene: [...prevState.scene, this.refs.sceneConfig.state.scene['sceneName']],
+            scene_val: prevState.scene_val.concat(tmp)
+        }), () => {
+            console.log("根据配置设置场景");
+        });
+
+    }
+
+    //删除对应场景
+    deleteSceneClick(i) {
+        console.log(this.state.scene, this.state.scene_val);
+
+        let scene = [...this.state.scene];
+        scene.splice(i, 1);
+        this.setState({ scene: scene });
+
+        let scene_val = [...this.state.scene_val];
+        scene_val.splice(i, 1);
+        this.setState({ scene_val: scene_val }, () => {
+            console.log(this.state.scene_val);
+        });
+    }
+
+    //增添新场景
+    clickAddScene = () => {
+        this.showSceneConfigModal(-1);
     }
 
     //点击确认按钮后添加并生成对应场景
     clickSelectScene = () => {
         let index = $("#sceneSelect option:selected").val();
         if (index == 1) {
+
+            //----添加场景
+            this.setState(prevState => ({ scene: [...prevState.scene, 'cubic' + prevState.scene.length] }));
+            this.setState(prevState => ({ scene_val: [...prevState.scene_val, [1.0, 1.0, 1.0]] }));
+            /*
+            这里不需要显示调用，因为该函数在render()中，一旦state数据发生变化，则会在render()中自动调用this.createSceneButton()
+            this.createSceneButton();
+            */
 
             this.cubicSource = vtkCubeSource.newInstance({ xLength: 2.0 });
             this.cubicMapper = vtkMapper.newInstance();
@@ -98,6 +298,7 @@ class ClothSimulation2 extends React.Component {
 
         }
         else if (index == 2) {
+            //this.cubicSource.set({xLength: 1.0});
 
             this.sphereSource = vtkSphereSource.newInstance();
             this.sphereMapper = vtkMapper.newInstance();
@@ -213,7 +414,7 @@ class ClothSimulation2 extends React.Component {
                     <div className="card-body pt-2">
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.clickAddScene}><span className="glyphicon glyphicon-plus">场景</span></button>
                         <div id="scene_tree" className="pt-2">
-
+                            {this.createSceneButton()}
                         </div>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button"><span className="glyphicon glyphicon-plus">材料属性</span></button>
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.cellPicker}><span className="glyphicon glyphicon-plus">边界条件</span></button>
@@ -300,6 +501,11 @@ class ClothSimulation2 extends React.Component {
                             </div>
                         </div>
 
+                    </div>
+
+                    <div>
+                        <SceneConfigModal ref="sceneConfig" show={this.state.isSceneConfigModalShow} sceneShow={this.state.sceneShow}
+                            onHide={() => this.hideSceneConfigModalModal()} onConfirm={() => this.setScenceVal()} deleteScene={() => this.deleteScene()}></SceneConfigModal>
                     </div>
 
                 </div>
