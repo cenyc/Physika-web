@@ -25,7 +25,7 @@ function deepCopy(obj) {
         return;
     }
     for (var i in obj) {
-        newobj[i] = typeof obj[i] === 'object' ? copy(obj[i]) : obj[i];
+        newobj[i] = typeof obj[i] === 'object' ? deepCopy(obj[i]) : obj[i];
     }
     return newobj;
 }
@@ -34,10 +34,8 @@ class SceneConfigModal extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            xLength: 1.0,
-            yLength: 1.0,
 
-            scene: { sceneName: "defaultScene" }
+            scene: { sceneName: "defaultScene", sceneCreationMethod: "choose a scene creation method..." }
         }
     }
 
@@ -47,15 +45,15 @@ class SceneConfigModal extends React.Component {
         console.log("sceneShow : " + this.props.sceneShow);
         if (this.props.sceneShow === -1) {
             let initialScene = {};
-            initialScene['sceneName'] = "defaultScene";
-            //开始判断各种存在的属性来生成对应的控件
-            if (initialScene.hasOwnProperty('sceneObj')) {
-                initialScene['zLength'] = 1.0;
-            }
-            else {
 
-            }
+            initialScene['sceneName'] = "defaultScene";
+            initialScene['sceneCreationMethod'] = "choose a scene creation method...";
+
             this.setState({ scene: initialScene });
+        }
+        else {
+            //开始判断各种存在的属性来生成对应的控件
+            this.setState({ scene: this.props.sceneShow });
         }
     }
 
@@ -66,21 +64,38 @@ class SceneConfigModal extends React.Component {
         const target = e.target;
         const val = target.value;
         const name = target.name;
-        console.log(name, val);
 
-        if (name === "sceneName" && val === "1") {
-            newScene['sceneObj'] = "choose a geometry...";
+        switch (name) {
+            case "sceneCreationMethod":
+                newScene['sceneCreationMethod'] = val;
+                if (val === "simple") {
+                    newScene['simpleConfig'] = {};
+                    newScene['simpleConfig']['sceneObj'] = "choose a geometry...";
+                    delete newScene['importConfig'];
+                }
+                else if (val === "import") {
+                    newScene['importConfig'] = {};
+                    newScene['importConfig']['path'] = "C://";
+                    delete newScene['simpleConfig'];
+                }
+                break;
+            case "sceneObj":
+                newScene['simpleConfig']['sceneObj'] = val;
+                if (val === "rectangle") {
+                    newScene['simpleConfig']['property'] = { xLength: 1.0, yLength: 1.0, zLength: 1.0 };
+                    //如何设置x,y,z的属性？多三个分支判断还是拆分成子组件？
+                }
+                break;
+            default:
+                newScene[name] = val;
         }
-        else {
-            newScene[name] = val;
-        }
-
-
+        console.log(newScene);
         this.setState({ scene: newScene });
     }
 
     render() {
-        const hasSceneObj = this.state.scene.hasOwnProperty('sceneObj');
+        const hasSceneObj = this.state.scene.hasOwnProperty('simpleConfig');
+        const sceneObjIsRectangle = (hasSceneObj && (this.state.scene['simpleConfig']['sceneObj'] === "rectangle"));
 
         return (
             <Modal show={this.props.show} onHide={this.props.onHide} onEnter={this.onModalEnter}>
@@ -89,16 +104,26 @@ class SceneConfigModal extends React.Component {
                 </Modal.Header>
                 <Modal.Body>
                     <Form>
+
                         <Form.Group controlId="sceneNameInput">
                             <Form.Label>场景名字</Form.Label>
                             <Form.Control type="text" name="sceneName" value={this.state.scene['sceneName']} onChange={this.sceneConfigChange} />
                         </Form.Group>
 
+                        <Form.Group controlId="selectSceneCreationMethod">
+                            <Form.Label>选择场景创建方式</Form.Label>
+                            <Form.Control as="select" name="sceneCreationMethod" value={this.state.scene['sceneCreationMethod']} onChange={this.sceneConfigChange}>
+                                <option disabled>choose a scene creation method...</option>
+                                <option value="simple">简单场景创建</option>
+                                <option value="import">外部场景导入</option>
+                            </Form.Control>
+                        </Form.Group>
+
                         {
                             hasSceneObj &&
-                            <Form.Group controlId="sceneSelect">
-                                <Form.Label>Example select</Form.Label>
-                                <Form.Control as="select" name="sceneObj" value={this.state.scene['sceneObj']} onChange={this.sceneConfigChange}>
+                            <Form.Group controlId="default1">
+                                <Form.Label>简单场景导入</Form.Label>
+                                <Form.Control as="select" name="sceneObj" value={this.state.scene['simpleConfig']['sceneObj']} onChange={this.sceneConfigChange}>
                                     <option disabled>choose a geometry...</option>
                                     <option value="rectangle">rectangle</option>
                                     <option value="sphere">sphere</option>
@@ -106,23 +131,26 @@ class SceneConfigModal extends React.Component {
                             </Form.Group>
                         }
 
-                        <Form.Row>
-                            <Form.Group as={Col} controlId="x">
-                                <Form.Label>x</Form.Label>
-                                <Form.Control name="xLength" onChange={this.sceneConfigChange} value={this.state.xLength} />
-                            </Form.Group>
+                        {
+                            sceneObjIsRectangle &&
+                            <Form.Row>
+                                <Form.Group as={Col} controlId="x">
+                                    <Form.Label>x</Form.Label>
+                                    <Form.Control name="xLength" />
+                                </Form.Group>
 
-                            <Form.Group as={Col} controlId="y">
-                                <Form.Label>y</Form.Label>
-                                <Form.Control name="yLength" onChange={this.sceneConfigChange} />
-                            </Form.Group>
+                                <Form.Group as={Col} controlId="y">
+                                    <Form.Label>y</Form.Label>
+                                    <Form.Control name="yLength" />
+                                </Form.Group>
 
-                            <Form.Group as={Col} controlId="z">
-                                <Form.Label>z</Form.Label>
-                                <Form.Control name="zLength" onChange={this.sceneConfigChange} />
-                            </Form.Group>
+                                <Form.Group as={Col} controlId="z">
+                                    <Form.Label>z</Form.Label>
+                                    <Form.Control name="zLength" />
+                                </Form.Group>
+                            </Form.Row>
+                        }
 
-                        </Form.Row>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
@@ -149,10 +177,9 @@ class ClothSimulation2 extends React.Component {
             address: null,
 
             scene: [],
-
+            sceneConfigValue: [],
+            sceneShow: 0,
             isSceneConfigModalShow: false,
-            sceneShow: -1,
-            scene_val: []
 
         };
     }
@@ -224,8 +251,9 @@ class ClothSimulation2 extends React.Component {
         else {
             this.setState({
                 isSceneConfigModalShow: true,
-                sceneShow: this.state.scene[i]
+                sceneShow: this.state.sceneConfigValue[i]
             }, () => {
+                console.log("显示已生成场景的配置模态框");
                 console.log(this.state.sceneShow);
             });
         }
@@ -238,80 +266,67 @@ class ClothSimulation2 extends React.Component {
         //concat返回的是浅拷贝，所以需要先将新scene进行一次深拷贝，否则新的scene会改变旧scene中的值
         let tmp = deepCopy(this.refs.sceneConfig.state.scene);
 
-        //this.setState(prevState => ({ scene: [...prevState.scene, this.refs.sceneConfig.state.scene['sceneName']] }));
-        //this.setState(prevState => ({ scene_val: prevState.scene_val.concat(tmp) }));
-
         this.setState(prevState => ({
             scene: [...prevState.scene, this.refs.sceneConfig.state.scene['sceneName']],
-            scene_val: prevState.scene_val.concat(tmp)
+            sceneConfigValue: prevState.sceneConfigValue.concat(tmp)
         }), () => {
             console.log("根据配置设置场景");
+            console.log(this.state.sceneConfigValue);
+            let tmp = this.state.sceneConfigValue[this.state.sceneConfigValue.length-1];
+            if (tmp['sceneCreationMethod'] === "simple") {
+                console.log("simple");
+                if (tmp['simpleConfig']['sceneObj'] === "rectangle") {
+                    console.log("开始渲染长方形");
+
+                    this.cubicSource = vtkCubeSource.newInstance({ 
+                        xLength: tmp['simpleConfig']['property']['xLength'],
+                        yLength: tmp['simpleConfig']['property']['yLength'],
+                        zLength: tmp['simpleConfig']['property']['zLength']
+                     });
+                    this.cubicMapper = vtkMapper.newInstance();
+                    this.cubicActor = vtkActor.newInstance();
+
+                    const outlineFileter = vtkOutlineFilter.newInstance();
+                    outlineFileter.setInputConnection(this.cubicSource.getOutputPort());
+                    this.cubicMapper.setInputConnection(outlineFileter.getOutputPort());
+                    this.cubicActor.setMapper(this.cubicMapper);
+                    this.renderer.addActor(this.cubicActor);
+
+                    this.renderer.resetCamera();
+                    this.renderWindow.render();
+
+                    this.state.sceneConfigValue[this.state.sceneConfigValue.length-1]['actor']="cubicActor";
+                }
+            }
+            else if (this.state.sceneConfigValue['sceneCreationMethod'] === 'import') {
+                console.log("import");
+            }
         });
 
     }
 
     //删除对应场景
     deleteSceneClick(i) {
-        console.log(this.state.scene, this.state.scene_val);
+        console.log(this.state.scene, this.state.sceneConfigValue);
 
         let scene = [...this.state.scene];
         scene.splice(i, 1);
         this.setState({ scene: scene });
 
-        let scene_val = [...this.state.scene_val];
-        scene_val.splice(i, 1);
-        this.setState({ scene_val: scene_val }, () => {
-            console.log(this.state.scene_val);
+        console.log(eval("this."+this.state.sceneConfigValue[i]['actor']));
+        //删除actor，eval将字符串转化为js代码
+        this.renderer.removeActor(eval("this."+this.state.sceneConfigValue[i]['actor']));
+        this.renderWindow.render();
+        let sceneConfigValue = [...this.state.sceneConfigValue];
+        sceneConfigValue.splice(i, 1);
+        this.setState({ sceneConfigValue: sceneConfigValue }, () => {
+            console.log(this.state.sceneConfigValue);
         });
     }
 
     //增添新场景
     clickAddScene = () => {
         this.showSceneConfigModal(-1);
-    }
-
-    //点击确认按钮后添加并生成对应场景
-    clickSelectScene = () => {
-        let index = $("#sceneSelect option:selected").val();
-        if (index == 1) {
-
-            //----添加场景
-            this.setState(prevState => ({ scene: [...prevState.scene, 'cubic' + prevState.scene.length] }));
-            this.setState(prevState => ({ scene_val: [...prevState.scene_val, [1.0, 1.0, 1.0]] }));
-            /*
-            这里不需要显示调用，因为该函数在render()中，一旦state数据发生变化，则会在render()中自动调用this.createSceneButton()
-            this.createSceneButton();
-            */
-
-            this.cubicSource = vtkCubeSource.newInstance({ xLength: 2.0 });
-            this.cubicMapper = vtkMapper.newInstance();
-            this.cubicActor = vtkActor.newInstance();
-
-            const outlineFileter = vtkOutlineFilter.newInstance();
-            outlineFileter.setInputConnection(this.cubicSource.getOutputPort());
-            this.cubicMapper.setInputConnection(outlineFileter.getOutputPort());
-            this.cubicActor.setMapper(this.cubicMapper);
-            this.renderer.addActor(this.cubicActor);
-
-            this.renderer.resetCamera();
-            this.renderWindow.render();
-
-        }
-        else if (index == 2) {
-            //this.cubicSource.set({xLength: 1.0});
-
-            this.sphereSource = vtkSphereSource.newInstance();
-            this.sphereMapper = vtkMapper.newInstance();
-            this.sphereActor = vtkActor.newInstance();
-
-            this.sphereMapper.setInputConnection(this.sphereSource.getOutputPort());
-            this.sphereActor.setMapper(this.sphereMapper);
-            this.renderer.addActor(this.sphereActor);
-
-            this.renderer.resetCamera();
-            this.renderWindow.render();
-
-        }
     }
 
     //面片拾取
@@ -473,33 +488,6 @@ class ClothSimulation2 extends React.Component {
                         </div>
 
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.uploadConfigPara}><span className="glyphicon glyphicon-plus">上传</span></button>
-
-                    </div>
-
-                    <div className="container">
-                        <div className="modal fade" id="selectSceneModal" role="dialog">
-                            <div className="modal-dialog">
-                                <div className="modal-content">
-                                    <div className="modal-header">
-                                        <h4 className="modal-title">选择场景</h4>
-                                        <button type="button" className="close" data-dismiss="modal">&times;</button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <form role="form">
-                                            <div className="form-group">
-                                                <select className="form-control" id="sceneSelect">
-                                                    <option value="1">立方体</option>
-                                                    <option value="2">球体</option>
-                                                </select>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-default" data-dismiss="modal" onClick={this.clickSelectScene}>确定</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                     </div>
 
