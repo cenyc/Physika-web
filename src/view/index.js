@@ -153,6 +153,16 @@ class ClothSimulation extends React.Component {
                 mapper: vtkMapper.newInstance(),
                 actor: vtkActor.newInstance()
             }, () => {
+                // 设置颜色
+                var nbCells = this.state.source.getOutputData().getNumberOfCells();
+                const values = new Float32Array(nbCells);
+                for(let i = 0; i<nbCells; i++)
+                {
+                    values[i] = 0.45;
+                }
+                const colors = vtkDataArray.newInstance({ name: 'colors', values });
+                this.state.source.getOutputData().getCellData().setScalars(colors);
+
                 this.state.mapper.setInputData(this.state.source.getOutputData());
                 this.state.actor.setMapper(this.state.mapper);
                 this.state.renderer.addActor(this.state.actor);
@@ -216,6 +226,15 @@ class ClothSimulation extends React.Component {
                     const pickedPoint = pickedPoints[i];
                     console.log(`Picked: ${pickedPoint}`);
                 }
+
+                // 修改颜色
+                var tmpScalars = this.state.source.getOutputData().getCellData().getScalars();
+                var tmpScalarsData = tmpScalars.getData();
+
+                tmpScalarsData[pickedCellId] = 0.0;
+                tmpScalars.setData(tmpScalarsData);
+                this.state.source.getOutputData().getCellData().setScalars(tmpScalars);
+                this.state.actor.modified();
             }
             this.state.renderWindow.render();
         });
