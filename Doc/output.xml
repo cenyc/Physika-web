@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Node class="SB" name="123">
+    <Field name="dt" class="Real">0.5</Field>
+    <Field name="gravity" class="vector3f">0.0 -9.8 0.0</Field>
+    <Node class="PE" name="">
+        <Field name="mass">1.0</Field>
+        <Field name="dt">0.0 -9.8 0.0</Field>
+        <Module name="load" class="ML">
+            <Field name="path">c:/</Field>
+        </Module>
+        <Module name="ela" class="PRM"/>
+    </Node>
+</Node>

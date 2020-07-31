@@ -6,6 +6,9 @@ const ejs = require('ejs');
 const bodyParser = require('body-parser');
 //
 const { spawn } = require('child_process');
+//加载xml
+const xml2js = require('xml-js');
+const fs = require('fs');
 
 const app = express();
 
@@ -27,11 +30,32 @@ app.post('/config', jsonParser, function (req, res) {
     else{
         let configData = req.body;
         console.log(configData);
-        let x_begin = configData.x_begin;
-        console.log(x_begin);
+        
+        //将json转化为xml并写文件
+        let options ={compact:true,ignoreComment:true,spaces:4};
+        let xml = xml2js.json2xml(configData,options);
+        console.log(xml);
+        fs.writeFile('./Doc/output.xml',xml,(err)=>{
+            if(err){
+                return console.error(err);
+            }
+        });
         //返回json对象
-        //res.json(configData);
+        res.json(configData);
+        
 
+        /*
+        //加载xml并解析为json
+        let xml = fs.readFileSync('./Doc/test.xml','utf-8');
+        let options = {compact: true, ignoreComment: true, alwaysChildren: true};
+        let result = xml2js.xml2js(xml,options);
+        console.log(result);
+        res.json(result);
+        */
+
+
+        /*
+        //调用python
         let getData;
         const callPython = spawn('python', ['./src/test.py']);
         callPython.stdout.on('data', function(data){
@@ -42,6 +66,7 @@ app.post('/config', jsonParser, function (req, res) {
             console.log(`child process close all stdio with code ${code}`);
             res.send(getData);
         });
+        */
     }
 
 })
