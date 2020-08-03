@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Node class="SB" name="123">
-    <Field name="dt" class="Real">0.5</Field>
+<Node class="SB" name="StaticBoundary">
+    <Field name="dt" class="Real">0.01</Field>
     <Field name="gravity" class="vector3f">0.0 -9.8 0.0</Field>
-    <Node class="PE" name="">
-        <Field name="mass">1.0</Field>
-        <Field name="dt">0.0 -9.8 0.0</Field>
-        <Module name="load" class="ML">
-            <Field name="path">c:/</Field>
+    <Node name="ParticleElasticBody" class="PEB">
+        <Field name="mass" class="Real">1.0</Field>
+        <Module name="elasticity" class="PRM" type="VisualModule">
+            <Field name="mass" class="Real">1.0</Field>
         </Module>
-        <Module name="ela" class="PRM"/>
+        <Module name="ElasticityModule" class="EM" type="ConstraintModule">
+            <Field name="dt" class="Real">0.1</Field>
+            <Field name="gravity" class="vector3f">0.0 -9.8 0.0</Field>
+        </Module>
+    </Node>
+    <Node name="default" class="X">
+        <Field name="dt" class="Real">0.1</Field>
+        <Field name="gravity" class="vector3f">0.0 -9.8 0.0</Field>
+        <Module name="随便写的" class="PRM" type="none">
+            <Field name="mass" class="Real">1.0</Field>
+        </Module>
     </Node>
 </Node>

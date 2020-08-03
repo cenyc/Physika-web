@@ -30,7 +30,7 @@ app.post('/config', jsonParser, function (req, res) {
     else{
         let configData = req.body;
         console.log(configData);
-        
+    
         //将json转化为xml并写文件
         let options ={compact:true,ignoreComment:true,spaces:4};
         let xml = xml2js.json2xml(configData,options);
@@ -42,7 +42,6 @@ app.post('/config', jsonParser, function (req, res) {
         });
         //返回json对象
         res.json(configData);
-        
 
         /*
         //加载xml并解析为json

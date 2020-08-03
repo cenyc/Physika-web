@@ -1,7 +1,6 @@
 import { Modal, Button, Form, Col, Row } from 'react-bootstrap';
 import 'bootstrap';
 import React from 'react';
-import $ from 'jquery';
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
 //vtkActor用于表示渲染场景中的实体
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
@@ -30,138 +29,6 @@ function deepCopy(obj) {
     return newobj;
 }
 
-class SceneConfigModal extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-
-            scene: { sceneName: "defaultScene", sceneCreationMethod: "choose a scene creation method..." }
-        }
-    }
-
-    //每次打开时按照对应scene初始化组件
-    onModalEnter = () => {
-        console.log("enter");
-        console.log("sceneShow : " + this.props.sceneShow);
-        if (this.props.sceneShow === -1) {
-            let initialScene = {};
-
-            initialScene['sceneName'] = "defaultScene";
-            initialScene['sceneCreationMethod'] = "choose a scene creation method...";
-
-            this.setState({ scene: initialScene });
-        }
-        else {
-            //开始判断各种存在的属性来生成对应的控件
-            this.setState({ scene: this.props.sceneShow });
-        }
-    }
-
-    //Todo：判断是否添加场景obj，来删除或增添场景名称及属性
-    sceneConfigChange = (e) => {
-        let newScene = this.state.scene;
-
-        const target = e.target;
-        const val = target.value;
-        const name = target.name;
-
-        switch (name) {
-            case "sceneCreationMethod":
-                newScene['sceneCreationMethod'] = val;
-                if (val === "simple") {
-                    newScene['simpleConfig'] = {};
-                    newScene['simpleConfig']['sceneObj'] = "choose a geometry...";
-                    delete newScene['importConfig'];
-                }
-                else if (val === "import") {
-                    newScene['importConfig'] = {};
-                    newScene['importConfig']['path'] = "C://";
-                    delete newScene['simpleConfig'];
-                }
-                break;
-            case "sceneObj":
-                newScene['simpleConfig']['sceneObj'] = val;
-                if (val === "rectangle") {
-                    newScene['simpleConfig']['property'] = { xLength: 1.0, yLength: 1.0, zLength: 1.0 };
-                    //如何设置x,y,z的属性？多三个分支判断还是拆分成子组件？
-                }
-                break;
-            default:
-                newScene[name] = val;
-        }
-        console.log(newScene);
-        this.setState({ scene: newScene });
-    }
-
-    render() {
-        const hasSceneObj = this.state.scene.hasOwnProperty('simpleConfig');
-        const sceneObjIsRectangle = (hasSceneObj && (this.state.scene['simpleConfig']['sceneObj'] === "rectangle"));
-
-        return (
-            <Modal show={this.props.show} onHide={this.props.onHide} onEnter={this.onModalEnter}>
-                <Modal.Header closeButton>
-                    <Modal.Title>场景属性设置</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-
-                        <Form.Group controlId="sceneNameInput">
-                            <Form.Label>场景名字</Form.Label>
-                            <Form.Control type="text" name="sceneName" value={this.state.scene['sceneName']} onChange={this.sceneConfigChange} />
-                        </Form.Group>
-
-                        <Form.Group controlId="selectSceneCreationMethod">
-                            <Form.Label>选择场景创建方式</Form.Label>
-                            <Form.Control as="select" name="sceneCreationMethod" value={this.state.scene['sceneCreationMethod']} onChange={this.sceneConfigChange}>
-                                <option disabled>choose a scene creation method...</option>
-                                <option value="simple">简单场景创建</option>
-                                <option value="import">外部场景导入</option>
-                            </Form.Control>
-                        </Form.Group>
-
-                        {
-                            hasSceneObj &&
-                            <Form.Group controlId="default1">
-                                <Form.Label>简单场景导入</Form.Label>
-                                <Form.Control as="select" name="sceneObj" value={this.state.scene['simpleConfig']['sceneObj']} onChange={this.sceneConfigChange}>
-                                    <option disabled>choose a geometry...</option>
-                                    <option value="rectangle">rectangle</option>
-                                    <option value="sphere">sphere</option>
-                                </Form.Control>
-                            </Form.Group>
-                        }
-
-                        {
-                            sceneObjIsRectangle &&
-                            <Form.Row>
-                                <Form.Group as={Col} controlId="x">
-                                    <Form.Label>x</Form.Label>
-                                    <Form.Control name="xLength" />
-                                </Form.Group>
-
-                                <Form.Group as={Col} controlId="y">
-                                    <Form.Label>y</Form.Label>
-                                    <Form.Control name="yLength" />
-                                </Form.Group>
-
-                                <Form.Group as={Col} controlId="z">
-                                    <Form.Label>z</Form.Label>
-                                    <Form.Control name="zLength" />
-                                </Form.Group>
-                            </Form.Row>
-                        }
-
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button onClick={this.props.onConfirm}>确认</Button>
-                    <Button onClick={this.props.deleteScene}>删除场景</Button>
-                </Modal.Footer>
-            </Modal>
-        )
-    }
-}
-
 const Field = [
     { _attributes: { name: "mass", class: "Real" }, _text: "1.0" },
     { _attributes: { name: "dt", class: "Real" }, _text: "0.1" },
@@ -187,43 +54,47 @@ function fieldConfig(index) {
 }
 
 //secene属性配置
-class SceneConfig extends React.Component {
+class SceneConfigModal extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            sceneName: "123",
-            sceneClass: "choose a scene class...",
-            sceneField: []
+            name: "",
+            class: "",
+            Field: []
         }
+
+        this.onModalEnter = this.onModalEnter.bind(this);
+        this.handleChange = this.handleChange.bind(this);
+        this.handleFieldChange = this.handleFieldChange.bind(this);
+        this.clickConfirm = this.clickConfirm.bind(this);
     }
 
     //每次打开时按照对应sceneConfig初始化组件
-    onModalEnter = () => {
+    onModalEnter() {
         console.log("enter");
         const sceneConfig = this.props.sceneConfig;
         this.setState({
-            sceneName: sceneConfig['sceneName'],
-            sceneClass: sceneConfig['sceneClass'],
-            sceneField: sceneConfig['sceneField']
+            name: sceneConfig['name'],
+            class: sceneConfig['class'],
+            Field: sceneConfig['Field']
         }, () => {
             console.log("初始化sceneConfig：", this.state);
         })
     }
 
-    handleChange = (e) => {
-        //const {name,val}=e.target;
+    handleChange(e) {
         const target = e.target;
         const val = target.value;
         const name = target.name;
-        console.log("123",Field);
-        
-        if (name === "sceneClass") {
+        console.log("123", Field);
+
+        if (name === "class") {
             switch (val) {
                 case "SB":
-                    this.setState({ sceneField: fieldConfig(0) });
+                    this.setState({ Field: fieldConfig(0) });
                     break;
                 case "X":
-                    this.setState({ sceneField: fieldConfig(1) });
+                    this.setState({ Field: fieldConfig(1) });
                     break;
             }
         }
@@ -233,24 +104,23 @@ class SceneConfig extends React.Component {
         });
     }
 
-    handleFieldChange = (e) => {
+    handleFieldChange(e) {
         const target = e.target;
         const val = target.value;
         const name = target.name;
-        let tmp = this.state.sceneField;
+        let tmp = this.state.Field;
         tmp.find((object, index) => {
             if (object._attributes.name === name) {
                 tmp[index]._text = val;
             }
         });
-        this.setState({ sceneField: tmp }, () => {
-            console.log(this.state.sceneField);
-            console.log("321",Field);
+        this.setState({ Field: tmp }, () => {
+            console.log(this.state.Field);
         });
     }
 
     showField() {
-        return this.state.sceneField.map((field, index) =>
+        return this.state.Field.map((field, index) =>
             <div key={index}>
                 <Form.Group as={Row} controlId="formHorizontalField">
                     <Form.Label column sm={2}>{field['_attributes']['name']}</Form.Label>
@@ -263,14 +133,14 @@ class SceneConfig extends React.Component {
     }
 
     //返回sceneConfig
-    clickConfirm = () => {
+    clickConfirm() {
         let res = this.state;
         this.props.changeSceneConfigModal(res);
         this.props.onHide();
     }
 
     render() {
-        let hasChoosedSceneClass = (this.state.sceneClass === "choose a scene class...") ? false : true;
+        let hasChoosedSceneClass = (this.state.class === "choose a scene class...") ? false : true;
         return (
             <Modal show={this.props.show} onHide={this.props.onHide} onEnter={this.onModalEnter}>
                 <Modal.Header closeButton>
@@ -281,12 +151,12 @@ class SceneConfig extends React.Component {
 
                         <Form.Group controlId="sceneNameInput">
                             <Form.Label>场景名字</Form.Label>
-                            <Form.Control type="text" name="sceneName" value={this.state.sceneName} onChange={this.handleChange} />
+                            <Form.Control type="text" name="name" value={this.state.name} onChange={this.handleChange} />
                         </Form.Group>
 
                         <Form.Group controlId="selectSceneClass">
                             <Form.Label>选择场景类</Form.Label>
-                            <Form.Control as="select" name="sceneClass" value={this.state.sceneClass} onChange={this.handleChange}>
+                            <Form.Control as="select" name="class" value={this.state.class} onChange={this.handleChange}>
                                 <option disabled>choose a scene class...</option>
                                 <option value="SB">固体边界</option>
                                 <option value="X">未知</option>
@@ -312,46 +182,335 @@ class SceneConfig extends React.Component {
 }
 //-------------
 
+//-----NodeConfigModal---------
+class NodeConfigModal extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            name: "",
+            class: "",
+            Field: []
+        }
+
+        this.onModalEnter = this.onModalEnter.bind(this);
+        this.handleChange = this.handleChange.bind(this);
+        this.handleFieldChange = this.handleFieldChange.bind(this);
+        this.clickConfirm = this.clickConfirm.bind(this);
+    }
+
+    onModalEnter() {
+        console.log("enter");
+        const nodeArray = this.props.nodeArray;
+        const nodeIndex = this.props.nodeIndex;
+        if (nodeIndex === -1) {
+            this.setState({
+                name: "default",
+                class: "choose a node class..."
+            }, () => {
+                console.log("初始化node：", this.state);
+            })
+        }
+        else {
+            this.setState({
+                name: nodeArray[nodeIndex]['_attributes']['name'],
+                class: nodeArray[nodeIndex]['_attributes']['class'],
+                Field: nodeArray[nodeIndex]['Field']
+            }, () => {
+                console.log("初始化node：", this.state);
+            })
+        }
+    }
+
+    handleChange(e) {
+        const target = e.target;
+        const val = target.value;
+        const name = target.name;
+
+        if (name === "class") {
+            switch (val) {
+                case "PEB":
+                    this.setState({ Field: fieldConfig(1) });
+                    break;
+                case "X":
+                    this.setState({ Field: fieldConfig(0) });
+                    break;
+            }
+        }
+
+        this.setState({ [name]: val }, () => {
+            console.log(this.state);
+        });
+    }
+
+    handleFieldChange(e) {
+        const target = e.target;
+        const val = target.value;
+        const name = target.name;
+        let tmp = this.state.Field;
+        tmp.find((object, index) => {
+            if (object._attributes.name === name) {
+                tmp[index]._text = val;
+            }
+        });
+        this.setState({ Field: tmp });
+    }
+
+    clickConfirm() {
+        const nodeArray = this.props.nodeArray;
+        const nodeIndex = this.props.nodeIndex;
+        if (nodeIndex === -1) {
+            let node = {};
+            node['_attributes'] = {};
+            node['_attributes']['name'] = this.state.name;
+            node['_attributes']['class'] = this.state.class;
+            node['Field'] = this.state.Field;
+            node['Module'] = [];
+            nodeArray.push(node);
+        }
+        else {
+            nodeArray[nodeIndex]['_attributes']['name'] = this.state.name;
+            nodeArray[nodeIndex]['_attributes']['class'] = this.state.class;
+            nodeArray[nodeIndex]['Field'] = this.state.Field;
+        }
+        this.props.changeNodeConfigModal(nodeArray);
+        this.props.onHide();
+    }
+
+    showField() {
+        return this.state.Field.map((field, index) =>
+            <div key={index}>
+                <Form.Group as={Row} controlId="formHorizontalField">
+                    <Form.Label column sm={2}>{field['_attributes']['name']}</Form.Label>
+                    <Col sm={5}>
+                        <Form.Control type="text" name={field['_attributes']['name']} value={field['_text']} onChange={this.handleFieldChange} />
+                    </Col>
+                </Form.Group>
+            </div>
+        );
+    }
+
+    render() {
+        let hasChoosedNodeClass = (this.state.class === "choose a node class...") ? false : true;
+        return (
+            <Modal show={this.props.show} onHide={this.props.onHide} onEnter={this.onModalEnter}>
+                <Modal.Header closeButton>
+                    <Modal.Title>节点属性设置</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+
+                        <Form.Group>
+                            <Form.Label>节点名字</Form.Label>
+                            <Form.Control type="text" name="name" value={this.state.name} onChange={this.handleChange} />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>选择节点类</Form.Label>
+                            <Form.Control as="select" name="class" value={this.state.class} onChange={this.handleChange}>
+                                <option disabled>choose a node class...</option>
+                                <option value="PEB">粒子弹性体</option>
+                                <option value="X">未知</option>
+                            </Form.Control>
+                        </Form.Group>
+
+                        {
+                            hasChoosedNodeClass &&
+                            <Form.Group>
+                                <Form.Label>场量设置</Form.Label>
+                                {this.showField()}
+                            </Form.Group>
+                        }
+
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={this.clickConfirm}>确认</Button>
+                </Modal.Footer>
+            </Modal>
+        )
+    }
+}
+//-------------
+
+//-----ModuleConfigModal---------
+class ModuleConfigModal extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            name: "",
+            class: "",
+            type: "",
+            Field: []
+        }
+
+        this.onModalEnter = this.onModalEnter.bind(this);
+        this.handleChange = this.handleChange.bind(this);
+        this.handleFieldChange = this.handleFieldChange.bind(this);
+        this.clickConfirm = this.clickConfirm.bind(this);
+    }
+
+    onModalEnter() {
+        console.log("enter");
+        const moduleArray = this.props.node['Module'];
+        const moduleIndex = this.props.moduleIndex;
+        if (moduleIndex === -1) {
+            this.setState({
+                name: "default",
+                class: "choose a module class...",
+                type: "none"
+            }, () => {
+                console.log("初始化module：", this.state);
+            })
+        }
+        else {
+            this.setState({
+                name: moduleArray[moduleIndex]['_attributes']['name'],
+                class: moduleArray[moduleIndex]['_attributes']['class'],
+                type: moduleArray[moduleIndex]['_attributes']['type'],
+                Field: moduleArray[moduleIndex]['Field']
+            }, () => {
+                console.log("初始化module：", this.state);
+            })
+        }
+    }
+
+    handleChange(e) {
+        const target = e.target;
+        const val = target.value;
+        const name = target.name;
+
+        if (name === "class") {
+            switch (val) {
+                case "PRM":
+                    this.setState({ Field: fieldConfig(1) });
+                    break;
+                case "EM":
+                    this.setState({ Field: fieldConfig(0) });
+                    break;
+            }
+        }
+
+        this.setState({ [name]: val }, () => {
+            console.log(this.state);
+        });
+    }
+
+    handleFieldChange(e) {
+        const target = e.target;
+        const val = target.value;
+        const name = target.name;
+        let tmp = this.state.Field;
+        tmp.find((object, index) => {
+            if (object._attributes.name === name) {
+                tmp[index]._text = val;
+            }
+        });
+        this.setState({ Field: tmp });
+    }
+
+    clickConfirm() {
+        const moduleArray = this.props.node['Module'];
+        const moduleIndex = this.props.moduleIndex;
+        if (moduleIndex === -1) {
+            let module = {};
+            module['_attributes'] = {};
+            module['_attributes']['name'] = this.state.name;
+            module['_attributes']['class'] = this.state.class;
+            module['_attributes']['type'] = this.state.type;
+            module['Field'] = this.state.Field;
+            moduleArray.push(module);
+        }
+        else {
+            moduleArray[moduleIndex]['_attributes']['name'] = this.state.name;
+            moduleArray[moduleIndex]['_attributes']['class'] = this.state.class;
+            moduleArray[moduleIndex]['_attributes']['type'] = this.state.type;
+            moduleArray[moduleIndex]['Field'] = this.state.Field;
+        }
+        this.props.changeModuleConfigModal(moduleArray);
+        this.props.onHide();
+    }
+
+    showField() {
+        return this.state.Field.map((field, index) =>
+            <div key={index}>
+                <Form.Group as={Row} controlId="formHorizontalField">
+                    <Form.Label column sm={2}>{field['_attributes']['name']}</Form.Label>
+                    <Col sm={5}>
+                        <Form.Control type="text" name={field['_attributes']['name']} value={field['_text']} onChange={this.handleFieldChange} />
+                    </Col>
+                </Form.Group>
+            </div>
+        );
+    }
+
+    render() {
+        let hasChoosedNodeClass = (this.state.class === "choose a module class...") ? false : true;
+        return (
+            <Modal show={this.props.show} onHide={this.props.onHide} onEnter={this.onModalEnter}>
+                <Modal.Header closeButton>
+                    <Modal.Title>模组属性设置</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+
+                        <Form.Group>
+                            <Form.Label>模组名字</Form.Label>
+                            <Form.Control type="text" name="name" value={this.state.name} onChange={this.handleChange} />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>模组类型</Form.Label>
+                            <Form.Control type="text" name="type" value={this.state.type} onChange={this.handleChange} />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>选择模组类</Form.Label>
+                            <Form.Control as="select" name="class" value={this.state.class} onChange={this.handleChange}>
+                                <option disabled>choose a module class...</option>
+                                <option value="PRM">点渲染模组</option>
+                                <option value="EM">弹性模组</option>
+                            </Form.Control>
+                        </Form.Group>
+
+                        {
+                            hasChoosedNodeClass &&
+                            <Form.Group>
+                                <Form.Label>场量设置</Form.Label>
+                                {this.showField()}
+                            </Form.Group>
+                        }
+
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={this.clickConfirm}>确认</Button>
+                </Modal.Footer>
+            </Modal>
+        )
+    }
+}
+//-------------------------------
+
 class ClothSimulation2 extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
 
             sceneConfig: {
-                sceneName: "default",
-                sceneClass: "choose a scene class...",
-                sceneField: []
+                name: "default",
+                class: "choose a scene class...",
+                Field: []
             },
             isSceneConfigModalShow: false,
 
+            nodeArray: [],
+            nodeIndex: -1,
+            isAddNodeButtonShow: false,
+            isNodeConfigModalShow: false,
 
-            scene: [],
-            sceneConfigValue: [],
-            sceneShow: 0,
-            isSonNodeConfigModalShow: false,
-
-            allNode: [],
-            eachNode: {
-                Field: [
-                    { _attributes: { name: "mass" }, _text: "1.0" },
-                    { _attributes: { name: "dt" }, _text: "0.0 -9.8 0.0" }
-                ],
-                Module: [
-                    {
-                        _attributes: { name: "load", class: "ML" },
-                        Field: [
-                            {
-                                _attributes: { name: "path" },
-                                _text: "c:/"
-                            }]
-                    },
-                    {
-                        _attributes: { name: "ela", class: "PRM" }
-                    }
-                ],
-                _attributes: { class: "PE", name: "" }
-            }
-
+            nodeIndexForModules: -1,
+            moduleIndex: -1,
+            isModuleConfigModalShow: false,
         };
     }
 
@@ -403,7 +562,10 @@ class ClothSimulation2 extends React.Component {
     }
     changeSceneConfigModal(val) {
         console.log(val);
-        this.setState({ sceneConfig: val }, () => {
+        this.setState({
+            sceneConfig: val,
+            isAddNodeButtonShow: true
+        }, () => {
             console.log(this.state.sceneConfig);
             /*
             //测试返回的val是引用还是值
@@ -430,94 +592,110 @@ class ClothSimulation2 extends React.Component {
         const { name, value } = e.target;
 
         this.setState({ [name]: value }, () => {
-            console.log("sceneName: ", this.state.sceneName, "\n",
-                "sceneClass: ", this.state.sceneClass);
+            console.log("name: ", this.state.name, "\n",
+                "class: ", this.state.class);
         })
     }
     */
     //----------------------------
 
-
-
-
-    //在render中调用事件函数，render()中的this.createSceneButton后面必须加括号!
-    createSceneButton() {
-        return this.state.scene.map((val, i) =>
+    //-------子结点（Node）创建及相关函数设置
+    clickAddNode() {
+        this.showNodeConfigModal(-1);
+    }
+    showNodeConfigModal(i) {
+        this.setState({
+            nodeIndex: i,
+            isNodeConfigModalShow: true
+        });
+    }
+    hideNodeConfigModal() {
+        this.setState({ isNodeConfigModalShow: false });
+    }
+    changeNodeConfigModal(val) {
+        this.setState({
+            nodeArray: val
+        }, () => {
+            console.log("返回node", this.state.nodeArray);
+        })
+    }
+    deleteNode(i) {
+        console.log("删除节点前", this.state.nodeArray);
+        let nodeArray = [...this.state.nodeArray];
+        nodeArray.splice(i, 1);
+        console.log("节点splice后", this.state.nodeArray);
+        this.setState({
+            nodeArray: nodeArray
+        }, () => {
+            console.log("删除节点后", this.state.nodeArray);
+        })
+    }
+    setNodeIndexForModules(i) {
+        this.setState({ nodeIndexForModules: i });
+    }
+    createNodeButton() {
+        return this.state.nodeArray.map((node, i) =>
             <div key={i}>
-                <button onClick={() => this.showSceneConfigModal(i)}>{val}</button>
-                <button onClick={() => this.deleteSceneClick(i)}>x</button>
+                <button onClick={() => this.setNodeIndexForModules(i)}>{node['_attributes']['name']}</button>
+                <button onClick={() => this.showNodeConfigModal(i)}>属性</button>
+                <button onClick={() => this.deleteNode(i)}>X</button>
             </div>
         );
     }
+    //-------------------------------------
 
-
-    //隐藏场景配置模态框
-    hideSceneConfigModalModal() {
-        this.setState({ isSonNodeConfigModalShow: false });
+    //-------材料属性Module及相关函数设置
+    clickAddModule() {
+        this.showModuleConfigModal(-1);
     }
-
-    //显示场景配置模态框
-    showSceneConfigModal(i) {
-        if (i === -1) {
-            this.setState({
-                isSonNodeConfigModalShow: true,
-                sceneShow: -1
-            }, () => {
-                console.log(this.state.sceneShow);
-            });
-        }
-        else {
-            this.setState({
-                isSonNodeConfigModalShow: true,
-                sceneShow: this.state.sceneConfigValue[i]
-            }, () => {
-                console.log("显示已生成场景的配置模态框");
-                console.log(this.state.sceneShow);
-            });
-        }
-    }
-
-    //主控件接收SceneConfigModal子控件传回的新场景配置
-    setScenceVal() {
-        this.setState({ isSonNodeConfigModalShow: false });
-
-        //concat返回的是浅拷贝，所以需要先将新scene进行一次深拷贝，否则新的scene会改变旧scene中的值
-        let tmp = deepCopy(this.refs.sceneConfig.state.scene);
-
-        this.setState(prevState => ({
-            scene: [...prevState.scene, this.refs.sceneConfig.state.scene['sceneName']],
-            sceneConfigValue: prevState.sceneConfigValue.concat(tmp)
-        }), () => {
-            console.log("根据配置设置场景");
-            console.log(this.state.sceneConfigValue);
-            //
-        });
-
-    }
-
-    //删除对应场景
-    deleteSceneClick(i) {
-        console.log(this.state.scene, this.state.sceneConfigValue);
-
-        let scene = [...this.state.scene];
-        scene.splice(i, 1);
-        this.setState({ scene: scene });
-
-        console.log(eval("this." + this.state.sceneConfigValue[i]['actor']));
-        //删除actor，eval将字符串转化为js代码
-        this.renderer.removeActor(eval("this." + this.state.sceneConfigValue[i]['actor']));
-        this.renderWindow.render();
-        let sceneConfigValue = [...this.state.sceneConfigValue];
-        sceneConfigValue.splice(i, 1);
-        this.setState({ sceneConfigValue: sceneConfigValue }, () => {
-            console.log(this.state.sceneConfigValue);
+    showModuleConfigModal(i) {
+        this.setState({
+            moduleIndex: i,
+            isModuleConfigModalShow: true
         });
     }
-
-    //增添新场景
-    clickAddScene = () => {
-        this.showSceneConfigModal(-1);
+    hideModuleConfigModal() {
+        this.setState({ isModuleConfigModalShow: false });
     }
+    changeModuleConfigModal(val) {
+        let nodeArray = this.state.nodeArray;
+        let nodeIndex = this.state.nodeIndexForModules;
+        nodeArray[nodeIndex]['Module']=val;
+        this.setState({
+            nodeArray: nodeArray
+        }, () => {
+            console.log("返回node", this.state.nodeArray);
+        })
+    }
+    deleteModule(i) {
+        console.log("删除模块前", this.state.nodeArray);
+       let nodeIndex = this.state.nodeIndexForModules;
+       //js展开符号无法深拷贝this.state.nodeArray中Module数组。
+       //为了保证在进行setState操作前不改变this.state.nodeArray数组，
+       //所以先对this.state.nodeArray数组进行深拷贝再对其拷贝对象nodeArray进行操作,
+       //最后再用nodeArray覆盖原this.state.nodeArray。
+       let nodeArray = deepCopy(this.state.nodeArray);
+       let nodeModule = [...nodeArray[nodeIndex]['Module']]
+        nodeModule.splice(i, 1);
+        console.log("splice之后，", this.state.nodeArray);
+        nodeArray[nodeIndex]['Module']=nodeModule;
+        this.setState({
+            nodeArray: nodeArray
+        }, () => {
+            console.log("删除模块后", this.state.nodeArray);
+        })
+       
+    }
+    createModuleButton() {
+        return this.state.nodeArray[this.state.nodeIndexForModules]['Module'].map((module, i) =>
+            <div key={i}>
+                <button onClick={() => this.showModuleConfigModal(i)}>{module['_attributes']['name']}</button>
+                <button onClick={() => this.deleteModule(i)}>X</button>
+            </div>
+        );
+    }
+    //---------------------
+
 
     //面片拾取
     cellPicker = () => {
@@ -578,13 +756,16 @@ class ClothSimulation2 extends React.Component {
         }
         config['Node']['Node']['0'] = this.state.eachNode;
 
-        
+
         //-----最外层场景Node配置
-        config['Node']['_attributes']['name'] = this.state.sceneConfig['sceneName'];
-        config['Node']['_attributes']['class'] = this.state.sceneConfig['sceneClass'];
-        config['Node']['Field'] = this.state.sceneConfig['sceneField'];
-        //-----
-        
+        config['Node']['_attributes']['name'] = this.state.sceneConfig['name'];
+        config['Node']['_attributes']['class'] = this.state.sceneConfig['class'];
+        config['Node']['Field'] = this.state.sceneConfig['Field'];
+        //----------------------
+        //-----内部Node配置
+        config['Node']['Node']=this.state.nodeArray;
+        //----------------------
+
 
         fetch('/config', {
             method: 'POST',
@@ -604,39 +785,61 @@ class ClothSimulation2 extends React.Component {
     }
 
     render() {
-        //------
-
+        let hasChoosedNode = (this.state.nodeIndexForModules === -1) ? false : true;
         return (
             <div className="w-100">
                 <div className="card border rounded-0"><span className="text-center m-1">布料仿真</span>
                     <hr className="m-0" />
                     <div className="card-body pt-2">
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={() => this.clickShowSceneConfigModal()}><span className="glyphicon glyphicon-plus">场景</span></button>
-
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.clickAddScene}><span className="glyphicon glyphicon-plus">材料属性</span></button>
-                        <div id="scene_tree" className="pt-2">
-                            {this.createSceneButton()}
+                        {
+                            this.state.isAddNodeButtonShow &&
+                            <button onClick={() => this.clickAddNode()}>+添加Node</button>
+                        }
+                        <div id="nodeTree" className="pt-2">
+                            {this.createNodeButton()}
                         </div>
+
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" ><span className="glyphicon glyphicon-plus">材料属性</span></button>
+
+                        {
+                            hasChoosedNode &&
+                            <div id="moduleTree" className="pt-2">
+                                <p>{this.state.nodeArray[this.state.nodeIndexForModules]['_attributes']['name']}的Modules</p>
+                                <button onClick={() => this.clickAddModule()}>+添加Module</button>
+                                {this.createModuleButton()}
+                            </div>
+                        }
+
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.cellPicker}><span className="glyphicon glyphicon-plus">边界条件</span></button>
 
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.uploadConfigPara}><span className="glyphicon glyphicon-plus">上传</span></button>
 
                     </div>
-                    <SceneConfig
-                        show={this.state.isSceneConfigModalShow}
-                        sceneConfig={this.state.sceneConfig}
-                        changeSceneConfigModal={(val) => this.changeSceneConfigModal(val)}
-                        onHide={() => this.hideSceneConfigModal()}
-                    ></SceneConfig>
-                    <div>
+                    <div >
+                        <SceneConfigModal
+                            show={this.state.isSceneConfigModalShow}
+                            sceneConfig={this.state.sceneConfig}
+                            changeSceneConfigModal={(val) => this.changeSceneConfigModal(val)}
+                            onHide={() => this.hideSceneConfigModal()}
+                        ></SceneConfigModal>
 
+                        <NodeConfigModal
+                            show={this.state.isNodeConfigModalShow}
+                            nodeArray={this.state.nodeArray}
+                            nodeIndex={this.state.nodeIndex}
+                            changeNodeConfigModal={(val) => this.changeNodeConfigModal(val)}
+                            onHide={() => this.hideNodeConfigModal()}
+                        ></NodeConfigModal>
+
+                        <ModuleConfigModal
+                            show={this.state.isModuleConfigModalShow}
+                            node={this.state.nodeArray[this.state.nodeIndexForModules]}
+                            moduleIndex={this.state.moduleIndex}
+                            changeModuleConfigModal={(val) => this.changeModuleConfigModal(val)}
+                            onHide={() => this.hideModuleConfigModal()}
+                        ></ModuleConfigModal>
                     </div>
-
-                    <div>
-                        <SceneConfigModal ref="sceneConfig" show={this.state.isSonNodeConfigModalShow} sceneShow={this.state.sceneShow}
-                            onHide={() => this.hideSceneConfigModalModal()} onConfirm={() => this.setScenceVal()} deleteScene={() => this.deleteScene()}></SceneConfigModal>
-                    </div>
-
                 </div>
             </div>
         );
