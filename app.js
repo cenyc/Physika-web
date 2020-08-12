@@ -23,14 +23,22 @@ app.post('/login', urlencodedParser, function (req, res) {
 })
 */
 
-app.post('/config', jsonParser, function (req, res) {
+app.post('/loadConfig', jsonParser, function (req, res) {
     if(!req.body){
         return res.sendStatus(400);
     }
     else{
-        let configData = req.body;
-        console.log(configData);
+        let reqInitConfig = req.body;
+        console.log(reqInitConfig);
+
+        //加载xml并解析为json
+        let xml = fs.readFileSync('./Doc/test.xml','utf-8');
+        let options = {compact: true, ignoreComment: true};
+        let result = xml2js.xml2js(xml,options);
+        console.log(result);
+        res.json(result);
     
+        /*
         //将json转化为xml并写文件
         let options ={compact:true,ignoreComment:true,spaces:4};
         let xml = xml2js.json2xml(configData,options);
@@ -43,14 +51,10 @@ app.post('/config', jsonParser, function (req, res) {
         //返回json对象
         res.json(configData);
 
-        /*
-        //加载xml并解析为json
-        let xml = fs.readFileSync('./Doc/test.xml','utf-8');
-        let options = {compact: true, ignoreComment: true, alwaysChildren: true};
-        let result = xml2js.xml2js(xml,options);
-        console.log(result);
-        res.json(result);
         */
+        
+        
+        
 
 
         /*

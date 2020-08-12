@@ -1,5 +1,5 @@
-<Node class="StaticBoundary" name="">
-    <Node class="ParticleElasticBody" name="">
+<Node class="StaticBoundary" name="Node">
+    <Node class="ParticleElasticBody" name="Node1">
         <Module class="MeshLoader" name="loader1">
           	<Field class="string" name="path">C://</Field>
         </Module>
@@ -12,7 +12,7 @@
         </Module>
         <Field class="Real" name="mass"> 1.0 </Field>
     </Node>
-    <Node class="ParticleElasticBody" name="">
+    <Node class="ParticleElasticBody" name="Node2">
         <Module class="ElasticityModule" type="ConstraintModule" name="elasticity">
             <Field class="Real" name="mu"> 3000</Field>
             <Field class="Real" name="lambda"> 1500 </Field>
