@@ -4,7 +4,7 @@
           	<Field class="string" name="path">C://</Field>
         </Module>
 	<Module class="PointRenderModule" type="VisualModule" name="elasticity">
-            <Field class="vector3f" name="color">0, 1, 1</Field>
+            <Field class="vector3f" name="color">0 1 1</Field>
         </Module>
         <Module class="ElasticityModule" type="ConstraintModule">
             <Field class="Real" name="mu"> 1000 </Field>
