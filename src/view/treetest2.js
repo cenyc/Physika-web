@@ -16,7 +16,10 @@ function deepCopy(obj) {
         return;
     }
     for (var i in obj) {
-        newobj[i] = typeof obj[i] === 'object' ? deepCopy(obj[i]) : obj[i];
+        //title成员中含有的dom标签在深拷贝时有很多问题！！！！
+        if(i!=='title'){
+            newobj[i] = (typeof obj[i] === 'object' && obj[i] !== null) ? deepCopy(obj[i]) : obj[i];
+        }
     }
     return newobj;
 }
@@ -236,7 +239,8 @@ class ClothSimulation2 extends React.Component {
     }
 
     //构建符合ant Tree数据结构第一步（通过递归将每层对象的成员组织成数组形式）
-    buildNode(node) {
+    //其中node为当前遍历的对象，tag为当前对象的标签名
+    buildNode(node, tag) {
         let childNode = [];
         Object.keys(node).map((nodeKey, index) => {
             if (nodeKey === '_attributes') {
@@ -245,14 +249,16 @@ class ClothSimulation2 extends React.Component {
                     childNode.push(
                         {
                             _attributes: node._attributes,
-                            _text: node._text
+                            _text: node._text,
+                            tag: tag
                         }
                     );
                 }
                 else {
                     childNode.push(
                         {
-                            _attributes: node._attributes
+                            _attributes: node._attributes,
+                            tag: tag
                         }
                     );
                 }
@@ -264,11 +270,20 @@ class ClothSimulation2 extends React.Component {
             else {
                 if (Array.isArray(node[nodeKey])) {
                     node[nodeKey].map((obj, index) => {
-                        childNode.push(this.buildNode(obj));
+                        childNode.push(this.buildNode(obj, nodeKey));
                     })
                 }
                 else if (isObject(node[nodeKey])) {
-                    childNode.push(this.buildNode(node[nodeKey]));
+                    if (nodeKey === '_attributes') {
+                        //如果nodeKey为'_attributes'，
+                        //则表明即将存储当前tag的属性，所以应将当前的tag名作为tag
+                        childNode.push(this.buildNode(node[nodeKey], tag));
+                    }
+                    else {
+                        //如果nodeKey不为'_attributes'，
+                        //则表明即将存储当前tag的孩子的属性，所以应将nodeKey名作为tag
+                        childNode.push(this.buildNode(node[nodeKey], nodeKey));
+                    }
                 }
             }
         });
@@ -278,7 +293,7 @@ class ClothSimulation2 extends React.Component {
     //构建符合ant Tree数据结构data
     buildDataStructure = (config) => {
         //注意传入buildNode函数中的对象为initConfig.Node!
-        let childNode = this.buildNode(config.Node);
+        let childNode = this.buildNode(config.Node, 'Node');
         console.log(childNode);
 
         //每一层都含有一个包含当前结点属性的对象，
@@ -306,7 +321,7 @@ class ClothSimulation2 extends React.Component {
                 //找到包含当前结点属性的对象后，从当前node删除它，然后再遍历其他子结点成员
                 node.splice(fatherIndex, 1);
                 node.map((item, index) => {
-                    childNode.children.push(traverseNode(item, key +'-'+ index));
+                    childNode.children.push(traverseNode(item, key + '-' + index));
                 });
                 return childNode;
             }
@@ -336,7 +351,7 @@ class ClothSimulation2 extends React.Component {
         }
 
         return <TreeNode {...item} />;
-    })
+    });
 
     showTreeNodeAttrModal = (item) => {
         this.setState({
@@ -357,15 +372,14 @@ class ClothSimulation2 extends React.Component {
 
     //接收TreeNodeAttrModal返回的结点数据并更新树
     changeData = (obj) => {
-        let data=this.state.data;
-        let eachKey=this.state.treeNodeKey.split('-');
-        let count=0;
-        console.log(eachKey);
-        const findTreeNodeKey=(node)=>{
-            if(count===eachKey.length-1){
+        let data = this.state.data;
+        let eachKey = this.state.treeNodeKey.split('-');
+        let count = 0;
+        const findTreeNodeKey = (node) => {
+            if (count === eachKey.length - 1) {
                 //找到treeNodeKey对应树结点，更新数据
-                if(!!obj._text){
-                    node[eachKey[count]]._text=obj._text;
+                if (!!obj._text) {
+                    node[eachKey[count]]._text = obj._text;
                 }
                 //若以后需修改_attributes属性，则在此添加代码
                 return;
@@ -374,35 +388,46 @@ class ClothSimulation2 extends React.Component {
         };
         findTreeNodeKey(data);
         this.setState({
-            data:data
+            data: data
         })
         this.hideTreeNodeAttrModal();
     }
 
+    buildJson = (father, children) => children.map(item => {
+        if (!father.hasOwnProperty(item.tag)) {
+            father[item.tag] = [];
+        }
+        father[item.tag].push(item);
+        if (item.hasOwnProperty('children')) {
+            this.buildJson(item, item.children);
+            delete item.children;
+        }
+        delete item.key;
+        delete item.tag;
+        delete item.title;
+    });
+
     //上传数据到服务器
     uploadConfigPara = () => {
         console.log("开始上传");
-        let config = {
-            _declaration: {
-                _attributes: {
-                    version: "1.0",
-                    encoding: "utf-8"
-                }
+        let json = {};
+        let obj={};
+        let data = deepCopy(this.state.data);
+        this.buildJson(obj, data);
+        json._declaration={
+            _attributes: {
+                version: "1.0",
+                encoding: "utf-8"
             },
-            Node: {
-                _attributes: {
-                    class: "",
-                    name: ""
-                },
-                Field: [],
-                Node: []
-            }
+            Node:{}
         }
+        json.Node=obj.Node;
+        console.log(json);
 
-
-        fetch('/loadconfig', {
+        
+        fetch('/uploadconfig', {
             method: 'POST',
-            body: JSON.stringify(config),
+            body: JSON.stringify(json),
             headers: new Headers({
                 'Content-Type': 'application/json'
             })
@@ -415,6 +440,7 @@ class ClothSimulation2 extends React.Component {
 
             });
         //.then(res => res.json())
+        
     }
 
     render() {

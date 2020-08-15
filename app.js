@@ -37,25 +37,6 @@ app.post('/loadConfig', jsonParser, function (req, res) {
         let result = xml2js.xml2js(xml,options);
         console.log(result);
         res.json(result);
-    
-        /*
-        //将json转化为xml并写文件
-        let options ={compact:true,ignoreComment:true,spaces:4};
-        let xml = xml2js.json2xml(configData,options);
-        console.log(xml);
-        fs.writeFile('./Doc/output.xml',xml,(err)=>{
-            if(err){
-                return console.error(err);
-            }
-        });
-        //返回json对象
-        res.json(configData);
-
-        */
-        
-        
-        
-
 
         /*
         //调用python
@@ -74,7 +55,27 @@ app.post('/loadConfig', jsonParser, function (req, res) {
 
 })
 
+app.post('/uploadConfig', jsonParser, function (req, res){
+    if(!req.body){
+        return res.sendStatus(400);
+    }
+    else{
+        let configData = req.body;
+        console.log(configData);
 
+        //将json转化为xml并写文件
+        let options ={compact:true,ignoreComment:true,spaces:4};
+        let xml = xml2js.json2xml(configData,options);
+        fs.writeFile('./Doc/output.xml',xml,(err)=>{
+            if(err){
+                return console.error(err);
+            }
+        });
+        //返回json对象
+        res.json(configData);
+
+    }
+})
 
 //引入multer
 const multer = require('multer');

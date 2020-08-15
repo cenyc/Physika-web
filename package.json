@@ -33,6 +33,7 @@
     "jsdom": "^16.2.2",
     "kw-web-suite": "^9.0.0",
     "light-viz": "^1.18.1",
+    "lodash": "^4.17.15",
     "module": "^1.2.5",
     "monologue.js": "^0.3.5",
     "mout": "^1.2.2",
