@@ -30,7 +30,7 @@ const formItemLayout = {
     wrapperCol: { span: 20 },
 };
 
-const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal }) => {
+const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
     const [form] = Form.useForm();
     const formInitialValues = {};
 
@@ -59,6 +59,27 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal }) =
         }
     }
 
+    function returnTreeNodeData(value) {
+        let obj = {
+            _attributes: treeNodeAttr,
+            _text: ''
+        };
+        Object.keys(obj._attributes).map((item) => {
+            //这里不能点引用item，会出大问题！（会将item作为一个新成员加入到obj._attributes中）
+            obj._attributes[item] = value[item];
+        });
+        if (value.hasOwnProperty('real')) {
+            obj._text = value.real;
+        }
+        else if (value.hasOwnProperty('realX')) {
+            obj._text = value.realX + ' ' + value.realY + ' ' + value.realZ;
+        }
+        else {
+            console.log("There is no _text in this treeNode.");
+        }
+        changeData(deepCopy(obj));
+    }
+
     return (
         <Modal
             title={"结点属性"}
@@ -67,7 +88,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal }) =
                 form.validateFields()
                     .then(value => {
                         console.log(value);
-                        hideModal();
+                        returnTreeNodeData(value);
                     })
                     .catch(info => {
 
@@ -96,7 +117,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal }) =
                 }
                 {
                     (treeNodeAttr.class === 'Real') &&
-                    <Form.Item name="real" label="Value" >
+                    <Form.Item name="real" label="Value"
+                        rules={[{ required: true, message: 'Value cannot be empty!' }]}
+                    >
                         <InputNumber min={0} max={10000} step={0.1} />
                     </Form.Item>
                 }
@@ -120,11 +143,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal }) =
                                 </Form.Item>
                             </Col>
                         </Row>
-
                     </Form.Item>
                 }
-
-
             </Form>
         </Modal>
     );
@@ -286,14 +306,14 @@ class ClothSimulation2 extends React.Component {
                 //找到包含当前结点属性的对象后，从当前node删除它，然后再遍历其他子结点成员
                 node.splice(fatherIndex, 1);
                 node.map((item, index) => {
-                    childNode.children.push(traverseNode(item, key + index));
+                    childNode.children.push(traverseNode(item, key +'-'+ index));
                 });
                 return childNode;
             }
 
         };
         let data = [];
-        data.push(traverseNode(deepCopy(childNode), '1'));
+        data.push(traverseNode(deepCopy(childNode), '0'));
         console.log(data);
         this.setState({
             data: data
@@ -328,13 +348,35 @@ class ClothSimulation2 extends React.Component {
             this.setState({ treeNodeText: item._text });
         }
     }
+
     hideTreeNodeAttrModal = () => {
         this.setState({
             isTreeNodeAttrModalShow: false
         });
     }
-    changeData = () => {
 
+    //接收TreeNodeAttrModal返回的结点数据并更新树
+    changeData = (obj) => {
+        let data=this.state.data;
+        let eachKey=this.state.treeNodeKey.split('-');
+        let count=0;
+        console.log(eachKey);
+        const findTreeNodeKey=(node)=>{
+            if(count===eachKey.length-1){
+                //找到treeNodeKey对应树结点，更新数据
+                if(!!obj._text){
+                    node[eachKey[count]]._text=obj._text;
+                }
+                //若以后需修改_attributes属性，则在此添加代码
+                return;
+            }
+            findTreeNodeKey(node[eachKey[count++]].children);
+        };
+        findTreeNodeKey(data);
+        this.setState({
+            data:data
+        })
+        this.hideTreeNodeAttrModal();
     }
 
     //上传数据到服务器
@@ -398,6 +440,7 @@ class ClothSimulation2 extends React.Component {
                             treeNodeText={this.state.treeNodeText}
                             visible={this.state.isTreeNodeAttrModalShow}
                             hideModal={() => this.hideTreeNodeAttrModal()}
+                            changeData={(obj) => this.changeData(obj)}
                         ></TreeNodeAttrModal>
                     </div>
                 </div>
@@ -407,12 +450,3 @@ class ClothSimulation2 extends React.Component {
 }
 
 export { ClothSimulation2 }
-/*
-<TreeNodeAttrModal
-    key={this.state.treeNodeKey}
-    treeNodeAttr={this.state.treeNodeAttr}
-    treeNodeText={this.state.treeNodeText}
-    visible={this.state.isTreeNodeAttrModalShow}
-    hideModal={() => this.hideTreeNodeAttrModal()}
-></TreeNodeAttrModal>
-*/
