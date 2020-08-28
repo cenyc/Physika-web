@@ -483,9 +483,9 @@ class ClothSimulation2 extends React.Component {
                 version: "1.0",
                 encoding: "utf-8"
             },
-            Node: {}
+            Scene: {}
         }
-        json.Node = obj.Node;
+        json.Scene = obj.Scene;
         console.log(json);
 
 

@@ -1,26 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Node class="StaticBoundary" name="Node">
-    <Node class="ParticleElasticBody" name="Node1">
-        <Module class="MeshLoader" name="loader1">
-            <Field class="string" name="path">C://</Field>
-        </Module>
-        <Module class="PointRenderModule" type="VisualModule" name="elasticity">
-            <Field class="vector3f" name="color">0 1 1</Field>
-        </Module>
-        <Module class="ElasticityModule" type="ConstraintModule">
-            <Field class="Real" name="mu"> 1000 </Field>
-            <Field class="Real" name="lambda"> 300 </Field>
-        </Module>
-        <Field class="Real" name="mass"> 1.0 </Field>
-    </Node>
-    <Node class="ParticleElasticBody" name="Node2">
-        <Module class="ElasticityModule" type="ConstraintModule" name="elasticity">
+<Scene class="StaticBoundary" name="场景">
+    <Node class="ParticleElasticBody" name="布料">
+        <Module class="ElasticityModule" type="ConstraintModule" name="弹性">
             <Field class="Real" name="mu"> 3000</Field>
             <Field class="Real" name="lambda"> 1500 </Field>
         </Module>
-        <Field class="Real" name="mass"> 1.0 </Field>
-        <Field class="Real" name="horizon"> 0.2 </Field>
+        <Field class="Real" name="质量"> 1.0 </Field>
+        <Field class="string" name="路径">./static/geo/mesh_100.obj</Field>
     </Node>
-    <Field class="vector3f" name="gravity">0.0 -9.8 0.0</Field>
-    <Field class="Real" name="dt">10</Field>
-</Node>
+    <Field class="vector3f" name="重力">0.0 -9.8 0.0</Field>
+    <Field class="Real" name="模拟步长">0.2</Field>
+</Scene>
