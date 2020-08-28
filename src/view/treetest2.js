@@ -10,6 +10,11 @@ import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
 import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
 import 'antd/dist/antd.css';
 
+import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
+import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
+import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
+
+//深拷贝
 function deepCopy(obj) {
     var newobj = obj.constructor === Array ? [] : {};
     if (typeof obj !== 'object') {
@@ -17,22 +22,25 @@ function deepCopy(obj) {
     }
     for (var i in obj) {
         //title成员中含有的dom标签在深拷贝时有很多问题！！！！
-        if(i!=='title'){
+        if (i !== 'title') {
             newobj[i] = (typeof obj[i] === 'object' && obj[i] !== null) ? deepCopy(obj[i]) : obj[i];
         }
     }
     return newobj;
 }
 
+//判断输入对象是否为Object
 const isObject = (object) => {
     return Object.prototype.toString.call(object) === '[object Object]';
 }
 
+//TreeNodeAttrModal组件中Form的样式
 const formItemLayout = {
     labelCol: { span: 4 },
     wrapperCol: { span: 20 },
 };
 
+//使用Hook实现的树结点属性显示Modal
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
     const [form] = Form.useForm();
     const formInitialValues = {};
@@ -44,9 +52,11 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         }
     }, [visible]);
 
+    //设置Form的初始化值
     function setFormInitialValues() {
         formInitialValues.name = treeNodeAttr.name;
         formInitialValues.class = treeNodeAttr.class;
+        //当结点不含有type时，formInitialValues.type=undefined！
         formInitialValues.type = treeNodeAttr.type;
         if (!!treeNodeText) {
             switch (treeNodeAttr.class) {
@@ -62,6 +72,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         }
     }
 
+    //返回树结点修改后的数据
     function returnTreeNodeData(value) {
         let obj = {
             _attributes: treeNodeAttr,
@@ -131,17 +142,23 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     <Form.Item label="Value">
                         <Row>
                             <Col span={8}>
-                                <Form.Item name="realX" label="X" >
+                                <Form.Item name="realX" label="X"
+                                    rules={[{ required: true, message: 'X cannot be empty!' }]}
+                                >
                                     <InputNumber min={-10} max={10} step={0.1} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                                <Form.Item name="realY" label="Y" >
+                                <Form.Item name="realY" label="Y"
+                                    rules={[{ required: true, message: 'Y cannot be empty!' }]}
+                                >
                                     <InputNumber min={-10} max={10} step={0.1} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                                <Form.Item name="realZ" label="Z" >
+                                <Form.Item name="realZ" label="Z"
+                                    rules={[{ required: true, message: 'Z cannot be empty!' }]}
+                                >
                                     <InputNumber min={-10} max={10} step={0.1} />
                                 </Form.Item>
                             </Col>
@@ -152,7 +169,14 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         </Modal>
     );
 }
-
+/*
+//是否需要给treeNodeAttr设置默认值?
+treeNodeAttr: {
+    name: "",
+    class: "",
+    type: ""
+},
+*/
 class ClothSimulation2 extends React.Component {
     constructor(props) {
         super(props);
@@ -160,11 +184,7 @@ class ClothSimulation2 extends React.Component {
 
             data: [],
             isTreeNodeAttrModalShow: false,
-            treeNodeAttr: {
-                name: "",
-                class: "",
-                type: ""
-            },
+            treeNodeAttr: {},
             treeNodeText: "",
             treeNodeKey: -1
 
@@ -285,6 +305,9 @@ class ClothSimulation2 extends React.Component {
                         childNode.push(this.buildNode(node[nodeKey], nodeKey));
                     }
                 }
+                else {
+                    console.log("buildNode有问题:", node[nodeKey]);
+                }
             }
         });
         return childNode;
@@ -293,7 +316,7 @@ class ClothSimulation2 extends React.Component {
     //构建符合ant Tree数据结构data
     buildDataStructure = (config) => {
         //注意传入buildNode函数中的对象为initConfig.Node!
-        let childNode = this.buildNode(config.Node, 'Node');
+        let childNode = this.buildNode(config.Scene, 'Scene');
         console.log(childNode);
 
         //每一层都含有一个包含当前结点属性的对象，
@@ -333,12 +356,54 @@ class ClothSimulation2 extends React.Component {
         this.setState({
             data: data
         });
+        //构建完data数组，准备初始化导入的模型
+        this.loadObject();
+    }
+
+    loadObject = () => {
+        this.objectList = [];
+        this.state.data[0].children.map((i, index) => {
+            let obj = {};
+            if (i.tag == 'Node') {
+                i.children.map((j, index) => {
+                    if (j._attributes.name == '路径') {
+                        obj.url = j._text;
+                    }
+                });
+                this.objectList.push(obj);
+            }
+        });
+        console.log("1111111111");
+        console.log(this.objectList);
+        const reader = vtkOBJReader.newInstance();
+        this.objectList.map((item, index) => {
+            reader.setUrl(item.url)
+                .then(() => {
+                    const size=reader.getNumberOfOutputPorts();
+                    for(let i=0;i<size;i++){
+                        const polydata=reader.getOutputData(i);
+                        const name=polydata.get('name').name;
+                        const mapper=vtkMapper.newInstance();
+                        const actor=vtkActor.newInstance();
+
+                        actor.setMapper(mapper);
+                        mapper.setInputData(polydata);
+                        this.renderer.addActor(actor);
+                    }
+                    this.renderer.resetCamera();
+                    this.renderWindow.render();
+                });
+        });
     }
 
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
                 <Button type="text" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
+                {
+                    (item.tag === 'Node') &&
+                    <Button type="text">pick</Button>
+                }
             </div>
         );
 
@@ -404,27 +469,26 @@ class ClothSimulation2 extends React.Component {
         }
         delete item.key;
         delete item.tag;
-        delete item.title;
     });
 
     //上传数据到服务器
     uploadConfigPara = () => {
         console.log("开始上传");
         let json = {};
-        let obj={};
+        let obj = {};
         let data = deepCopy(this.state.data);
         this.buildJson(obj, data);
-        json._declaration={
+        json._declaration = {
             _attributes: {
                 version: "1.0",
                 encoding: "utf-8"
             },
-            Node:{}
+            Node: {}
         }
-        json.Node=obj.Node;
+        json.Node = obj.Node;
         console.log(json);
 
-        
+
         fetch('/uploadconfig', {
             method: 'POST',
             body: JSON.stringify(json),
@@ -440,7 +504,7 @@ class ClothSimulation2 extends React.Component {
 
             });
         //.then(res => res.json())
-        
+
     }
 
     render() {

@@ -11,7 +11,7 @@
             <Field class="Real" name="mu"> 1000 </Field>
             <Field class="Real" name="lambda"> 300 </Field>
         </Module>
-        <Field class="Real" name="mass">20</Field>
+        <Field class="Real" name="mass"> 1.0 </Field>
     </Node>
     <Node class="ParticleElasticBody" name="Node2">
         <Module class="ElasticityModule" type="ConstraintModule" name="elasticity">
@@ -22,5 +22,5 @@
         <Field class="Real" name="horizon"> 0.2 </Field>
     </Node>
     <Field class="vector3f" name="gravity">0.0 -9.8 0.0</Field>
-    <Field class="Real" name="dt">0.054</Field>
+    <Field class="Real" name="dt">10</Field>
 </Node>
