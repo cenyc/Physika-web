@@ -9,5 +9,5 @@
         <Field class="string" name="路径">./static/geo/mesh_100.obj</Field>
     </Node>
     <Field class="vector3f" name="重力">0.0 -9.8 0.0</Field>
-    <Field class="Real" name="模拟步长">0.2</Field>
+    <Field class="Real" name="模拟步长">0.1</Field>
 </Scene>
