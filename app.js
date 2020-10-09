@@ -32,7 +32,7 @@ app.post('/loadConfig', jsonParser, function (req, res) {
         console.log(reqInitConfig);
 
         //加载xml并解析为json
-        let xml = fs.readFileSync('./Doc/test.xml','utf-8');
+        let xml = fs.readFileSync('./data/config_file/load/test.xml','utf-8');
         let options = {compact: true, ignoreComment: true};
         let result = xml2js.xml2js(xml,options);
         console.log(result);
@@ -66,7 +66,7 @@ app.post('/uploadConfig', jsonParser, function (req, res){
         //将json转化为xml并写文件
         let options ={compact:true,ignoreComment:true,spaces:4};
         let xml = xml2js.json2xml(configData,options);
-        fs.writeFile('./Doc/output.xml',xml,(err)=>{
+        fs.writeFile('./data/config_file/upload/output.xml',xml,(err)=>{
             if(err){
                 return console.error(err);
             }
@@ -121,6 +121,8 @@ app.engine('html', ejs.renderFile);
 //把static设置为静态资源文件夹，可以让浏览器访问
 app.use('/static', express.static(path.join(__dirname, 'static')));
 app.use('/dist', express.static(path.join(__dirname, 'dist')));
+//2020.10.8 新建data文件夹，包含配置文件和可视化数据
+app.use('/data',express.static(path.join(__dirname, 'data')));
 
 // 对所有(/)URL或路由返回index.html
 app.get('/', function (req, res) {

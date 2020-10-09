@@ -48,4 +48,4 @@ function uploadConfigPara(data){
 
 export {
     uploadConfigPara as physikaUploadConfig
-}
+};

@@ -36,7 +36,7 @@ import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkSelectionNode from 'vtk.js/Sources/Common/DataModel/SelectionNode';
 
 //import { ClothSimulation2 } from './treetest2'
-import { ClothSimulation2 } from './cloth'
+import { PhysikaClothSimulation } from './Cloth'
 
 
 var pipeline_node = [];
@@ -105,7 +105,7 @@ class ClothSimulation extends Component {
 
 
 //20200531
-class ClothSimulation extends React.Component {
+class ClothSimulation_old extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -402,7 +402,7 @@ class LeftNav extends Component {
                 right_container.removeChild(document.getElementById("geoViewer"));
             }
             right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
-            ReactDOM.render(<ClothSimulation />, document.getElementById("createTree"));
+            ReactDOM.render(<PhysikaClothSimulation />, document.getElementById("createTree"));
         }
         else if (index == 2) {
             console.log("流体模拟");
@@ -410,7 +410,7 @@ class LeftNav extends Component {
                 right_container.removeChild(document.getElementById("geoViewer"));
             }
             right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
-            ReactDOM.render(<ClothSimulation2 />, document.getElementById("createTree"));
+            ReactDOM.render(<ClothSimulation_old />, document.getElementById("createTree"));
         }
     }
 
