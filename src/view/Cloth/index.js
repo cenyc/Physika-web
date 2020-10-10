@@ -16,7 +16,6 @@ import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 //mapper
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
-
 //loadConfig
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 //uploadConfig
@@ -90,7 +89,8 @@ class ClothSimulation extends React.Component {
 
     //导入配置文件并传回树结构支持的data数组
     loadConfig = () => {
-        physikaLoadConfig(0).then(value => {
+        //需要传入仿真类型
+        physikaLoadConfig("cloth").then(value => {
             this.setState({
                 data: value
             });
@@ -143,7 +143,7 @@ class ClothSimulation extends React.Component {
                 <Button type="text" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
                 {
                     (item.tag === 'Node') &&
-                    <Button type="text">pick</Button>
+                    <Button type="text" onClick={() => this.cellPick(item)}>pick</Button>
                 }
             </div>
         );
@@ -199,10 +199,29 @@ class ClothSimulation extends React.Component {
         this.hideTreeNodeAttrModal();
     }
 
-    //上传xml配置文件
+    //上传xml配置文件并获取模拟结果的xml
     uploadConfig = () => {
-        physikaUploadConfig(this.state.data);
+        if (this.state.data.length == 0) {
+            alert("还未加载配置文件！");
+        }
+        else {
+            //第一个参数data，第二个参数仿真类型
+            physikaUploadConfig(this.state.data, "cloth").then(value => {
+                this.setState({
+                    data: value
+                });
+            }).then(() => {
+                //setState异步操作，需要接then保证正确加载obj
+                this.loadObject();
+            });
+        }
     }
+
+    //---------2020.10.9 面片选取----------
+    cellPick = (item) => {
+
+    }
+    //------------------------------------
 
     render() {
         console.log("tree:", this.state.data);

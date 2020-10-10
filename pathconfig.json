@@ -1,0 +1,14 @@
+{
+    "cloth":{
+        "simType":1,
+        "initConfigFileName":"./data/config_file/initload/test.xml",
+        "callPythonFileName":"./src/test.py",
+        "uploadFileDirectory":"./data/config_file/upload/"
+    },
+    "fluid":{
+        "simType":2,
+        "initConfigFileName":"./data/config_file/initload/",
+        "callPythonFileName":"./src/test.py",
+        "uploadFileDirectory":"./data/config_file/upload/"
+    }
+}
