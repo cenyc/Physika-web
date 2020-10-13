@@ -31,6 +31,13 @@ treeNodeAttr: {
     type: ""
 },
 */
+
+//明确一个前提：
+//如果当前帧场景中包含不止一个obj，则这些obj应写在同一个文件中
+//curScene中保存了当前帧中所包含的obj
+//curScene=[{ name, polydata, mapper, actor },...]
+const curScene = [];
+
 class ClothSimulation extends React.Component {
     constructor(props) {
         super(props);
@@ -54,7 +61,6 @@ class ClothSimulation extends React.Component {
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
-
         //------------------------
         /*
         //添加坐标轴：X：红，Y：黄，Z: 绿
@@ -100,41 +106,49 @@ class ClothSimulation extends React.Component {
         });
     }
 
+
     //加载obj，是否这样用待定！
     loadObject = () => {
-        this.objectList = [];
-        this.state.data[0].children.map((i, index) => {
-            let obj = {};
-            if (i.tag == 'Node') {
-                i.children.map((j, index) => {
-                    if (j._attributes.name == '路径') {
-                        obj.url = j._text;
-                    }
-                });
-                this.objectList.push(obj);
+        let path="";
+        this.state.data[0].children.map(item => {
+            if (item.tag == 'Path') {
+                path = item._text;
             }
         });
-        console.log("1111111111");
-        console.log(this.objectList);
-        const reader = vtkOBJReader.newInstance();
-        this.objectList.map((item, index) => {
-            reader.setUrl(item.url)
-                .then(() => {
-                    const size = reader.getNumberOfOutputPorts();
-                    for (let i = 0; i < size; i++) {
-                        const polydata = reader.getOutputData(i);
-                        const name = polydata.get('name').name;
-                        const mapper = vtkMapper.newInstance();
-                        const actor = vtkActor.newInstance();
+        console.log(path);
+        //splitMode模式会将obj中的多个对象拆分存储，'usemtl'能否换成别的目前不清楚。。。
+        const reader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
+        reader.setUrl(path)
+            .then(()=>{
+                const size=reader.getNumberOfOutputPorts();
+                for (let i = 0; i < size; i++) {
+                    const polydata = reader.getOutputData(i);
+                    const name = polydata.get('name').name;
+                    const mapper = vtkMapper.newInstance();
+                    const actor = vtkActor.newInstance();
 
-                        actor.setMapper(mapper);
-                        mapper.setInputData(polydata);
-                        this.renderer.addActor(actor);
-                    }
-                    this.renderer.resetCamera();
-                    this.renderWindow.render();
-                });
-        });
+                    actor.setMapper(mapper);
+                    mapper.setInputData(polydata);
+                    this.renderer.addActor(actor);
+
+                    curScene.push({name,polydata,mapper,actor});
+                }
+                console.log(curScene);
+                
+                this.renderer.resetCamera();
+                this.renderWindow.render();
+                
+                /*
+                //控制对象是否可见
+                console.log(curScene.length);
+                for(let i=2;i<curScene.length;i++){
+                    const actor=curScene[i].actor;
+                    const visibility=actor.getVisibility();
+                    actor.setVisibility(!visibility);
+                }
+                this.renderWindow.render();
+                */
+            });
     }
 
     renderTreeNodes = (data) => data.map((item, index) => {
