@@ -1,6 +1,7 @@
 import 'bootstrap';
 import React from 'react';
 import { Tree, Button } from 'antd';
+import { BiShow, BiHide, BiPointer } from 'react-icons/bi'
 const { TreeNode } = Tree;
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
@@ -32,12 +33,6 @@ treeNodeAttr: {
 },
 */
 
-//明确一个前提：
-//如果当前帧场景中包含不止一个obj，则这些obj应写在同一个文件中
-//curScene中保存了当前帧中所包含的obj
-//curScene=[{ name, polydata, mapper, actor },...]
-const curScene = [];
-
 class ClothSimulation extends React.Component {
     constructor(props) {
         super(props);
@@ -61,6 +56,12 @@ class ClothSimulation extends React.Component {
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
+        //明确一个前提：
+        //如果当前帧场景中包含不止一个obj，则这些obj应写在同一个文件中
+        //curScene中保存了当前帧中所包含的obj
+        //curScene={name:{polydata, mapper, actor},...}
+        this.curScene = {};
+
         //------------------------
         /*
         //添加坐标轴：X：红，Y：黄，Z: 绿
@@ -97,67 +98,87 @@ class ClothSimulation extends React.Component {
     loadConfig = () => {
         //需要传入仿真类型
         physikaLoadConfig("cloth").then(value => {
-            this.setState({
-                data: value
+            //加载对象是异步的，为了能够正确处理changeVisible事件，
+            //在this.state.date更新触发render之前必须完成对this.curScene对象的赋值
+            //所以这里故意将传回的value值延迟到this.curScene对象赋值完成后再赋值给data
+            this.loadObject(value)
+            .then(value=>{
+                this.setState({
+                    data: value
+                });
             });
-        }).then(() => {
-            //setState异步操作，需要接then保证正确加载obj
-            this.loadObject();
         });
     }
 
 
     //加载obj，是否这样用待定！
-    loadObject = () => {
-        let path="";
-        this.state.data[0].children.map(item => {
+    loadObject = (data) => {
+        let path = "";
+        data[0].children.map(item => {
             if (item.tag == 'Path') {
                 path = item._text;
             }
         });
         console.log(path);
+        //清空旧场景，移除旧actor
+        Object.keys(this.curScene).map(key=>{
+            this.renderer.removeActor(this.curScene[key].actor);
+        });
+        this.curScene={};
+        //removeAllActors()这个方法有点问题，删完没反应；讨论区说用removeAllViewProps()
+        //this.renderer.removeAllActors();
+        //this.renderer.removeAllViewProps();
         //splitMode模式会将obj中的多个对象拆分存储，'usemtl'能否换成别的目前不清楚。。。
         const reader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
-        reader.setUrl(path)
-            .then(()=>{
-                const size=reader.getNumberOfOutputPorts();
-                for (let i = 0; i < size; i++) {
-                    const polydata = reader.getOutputData(i);
-                    const name = polydata.get('name').name;
-                    const mapper = vtkMapper.newInstance();
-                    const actor = vtkActor.newInstance();
+        return new Promise((resolve, reject) => {
+            reader.setUrl(path)
+                .then(() => {
+                    const size = reader.getNumberOfOutputPorts();
+                    for (let i = 0; i < size; i++) {
+                        const polydata = reader.getOutputData(i);
+                        const name = polydata.get('name').name;
+                        const mapper = vtkMapper.newInstance();
+                        const actor = vtkActor.newInstance();
 
-                    actor.setMapper(mapper);
-                    mapper.setInputData(polydata);
-                    this.renderer.addActor(actor);
+                        actor.setMapper(mapper);
+                        mapper.setInputData(polydata);
+                        this.renderer.addActor(actor);
 
-                    curScene.push({name,polydata,mapper,actor});
-                }
-                console.log(curScene);
-                
-                this.renderer.resetCamera();
-                this.renderWindow.render();
-                
-                /*
-                //控制对象是否可见
-                console.log(curScene.length);
-                for(let i=2;i<curScene.length;i++){
-                    const actor=curScene[i].actor;
-                    const visibility=actor.getVisibility();
-                    actor.setVisibility(!visibility);
-                }
-                this.renderWindow.render();
-                */
-            });
+                        this.curScene[name] = { polydata, mapper, actor };
+                        //curScene.push({name,polydata,mapper,actor});
+                    }
+                    console.log(this.curScene);
+                    //在this.curScene对象赋值完成后再发送data数据
+                    resolve(data);
+                    this.renderer.resetCamera();
+                    this.renderWindow.render();
+                });
+        });
+    }
+
+    changeVisible = (item) => {
+        const actor = this.curScene[item._attributes.name].actor;
+        const visibility = actor.getVisibility();
+        actor.setVisibility(!visibility);
+        //因为actor可见性的变化不会触发组件的render，
+        //所以这里强制触发render，使得BiShow控件变为BiHide控件
+        this.forceUpdate();
+        this.renderWindow.render();
     }
 
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
-                <Button type="text" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
                 {
                     (item.tag === 'Node') &&
-                    <Button type="text" onClick={() => this.cellPick(item)}>pick</Button>
+                    (this.curScene[item._attributes.name].actor.getVisibility()
+                        ? <BiShow type="regular" onClick={() => this.changeVisible(item)}></BiShow>
+                        : <BiHide type="regular" onClick={() => this.changeVisible(item)}></BiHide>)
+                }
+                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
+                {
+                    (item.tag === 'Node') &&
+                    <BiPointer type="regular" onClick={() => this.cellPick(item)}></BiPointer>
                 }
             </div>
         );
@@ -221,17 +242,20 @@ class ClothSimulation extends React.Component {
         else {
             //第一个参数data，第二个参数仿真类型
             physikaUploadConfig(this.state.data, "cloth").then(value => {
-                this.setState({
-                    data: value
+                //加载对象是异步的，为了能够正确处理changeVisible事件，
+                //在this.state.date更新触发render之前必须完成对this.curScene对象的赋值
+                //所以这里故意将传回的value值延迟到this.curScene对象赋值完成后再赋值给data
+                this.loadObject(value)
+                .then(value=>{
+                    this.setState({
+                        data: value
+                    });
                 });
-            }).then(() => {
-                //setState异步操作，需要接then保证正确加载obj
-                this.loadObject();
             });
         }
     }
 
-    //---------2020.10.9 面片选取----------
+    //---------2020.10. 面片选取----------
     cellPick = (item) => {
 
     }

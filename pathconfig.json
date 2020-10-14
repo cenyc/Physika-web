@@ -1,7 +1,7 @@
 {
     "cloth":{
         "simType":1,
-        "initConfigFileName":"./data/config_file/initload/test.xml",
+        "initConfigFileName":"./data/config_file/initload/space-shuttle.xml",
         "callPythonFileName":"./src/test.py",
         "uploadFileDirectory":"./data/config_file/upload/"
     },
