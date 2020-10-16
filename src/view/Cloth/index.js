@@ -3,20 +3,24 @@ import React from 'react';
 import { Tree, Button } from 'antd';
 import { BiShow, BiHide, BiPointer } from 'react-icons/bi'
 const { TreeNode } = Tree;
+//antd样式
+import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
 //坐标轴
 import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
 //旋转控制控件
 import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
-//antd样式
-import 'antd/dist/antd.css';
 //obj读取器
 import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
 //actor
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 //mapper
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
+//面片拾取
+import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
+//
+import { EVENT_ABORT } from 'vtk.js/Sources/macro';
 //loadConfig
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 //uploadConfig
@@ -32,6 +36,89 @@ treeNodeAttr: {
     type: ""
 },
 */
+
+//屏蔽全局浏览器右键菜单
+document.oncontextmenu=function(){
+    return false;
+}
+
+function addPickedCell(cellId, node) {
+    //添加pick对象
+    let hasPickObj = false;
+    if(!node.hasOwnProperty('children')){
+        node.children=[];
+    }
+    let pickObjIndex = node.children.length;
+    node.children.map((item, index) => {
+        if (item.tag == 'Pick') {
+            hasPickObj = true;
+            pickObjIndex = index;
+        }
+    });
+    if (!hasPickObj) {
+        let pickOBj = {
+            children: [],
+            key: `${node.key}-${node.children.length}`,
+            tag: 'Pick',
+            _attributes: {
+                class: 'Pick',
+                name: '面片拾取'
+            }
+        };
+        pickOBj.title = (
+            <div>
+                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(pickOBj)}>{pickOBj._attributes.name}</Button>
+            </div>
+        );
+        node.children.push(pickOBj);
+    }
+    //添加面对象
+    const pickObj = node.children[pickObjIndex];
+    let hasCellObj = false;
+    let cellObjIndex = pickObj.children.length;
+    pickObj.children.map((item, index) => {
+        if (item._attributes.name == `cell-${cellId}`) {
+            hasCellObj = true;
+            cellObjIndex = index;
+        }
+    });
+    if (!hasCellObj) {
+        let cellObj = {
+            children: [],
+            key: `${pickObj.key}-${pickObj.children.length}`,
+            tag: 'Cell',
+            _attributes: {
+                class: 'Cell',
+                name: `cell-${cellId}`
+            }
+        };
+        cellObj.title = (
+            <div>
+                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(cellObj)}>{cellObj._attributes.name}</Button>
+            </div>
+        );
+        pickObj.children.push(cellObj);
+    }
+    const cellObj = pickObj.children[cellObjIndex];
+    if (cellObj.children.length === 0) {
+        let fieldeObj = {
+            key: `${cellObj.key}-0`,
+            tag: 'Field',
+            _text: '0.0 0.0 0.0',
+            _attributes: {
+                class: 'Vector3f',
+                name: '施加力'
+            }
+        };
+        fieldeObj.title = (
+            <div>
+                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(fieldeObj)}>{fieldeObj._attributes.name}</Button>
+            </div>
+        );
+        cellObj.children.push(fieldeObj);
+    }
+    return cellObj.children[0];
+}
 
 class ClothSimulation extends React.Component {
     constructor(props) {
@@ -97,12 +184,11 @@ class ClothSimulation extends React.Component {
     //导入配置文件并传回树结构支持的data数组
     loadConfig = () => {
         //需要传入仿真类型
-        physikaLoadConfig("cloth").then(value => {
+        physikaLoadConfig('cloth').then(value => {
             //加载对象是异步的，为了能够正确处理changeVisible事件，
             //在this.state.date更新触发render之前必须完成对this.curScene对象的赋值
             //所以这里故意将传回的value值延迟到this.curScene对象赋值完成后再赋值给data
-            this.loadObject(value)
-            .then(value=>{
+            this.loadObject(value).then(value => {
                 this.setState({
                     data: value
                 });
@@ -113,7 +199,7 @@ class ClothSimulation extends React.Component {
 
     //加载obj，是否这样用待定！
     loadObject = (data) => {
-        let path = "";
+        let path = '';
         data[0].children.map(item => {
             if (item.tag == 'Path') {
                 path = item._text;
@@ -121,10 +207,10 @@ class ClothSimulation extends React.Component {
         });
         console.log(path);
         //清空旧场景，移除旧actor
-        Object.keys(this.curScene).map(key=>{
+        Object.keys(this.curScene).map(key => {
             this.renderer.removeActor(this.curScene[key].actor);
         });
-        this.curScene={};
+        this.curScene = {};
         //removeAllActors()这个方法有点问题，删完没反应；讨论区说用removeAllViewProps()
         //this.renderer.removeAllActors();
         //this.renderer.removeAllViewProps();
@@ -150,12 +236,18 @@ class ClothSimulation extends React.Component {
                     console.log(this.curScene);
                     //在this.curScene对象赋值完成后再发送data数据
                     resolve(data);
+                    //重置camera位置为默认值（小控件刷新有问题）
+                    this.renderer.getActiveCamera().setPosition(0, 0, 1);
+                    this.renderer.getActiveCamera().setViewUp(0, 1, 0);
+                    this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
+
                     this.renderer.resetCamera();
                     this.renderWindow.render();
                 });
         });
     }
 
+    //改变actor的可见性
     changeVisible = (item) => {
         const actor = this.curScene[item._attributes.name].actor;
         const visibility = actor.getVisibility();
@@ -241,12 +333,11 @@ class ClothSimulation extends React.Component {
         }
         else {
             //第一个参数data，第二个参数仿真类型
-            physikaUploadConfig(this.state.data, "cloth").then(value => {
+            physikaUploadConfig(this.state.data, 'cloth').then(value => {
                 //加载对象是异步的，为了能够正确处理changeVisible事件，
                 //在this.state.date更新触发render之前必须完成对this.curScene对象的赋值
                 //所以这里故意将传回的value值延迟到this.curScene对象赋值完成后再赋值给data
-                this.loadObject(value)
-                .then(value=>{
+                this.loadObject(value).then(value => {
                     this.setState({
                         data: value
                     });
@@ -255,9 +346,45 @@ class ClothSimulation extends React.Component {
         }
     }
 
-    //---------2020.10. 面片选取----------
+    //---------2020.10.15 面片选取----------
     cellPick = (item) => {
+        console.log("开始选取");
 
+        const picker = vtkCellPicker.newInstance();
+        picker.setPickFromList(true);
+        picker.setTolerance(0);
+        picker.initializePickList();
+        picker.addPickList(this.curScene[item._attributes.name].actor);
+        //console.log(picker.getPickList());
+
+        this.renderWindow.getInteractor().onRightButtonPress((callData) => {
+            if (this.renderer !== callData.pokedRenderer) {
+                return;
+            }
+
+            const pos = callData.position;
+            const point = [pos.x, pos.y, 0.0];
+            console.log(`Pick at: ${point}`);
+            picker.pick(point, this.renderer);
+
+            if (picker.getActors().length === 0) {
+                const pickedPoint = picker.getPickPosition();
+                console.log(`No cells picked, default: ${pickedPoint}`);
+            }
+            else {
+                const pickedCellId = picker.getCellId();
+                console.log('Picked cell: ', pickedCellId);
+                const pickedPoints = picker.getPickedPositions();
+                for (let i = 0; i < pickedPoints.length; i++) {
+                    const pickedPoint = pickedPoints[i];
+                    console.log(`Picked: ${pickedPoint}`);
+                }
+                //添加选定节点
+                this.showTreeNodeAttrModal(addPickedCell(pickedCellId,item));
+                //console.log(this.renderWindow.getInteractor());
+            }
+            //return EVENT_ABORT;
+        });
     }
     //------------------------------------
 

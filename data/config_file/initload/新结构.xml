@@ -6,7 +6,10 @@
         </Module>
         <Field class="Real" name="质量"> 1.0 </Field>
     </Node>
-    <Field class="vector3f" name="重力">0.0 -9.8 0.0</Field>
+    <Field class="Vector3f" name="重力">0.0 -9.8 0.0</Field>
     <Field class="Real" name="模拟步长"> 0.01 </Field>
-    <Path class="string" name="路径">./data/visualize_data/space-shuttle-orbiter.obj</Path>
+    <Data class="Data" name="数据" type=".obj">
+        <Path class="String" name="路径">./data/visualize_data/space-shuttle-orbiter.obj</Path>
+        <Frame class="Frame" name="帧数">100</Frame>
+    </Data>
 </Scene>

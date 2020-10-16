@@ -11,7 +11,7 @@
     </Node>
     <Node class="3" name="spstob_3"></Node>
     <Node class="4" name="Metal"></Node>
-    <Field class="vector3f" name="重力">0.0 -9.8 0.0</Field>
+    <Field class="Vector3f" name="重力">0.0 -9.8 0.0</Field>
     <Field class="Real" name="模拟步长"> 0.01 </Field>
-    <Path class="string" name="路径">./data/visualize_data/space-shuttle-orbiter.obj</Path>
+    <Path class="String" name="路径">./data/visualize_data/space-shuttle-orbiter.obj</Path>
 </Scene>

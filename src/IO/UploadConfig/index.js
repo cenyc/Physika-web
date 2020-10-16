@@ -23,7 +23,6 @@ function uploadConfig(data, simType) {
     //必须用deepcopy，因为在深拷贝中会将html标签省略掉！！
     //如果不去掉html，将会产生循环引用
     buildJson(obj, deepCopy(data));
-    //buildJson(obj, data);
     jsonObj._declaration = {
         _attributes: {
             version: "1.0",

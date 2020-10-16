@@ -32,7 +32,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                 case 'Real':
                     formInitialValues.real = treeNodeText;
                     break;
-                case 'vector3f':
+                case 'Vector3f':
                     let vector3f = treeNodeText.split(' ');
                     formInitialValues.realX = vector3f[0];
                     formInitialValues.realY = vector3f[1];
@@ -107,7 +107,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     </Form.Item>
                 }
                 {
-                    (treeNodeAttr.class === 'vector3f') &&
+                    (treeNodeAttr.class === 'Vector3f') &&
                     <Form.Item label="Value">
                         <Row>
                             <Col span={8}>
