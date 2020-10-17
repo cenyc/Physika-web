@@ -1,7 +1,7 @@
 import 'bootstrap';
 import React from 'react';
 import { Tree, Button } from 'antd';
-import { BiShow, BiHide, BiPointer } from 'react-icons/bi'
+import { BiShow, BiHide, BiPointer, BiMinus } from 'react-icons/bi'
 const { TreeNode } = Tree;
 //antd样式
 import 'antd/dist/antd.css';
@@ -19,8 +19,6 @@ import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 //面片拾取
 import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
-//
-import { EVENT_ABORT } from 'vtk.js/Sources/macro';
 //loadConfig
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 //uploadConfig
@@ -38,15 +36,16 @@ treeNodeAttr: {
 */
 
 //屏蔽全局浏览器右键菜单
-document.oncontextmenu=function(){
+document.oncontextmenu = function () {
     return false;
 }
 
+//添加拾取的面片对应的树节点
 function addPickedCell(cellId, node) {
     //添加pick对象
     let hasPickObj = false;
-    if(!node.hasOwnProperty('children')){
-        node.children=[];
+    if (!node.hasOwnProperty('children')) {
+        node.children = [];
     }
     let pickObjIndex = node.children.length;
     node.children.map((item, index) => {
@@ -65,11 +64,6 @@ function addPickedCell(cellId, node) {
                 name: '面片拾取'
             }
         };
-        pickOBj.title = (
-            <div>
-                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(pickOBj)}>{pickOBj._attributes.name}</Button>
-            </div>
-        );
         node.children.push(pickOBj);
     }
     //添加面对象
@@ -92,11 +86,6 @@ function addPickedCell(cellId, node) {
                 name: `cell-${cellId}`
             }
         };
-        cellObj.title = (
-            <div>
-                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(cellObj)}>{cellObj._attributes.name}</Button>
-            </div>
-        );
         pickObj.children.push(cellObj);
     }
     const cellObj = pickObj.children[cellObjIndex];
@@ -110,11 +99,6 @@ function addPickedCell(cellId, node) {
                 name: '施加力'
             }
         };
-        fieldeObj.title = (
-            <div>
-                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(fieldeObj)}>{fieldeObj._attributes.name}</Button>
-            </div>
-        );
         cellObj.children.push(fieldeObj);
     }
     return cellObj.children[0];
@@ -196,7 +180,6 @@ class ClothSimulation extends React.Component {
         });
     }
 
-
     //加载obj，是否这样用待定！
     loadObject = (data) => {
         let path = '';
@@ -258,6 +241,7 @@ class ClothSimulation extends React.Component {
         this.renderWindow.render();
     }
 
+    //递归渲染每个树节点
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
@@ -271,6 +255,10 @@ class ClothSimulation extends React.Component {
                 {
                     (item.tag === 'Node') &&
                     <BiPointer type="regular" onClick={() => this.cellPick(item)}></BiPointer>
+                }
+                {
+                    (item.tag === 'Cell') &&
+                    <BiMinus type="regular" onClick={() => this.deleteNode(item.key)}></BiMinus>
                 }
             </div>
         );
@@ -290,11 +278,9 @@ class ClothSimulation extends React.Component {
         this.setState({
             isTreeNodeAttrModalShow: true,
             treeNodeAttr: item._attributes,
-            treeNodeKey: item.key
+            treeNodeKey: item.key,
+            treeNodeText: item._text
         });
-        if (item._text) {
-            this.setState({ treeNodeText: item._text });
-        }
     }
 
     hideTreeNodeAttrModal = () => {
@@ -305,7 +291,11 @@ class ClothSimulation extends React.Component {
 
     //接收TreeNodeAttrModal返回的结点数据并更新树
     changeData = (obj) => {
-        let data = this.state.data;
+        //注意：这里直接改变this.state.data本身不会触发渲染，
+        //真正触发渲染的是hideTreeNodeAttrModal()函数的setState！
+        //官方并不建议直接修改this.state中的值，因为这样不会触发渲染，
+        //但是React的setState本身并不能处理nested object的更新。
+        //若该函数不再包含hideTreeNodeAttrModal()函数，则需要另想办法更新this.state.data！
         let eachKey = this.state.treeNodeKey.split('-');
         let count = 0;
         const findTreeNodeKey = (node) => {
@@ -319,10 +309,7 @@ class ClothSimulation extends React.Component {
             }
             findTreeNodeKey(node[eachKey[count++]].children);
         };
-        findTreeNodeKey(data);
-        this.setState({
-            data: data
-        })
+        findTreeNodeKey(this.state.data);
         this.hideTreeNodeAttrModal();
     }
 
@@ -357,7 +344,7 @@ class ClothSimulation extends React.Component {
         picker.addPickList(this.curScene[item._attributes.name].actor);
         //console.log(picker.getPickList());
 
-        this.renderWindow.getInteractor().onRightButtonPress((callData) => {
+        const subscription = this.renderWindow.getInteractor().onRightButtonPress((callData) => {
             if (this.renderer !== callData.pokedRenderer) {
                 return;
             }
@@ -380,11 +367,38 @@ class ClothSimulation extends React.Component {
                     console.log(`Picked: ${pickedPoint}`);
                 }
                 //添加选定节点
-                this.showTreeNodeAttrModal(addPickedCell(pickedCellId,item));
-                //console.log(this.renderWindow.getInteractor());
+                this.showTreeNodeAttrModal(addPickedCell(pickedCellId, item));
+                //取消鼠标右键点击的订阅（2020.10.17）
+                subscription.unsubscribe();
             }
-            //return EVENT_ABORT;
         });
+    }
+    //------------------------------------
+
+    //删除指定树节点（其父节点保留）
+    deleteNode = (treeNodeKey) => {
+        let eachKey = treeNodeKey.split('-');
+        let count = 0;
+        const findTreeNodeKey = (node) => {
+            //找到treeNodeKey所在的children数组
+            if (count === eachKey.length - 1) {
+                //删除对应节点
+                node.splice(eachKey[count], 1);
+                //父节点key值变化，所以其所有子结点的key值也需要更新！
+                const changeNodeKey = (node_, fatherNodeKey) =>
+                    node_.map((item, index) => {
+                        item.key = fatherNodeKey + index;
+                        if (item.hasOwnProperty('children')) {
+                            changeNodeKey(item.children, item.key + '-');
+                        }
+                    });
+                changeNodeKey(node, treeNodeKey.slice(0, treeNodeKey.length - 1));
+                return;
+            }
+            findTreeNodeKey(node[eachKey[count++]].children);
+        };
+        findTreeNodeKey(this.state.data);
+        this.forceUpdate();
     }
     //------------------------------------
 
