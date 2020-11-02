@@ -539,4 +539,6 @@ class ClothSimulation2 extends React.Component {
     }
 }
 
-export { ClothSimulation2 }
+export { 
+    ClothSimulation2 as Test
+}
