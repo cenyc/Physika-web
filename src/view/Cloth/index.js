@@ -226,6 +226,9 @@ class ClothSimulation extends React.Component {
 
                     this.renderer.resetCamera();
                     this.renderWindow.render();
+                })
+                .catch((res) => {
+                    console.log("获取模型对象失败:", res);
                 });
         });
     }
@@ -368,9 +371,9 @@ class ClothSimulation extends React.Component {
                 }
                 //添加选定节点
                 this.showTreeNodeAttrModal(addPickedCell(pickedCellId, item));
-                //取消鼠标右键点击的订阅（2020.10.17）
-                subscription.unsubscribe();
             }
+            //取消鼠标右键点击的订阅（2020.10.17）
+            subscription.unsubscribe();
         });
     }
     //------------------------------------
