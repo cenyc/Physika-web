@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import 'normalize.css';
 import $ from 'jquery';
 
-import { Test } from './treetest2'
+import { Test } from '../OldCode/treetest2'
 import { PhysikaClothSimulation } from './Cloth'
 
 class LeftNav extends Component {

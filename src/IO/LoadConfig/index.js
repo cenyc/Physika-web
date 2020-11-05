@@ -27,6 +27,6 @@ function loadConfig(simType) {
 }
 
 export {
-    loadConfig as physikaLoadConfig,
+    loadConfig as physikaLoadConfig
 };
 

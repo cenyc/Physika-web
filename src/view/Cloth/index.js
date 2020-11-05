@@ -26,6 +26,8 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 //TreeNodeAttrModal(react模块名字首字母必须大写！)
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 
+import { physikaLoadObj } from '../../IO/LoadObj';
+
 /*
 //是否需要给treeNodeAttr设置默认值?
 treeNodeAttr: {
@@ -194,6 +196,18 @@ class ClothSimulation extends React.Component {
             this.renderer.removeActor(this.curScene[key].actor);
         });
         this.curScene = {};
+        //---------------2020.11.5--------------
+        return physikaLoadObj({ file: path, ext: 'ob' })
+            .then(value => {
+                console.log("res : ",value);
+                return Promise.resolve(data);
+            })
+            .catch(res=>{
+                console.log(res);
+                return Promise.resolve(data);
+            });
+        //---------------------------------------
+        /*
         //removeAllActors()这个方法有点问题，删完没反应；讨论区说用removeAllViewProps()
         //this.renderer.removeAllActors();
         //this.renderer.removeAllViewProps();
@@ -231,6 +245,7 @@ class ClothSimulation extends React.Component {
                     console.log("获取模型对象失败:", res);
                 });
         });
+        */
     }
 
     //改变actor的可见性
