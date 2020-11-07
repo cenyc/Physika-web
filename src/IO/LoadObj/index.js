@@ -1,5 +1,7 @@
 import JSZip from 'jszip';
 import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
+import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
+import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 
 function test(frameSeq) {
     return new Promise((resolve, reject) => {
@@ -13,59 +15,96 @@ function test(frameSeq) {
         }, 2000);
     });
 }
-
-function loadOBj(options) {
+/*
+function loadLocalOBJ(file) {
     const frameSeq = [];
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        //处理load事件，该事件在读取操作完成时触发
+        reader.onload = function onload(e) {
+            const objReader = vtkOBJReader.newInstance();
+            objReader.parseAsText(reader.result);
+            const nbOutputs = objReader.getNumberOfOutputPorts();
+            for (let i = 0; i < nbOutputs; i++) {
+                const polydata = reader.getOutputData(i);
+                const mapper = vtkMapper.newInstance();
+                const actor = vtkActor.newInstance();
+                let name = polydata.get('name').name;
+                if (!name) {
+                    name = i;
+                }
 
+                actor.setMapper(mapper);
+                mapper.setInputData(polydata);
+
+                const curFrame = {};
+                curFrame[name] = { polydata, mapper, actor };
+            }
+            frameSeq.push(curFrame);
+            resolve(frameSeq);
+        };
+        //开始读取指定的Blob中的内容
+        reader.readAsText(options.file);
+    });
+}
+*/
+function getObjContent(objReader) {
+    let curFrame = {};
+    const nbOutputs = objReader.getNumberOfOutputPorts();
+    for (let i = 0; i < nbOutputs; i++) {
+        const polydata = objReader.getOutputData(i);
+        const mapper = vtkMapper.newInstance();
+        const actor = vtkActor.newInstance();
+        let name = polydata.get('name').name;
+        if (!name) {
+            name = i;
+        }
+
+        mapper.setInputData(polydata);
+        actor.setMapper(mapper);
+
+        curFrame[name] = { polydata, mapper, actor };
+    }
+    return curFrame;
+}
+
+function loadObj(options) {
+    const frameSeq = [];
+    console.log(options);
     return new Promise((resolve, reject) => {
         if (options.file) {
             if (options.ext === 'obj') {
-                const reader = new FileReader();
+                const objReader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
+                const fileReader = new FileReader();
                 //处理load事件，该事件在读取操作完成时触发
-                reader.onload = function onload(e) {
-                    const objReader = vtkOBJReader.newInstance();
-                    objReader.parseAsText(reader.result);
-                    const nbOutputs = objReader.getNumberOfOutputPorts();
-                    for (let i = 0; i < nbOutputs; i++) {
-                        const polydata = reader.getOutputData(i);
-                        const mapper = vtkMapper.newInstance();
-                        const actor = vtkActor.newInstance();
-                        let name = polydata.get('name').name;
-                        if (!name) {
-                            name = i;
-                        }
-
-                        actor.setMapper(mapper);
-                        mapper.setInputData(polydata);
-
-                        const curFrame = {};
-                        curFrame[name] = { polydata, mapper, actor };
-                    }
-                    frameSeq.push(curFrame);
+                fileReader.onload = function onload(e) {
+                    //const objReader = vtkOBJReader.newInstance();
+                    objReader.parseAsText(fileReader.result);
+                    frameSeq.push(getObjContent(objReader));
                     resolve(frameSeq);
                 };
                 //开始读取指定的Blob中的内容
-                reader.readAsText(options.file);
+                fileReader.readAsText(options.file);
             }
             else {
-                console.log("6666");
-                test(frameSeq)
-                    .then(res => {
-                        if (res.length==0) {
-                            //此处发出的reject由loadOBj接收处理
-                            reject("frameSeq is null!");
-                        }
-                        resolve(frameSeq);
-                    })
-                    .catch(res => {
-                        //此处的catch处理loadZipContent发出的异常
-                        console.log("zip处理失败: ",res);
-                    });
+                
             }
         }
         else if (options.fileURL) {
-            console.log("url");
-            resolve([]);
+            if (options.ext === 'obj') {
+                const objReader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
+                objReader.setUrl(options.fileURL)
+                    .then(() => {
+                        frameSeq.push(getObjContent(objReader));
+                        resolve(frameSeq);
+                    })
+                    .catch(err=>{
+                        console.log("Failed to fetch .obj through url: ", err);
+                    })
+            }
+            else{
+                
+            }
         }
         else {
             reject("不支持该文件格式！");
@@ -73,65 +112,9 @@ function loadOBj(options) {
     });
 }
 
-async function loadOBj(options){
-    const frameSeq = [];
-
-    if (options.file) {
-        if (options.ext === 'obj') {
-            const reader = new FileReader();
-            //处理load事件，该事件在读取操作完成时触发
-            reader.onload = function onload(e) {
-                const objReader = vtkOBJReader.newInstance();
-                objReader.parseAsText(reader.result);
-                const nbOutputs = objReader.getNumberOfOutputPorts();
-                for (let i = 0; i < nbOutputs; i++) {
-                    const polydata = reader.getOutputData(i);
-                    const mapper = vtkMapper.newInstance();
-                    const actor = vtkActor.newInstance();
-                    let name = polydata.get('name').name;
-                    if (!name) {
-                        name = i;
-                    }
-
-                    actor.setMapper(mapper);
-                    mapper.setInputData(polydata);
-
-                    const curFrame = {};
-                    curFrame[name] = { polydata, mapper, actor };
-                }
-                frameSeq.push(curFrame);
-                return await Promise.resolve(frameSeq);
-            };
-            //开始读取指定的Blob中的内容
-            reader.readAsText(options.file);
-        }
-        else {
-            console.log("6666");
-            test(frameSeq)
-                .then(res => {
-                    if (res.length==0) {
-                        //此处发出的reject由loadOBj接收处理
-                        reject("frameSeq is null!");
-                    }
-                    resolve(frameSeq);
-                })
-                .catch(res => {
-                    //此处的catch处理loadZipContent发出的异常
-                    console.log("zip处理失败: ",res);
-                });
-        }
-    }
-    else if (options.fileURL) {
-        console.log("url");
-        resolve([]);
-    }
-    else {
-        reject("不支持该文件格式！");
-    }
-}
 
 export {
-    loadOBj as physikaLoadObj
+    loadObj as physikaLoadObj
 };
 
 function loadZipContent(zipContent, renderWindow, renderer) {

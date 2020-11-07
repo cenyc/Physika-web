@@ -1,4 +1,4 @@
-import { buildDataStructure } from '../BuildDataStructure'
+import { buildDataStructure } from '../BuildDataStructure';
 
 function loadConfig(simType) {
     let reqBody = {
@@ -16,13 +16,18 @@ function loadConfig(simType) {
             headers: new Headers({
                 'Content-Type': 'application/json'
             })
-        }).then(res => res.text())
-            .catch(error => console.error('Error:', error))
-            .then(res => {
-                let initConfig = JSON.parse(res);
-                resolve(buildDataStructure(initConfig));
-                console.log("成功获取初始化配置");
-            });
+        }).then(res => {
+            if (res.ok) {
+                return res.json();
+            }
+            console.log("发生了值得注意的其他错误！");
+            return Promise.reject(res);
+        }).then(res => {
+            console.log(res);
+            resolve(buildDataStructure(res));
+        }).catch(err => {
+            console.log(err);
+        });
     });
 }
 

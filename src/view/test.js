@@ -20,13 +20,13 @@ import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 //面片拾取
 import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
 //loadConfig
-import { physikaLoadConfig } from '../../IO/LoadConfig'
+import { physikaLoadConfig } from '../IO/LoadConfig'
 //uploadConfig
-import { physikaUploadConfig } from '../../IO/UploadConfig'
+import { physikaUploadConfig } from '../IO/UploadConfig'
 //TreeNodeAttrModal(react模块名字首字母必须大写！)
-import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
+import { PhysikaTreeNodeAttrModal } from './TreeNodeAttrModal'
 
-import { physikaLoadObj } from '../../IO/LoadObj';
+import { physikaLoadObj } from '../IO/LoadObj';
 
 /*
 //是否需要给treeNodeAttr设置默认值?
@@ -50,7 +50,7 @@ function addPickedCell(cellId, node) {
         node.children = [];
     }
     let pickObjIndex = node.children.length;
-    node.children.map((item, index) => {
+    node.children.forEach((item, index) => {
         if (item.tag == 'Pick') {
             hasPickObj = true;
             pickObjIndex = index;
@@ -72,7 +72,7 @@ function addPickedCell(cellId, node) {
     const pickObj = node.children[pickObjIndex];
     let hasCellObj = false;
     let cellObjIndex = pickObj.children.length;
-    pickObj.children.map((item, index) => {
+    pickObj.children.forEach((item, index) => {
         if (item._attributes.name == `cell-${cellId}`) {
             hasCellObj = true;
             cellObjIndex = index;
@@ -167,72 +167,59 @@ class ClothSimulation extends React.Component {
         }
     */
 
-    //导入配置文件并传回树结构支持的data数组
-    loadConfig = () => {
-        //需要传入仿真类型
-        physikaLoadConfig('cloth').then(value => {
-            //加载对象是异步的，为了能够正确处理changeVisible事件，
-            //在this.state.date更新触发render之前必须完成对this.curScene对象的赋值
-            //所以这里故意将传回的value值延迟到this.curScene对象赋值完成后再赋值给data
-            this.loadObject(value).then(value => {
-                this.setState({
-                    data: value
-                });
+    //导入初始化配置文件->加载初始模型->绘制模型->绘制树结构
+    load = () => {
+        physikaLoadConfig('cloth')
+            .then(res => {
+                console.log("成功获取初始化配置");
+                let options = this.extractURL(res);
+                return Promise.all([physikaLoadObj(options), res]);
+            })
+            .then(res => {
+                console.log("成功获取初始化场景", res);
+                this.resetScene(res[0][0]);
+                this.setState({ data: res[1] });
+            })
+            .catch(err => {
+                console.log("Error loading: ", err);
             });
-        });
     }
 
-    //加载obj，是否这样用待定！
-    loadObject = (data) => {
-        let path = '';
-        data[0].children.map(item => {
+    //从配置文件中提取模型的url
+    extractURL = (data) => {
+        //2020.11.7 Array遍历：
+        //若需要break/return，只能用for版本；
+        //若需要使用返回的新数组，则应用map（不能跳出，除非throw）;
+        //若只是遍历数组，则应用forEach（不能跳出，除非throw）。
+        for (const item of data[0].children) {
             if (item.tag == 'Path') {
-                path = item._text;
+                const url = item._text;
+                const ext = url.substring(url.lastIndexOf('.') + 1);
+                return { fileURL: url, ext: ext };
             }
-        });
-        console.log(path);
-        //清空旧场景，移除旧actor
-        Object.keys(this.curScene).map(key => {
+        }
+        console.log("throw error");
+    }
+
+    //重置场景？
+    resetScene = (newScene) => {
+        //移除旧场景actor
+        Object.keys(this.curScene).forEach(key => {
             this.renderer.removeActor(this.curScene[key].actor);
         });
-        this.curScene = {};
-        //removeAllActors()这个方法有点问题，删完没反应；讨论区说用removeAllViewProps()
-        //this.renderer.removeAllActors();
-        //this.renderer.removeAllViewProps();
-        //splitMode模式会将obj中的多个对象拆分存储，'usemtl'能否换成别的目前不清楚。。。
-        const reader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
-        return new Promise((resolve, reject) => {
-            reader.setUrl(path)
-                .then(() => {
-                    const size = reader.getNumberOfOutputPorts();
-                    for (let i = 0; i < size; i++) {
-                        const polydata = reader.getOutputData(i);
-                        const name = polydata.get('name').name;
-                        const mapper = vtkMapper.newInstance();
-                        const actor = vtkActor.newInstance();
-
-                        actor.setMapper(mapper);
-                        mapper.setInputData(polydata);
-                        this.renderer.addActor(actor);
-
-                        this.curScene[name] = { polydata, mapper, actor };
-                        //curScene.push({name,polydata,mapper,actor});
-                    }
-                    console.log(this.curScene);
-                    //在this.curScene对象赋值完成后再发送data数据
-                    resolve(data);
-                    //重置camera位置为默认值（小控件刷新有问题）
-                    this.renderer.getActiveCamera().setPosition(0, 0, 1);
-                    this.renderer.getActiveCamera().setViewUp(0, 1, 0);
-                    this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
-
-                    this.renderer.resetCamera();
-                    this.renderWindow.render();
-                })
-                .catch((res) => {
-                    console.log("获取模型对象失败:", res);
-                });
+        this.curScene = newScene;
+        //添加新场景actor
+        Object.keys(this.curScene).forEach(key => {
+            this.renderer.addActor(this.curScene[key].actor);
         });
+
+        //重置camera位置为默认值（小控件刷新有问题）
+        this.renderer.getActiveCamera().setPosition(0, 0, 1);
+        this.renderer.getActiveCamera().setViewUp(0, 1, 0);
+        this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
+
+        this.renderer.resetCamera();
+        this.renderWindow.render();
     }
 
     //改变actor的可见性
@@ -246,7 +233,7 @@ class ClothSimulation extends React.Component {
         this.renderWindow.render();
     }
 
-    //递归渲染每个树节点
+    //递归渲染每个树节点（这里必须用map遍历！可能因为需要返回的数组？）
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
@@ -318,23 +305,26 @@ class ClothSimulation extends React.Component {
         this.hideTreeNodeAttrModal();
     }
 
-    //上传xml配置文件并获取模拟结果的xml
-    uploadConfig = () => {
+    upload = () => {
         if (this.state.data.length == 0) {
             alert("还未加载配置文件！");
         }
         else {
             //第一个参数data，第二个参数仿真类型
-            physikaUploadConfig(this.state.data, 'cloth').then(value => {
-                //加载对象是异步的，为了能够正确处理changeVisible事件，
-                //在this.state.date更新触发render之前必须完成对this.curScene对象的赋值
-                //所以这里故意将传回的value值延迟到this.curScene对象赋值完成后再赋值给data
-                this.loadObject(value).then(value => {
-                    this.setState({
-                        data: value
-                    });
+            physikaUploadConfig(this.state.data, 'cloth')
+                .then(res => {
+                    console.log("成功上传配置并获取到仿真结果配置");
+                    let options = this.extractURL(res);
+                    return Promise.all([physikaLoadObj(options), res]);
+                })
+                .then(res => {
+                    console.log("成功获取仿真结果模型", res);
+                    this.resetScene(res[0][0]);
+                    this.setState({ data: res[1] });
+                })
+                .catch(err => {
+                    console.log("Error uploading: ", err);
                 });
-            });
         }
     }
 
@@ -391,7 +381,7 @@ class ClothSimulation extends React.Component {
                 node.splice(eachKey[count], 1);
                 //父节点key值变化，所以其所有子结点的key值也需要更新！
                 const changeNodeKey = (node_, fatherNodeKey) =>
-                    node_.map((item, index) => {
+                    node_.forEach((item, index) => {
                         item.key = fatherNodeKey + index;
                         if (item.hasOwnProperty('children')) {
                             changeNodeKey(item.children, item.key + '-');
@@ -414,14 +404,14 @@ class ClothSimulation extends React.Component {
                 <div className="card border rounded-0"><span className="text-center m-1">布料仿真</span>
                     <hr className="m-0" />
                     <div className="card-body pt-2">
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.loadConfig}><span className="glyphicon glyphicon-plus">加载场景</span></button>
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
                         <div className="pt-2">
                             <Tree >
                                 {this.renderTreeNodes(this.state.data)}
                             </Tree>
                         </div>
 
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.uploadConfig}><span className="glyphicon glyphicon-plus">上传</span></button>
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload}><span className="glyphicon glyphicon-plus">上传</span></button>
 
                     </div>
                     <div >
@@ -440,5 +430,5 @@ class ClothSimulation extends React.Component {
 }
 
 export {
-    ClothSimulation as PhysikaClothSimulation
+    ClothSimulation as Test
 };

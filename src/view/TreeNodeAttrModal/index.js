@@ -47,7 +47,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
             _attributes: treeNodeAttr,
             _text: ''
         };
-        Object.keys(obj._attributes).map((item) => {
+        Object.keys(obj._attributes).forEach((item) => {
             //这里不能点引用item，会出大问题！（会将item作为一个新成员加入到obj._attributes中）
             obj._attributes[item] = value[item];
         });

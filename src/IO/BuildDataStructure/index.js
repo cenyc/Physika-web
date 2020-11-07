@@ -4,7 +4,7 @@ import { deepCopy, isObject } from '../../Common'
 //其中node为当前遍历的对象，tag为当前对象的标签名
 function buildNode(node, tag) {
     let childNode = [];
-    Object.keys(node).map((nodeKey, index) => {
+    Object.keys(node).forEach((nodeKey, index) => {
         if (nodeKey === '_attributes') {
             //如果存在'_text'属性，则为叶子结点
             if (Object.keys(node).includes('_text')) {
@@ -31,7 +31,7 @@ function buildNode(node, tag) {
         }
         else {
             if (Array.isArray(node[nodeKey])) {
-                node[nodeKey].map((obj, index) => {
+                node[nodeKey].forEach((obj, index) => {
                     childNode.push(buildNode(obj, nodeKey));
                 })
             }
@@ -75,7 +75,7 @@ function buildDataStructure(config) {
             //childNode用于存储当前层的结点
             let fatherIndex;
             let childNode = {};
-            node.map((item, index) => {
+            node.forEach((item, index) => {
                 if (isObject(item)) {
                     fatherIndex = index;
                     childNode = item;
@@ -85,7 +85,7 @@ function buildDataStructure(config) {
             });
             //找到包含当前结点属性的对象后，从当前node删除它，然后再遍历其他子结点成员
             node.splice(fatherIndex, 1);
-            node.map((item, index) => {
+            node.forEach((item, index) => {
                 childNode.children.push(traverseNode(item, key + '-' + index));
             });
             return childNode;

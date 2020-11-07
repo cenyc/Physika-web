@@ -1,7 +1,7 @@
 import { deepCopy } from '../../Common'
 import { buildDataStructure } from '../BuildDataStructure'
 
-const buildJson = (father, children) => children.map(item => {
+const buildJson = (father, children) => children.forEach(item => {
     if (!father.hasOwnProperty(item.tag)) {
         father[item.tag] = [];
     }
@@ -47,13 +47,18 @@ function uploadConfig(data, simType) {
             headers: new Headers({
                 'Content-Type': 'application/json'
             })
-        }).then(res => res.text())
-            .catch(error => console.error('Error:', error))
-            .then(res => {
-                let resConfig = JSON.parse(res);
-                resolve(buildDataStructure(resConfig));
-                console.log("上传完成,返回模拟数据");
-            });
+        }).then(res => {
+            if (res.ok) {
+                return res.json();
+            }
+            console.log("发生了值得注意的其他错误！");
+            return Promise.reject(res);
+        }).then(res=>{
+            console.log(res);
+            resolve(buildDataStructure(res));
+        }).catch(err => {
+            console.log(err);
+        });
     });
 }
 
