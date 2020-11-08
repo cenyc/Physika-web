@@ -1,5 +1,5 @@
 <Scene class="StaticBoundary" name="场景">
-    <Node class="ParticleElasticBody" name="cloth1">
+    <Node class="ParticleElasticBody" name="0">
         <Module class="ElasticityModule" type="ConstraintModule" name="弹性">
             <Field class="Real" name="mu"> 3000</Field>
             <Field class="Real" name="lambda"> 1500 </Field>
@@ -8,5 +8,5 @@
     </Node>
     <Field class="vector3f" name="重力">0.0 -9.8 0.0</Field>
     <Field class="Real" name="模拟步长"> 0.01 </Field>
-    <Path class="string" name="路径">./data/visualize_data/mesh_100.obj</Path>
+    <Path class="string" name="路径">./data/visualize_data/pbd_coulping_mesh_only.zip</Path>
 </Scene>

@@ -208,6 +208,7 @@ class ClothSimulation extends React.Component {
             this.renderer.removeActor(this.curScene[key].actor);
         });
         this.curScene = newScene;
+        console.log(this.curScene);
         //添加新场景actor
         Object.keys(this.curScene).forEach(key => {
             this.renderer.addActor(this.curScene[key].actor);

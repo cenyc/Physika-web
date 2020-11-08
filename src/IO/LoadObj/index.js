@@ -2,6 +2,8 @@ import JSZip from 'jszip';
 import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
+import HttpDataAccessHelper from 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
+import { zip } from 'lodash';
 
 function test(frameSeq) {
     return new Promise((resolve, reject) => {
@@ -48,7 +50,7 @@ function loadLocalOBJ(file) {
     });
 }
 */
-function getObjContent(objReader) {
+function initializeObj(objReader) {
     let curFrame = {};
     const nbOutputs = objReader.getNumberOfOutputPorts();
     for (let i = 0; i < nbOutputs; i++) {
@@ -80,14 +82,14 @@ function loadObj(options) {
                 fileReader.onload = function onload(e) {
                     //const objReader = vtkOBJReader.newInstance();
                     objReader.parseAsText(fileReader.result);
-                    frameSeq.push(getObjContent(objReader));
+                    frameSeq.push(initializeObj(objReader));
                     resolve(frameSeq);
                 };
                 //开始读取指定的Blob中的内容
                 fileReader.readAsText(options.file);
             }
             else {
-                
+
             }
         }
         else if (options.fileURL) {
@@ -95,15 +97,56 @@ function loadObj(options) {
                 const objReader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
                 objReader.setUrl(options.fileURL)
                     .then(() => {
-                        frameSeq.push(getObjContent(objReader));
+                        frameSeq.push(initializeObj(objReader));
                         resolve(frameSeq);
                     })
-                    .catch(err=>{
+                    .catch(err => {
                         console.log("Failed to fetch .obj through url: ", err);
                     })
             }
-            else{
-                
+            else {
+                const zip = new JSZip();
+                HttpDataAccessHelper.fetchBinary(options.fileURL)
+                    .then(res => {
+                        return zip.loadAsync(res);
+                    })
+                    .then(() => {
+                        const fileContents = [];
+                        zip.forEach((relativePath, zipEntry) => {
+                            //正则表达式：两个斜杠（/）之间是模式；反斜杠（\）代表转义；$代表匹配结束；i为标志，表示不区分大小写搜索。
+                            if (relativePath.match(/\.obj$/i)) {
+                                //记录帧序，因为Promise.all不保证fileContents中文件的顺序，所以需要之后利用帧序重排序。
+                                const frameIndex = relativePath.substring(relativePath.lastIndexOf('_') + 1, relativePath.lastIndexOf('.'));
+                                const promise = new Promise((resolve, reject) => {
+                                    zipEntry.async('string')
+                                        .then(res => {
+                                            const objReader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
+                                            objReader.parseAsText(res);
+                                            resolve({ frameIndex: frameIndex, objReader: objReader });
+                                        })
+                                        .catch(err => {
+                                            reject(err);
+                                        });
+                                });
+                                fileContents.push(promise);
+                            }
+                        });
+                        return Promise.all(fileContents);
+                    })
+                    .then(res => {
+                        const orderedObjReader = new Array(res.length);
+                        res.forEach(item => {
+                            //取余是为了防止不是从第0帧开始（中间不能有帧缺失！）
+                            orderedObjReader[item.frameIndex % res.length] = item.objReader;
+                        });
+                        orderedObjReader.forEach(item=>{
+                            frameSeq.push(initializeObj(item));
+                        })
+                        resolve(frameSeq);
+                    })
+                    .catch(err=>{
+                        console.log("Failed to fetch .zip through url: ", err);
+                    });
             }
         }
         else {
