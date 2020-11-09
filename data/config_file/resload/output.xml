@@ -8,5 +8,5 @@
     </Node>
     <Field class="vector3f" name="重力">0.0 -9.8 0.0</Field>
     <Field class="Real" name="模拟步长"> 0.01 </Field>
-    <Path class="string" name="路径">./data/visualize_data/pbd_coulping_mesh_only.zip</Path>
+    <Path class="string" name="路径">./data/visualize_data/test.zip</Path>
 </Scene>

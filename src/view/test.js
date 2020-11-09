@@ -19,13 +19,9 @@ import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 //面片拾取
 import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
-//loadConfig
 import { physikaLoadConfig } from '../IO/LoadConfig'
-//uploadConfig
 import { physikaUploadConfig } from '../IO/UploadConfig'
-//TreeNodeAttrModal(react模块名字首字母必须大写！)
 import { PhysikaTreeNodeAttrModal } from './TreeNodeAttrModal'
-
 import { physikaLoadObj } from '../IO/LoadObj';
 
 /*
@@ -134,6 +130,12 @@ class ClothSimulation extends React.Component {
         //curScene中保存了当前帧中所包含的obj
         //curScene={name:{polydata, mapper, actor},...}
         this.curScene = {};
+        //frameSeq保存了每帧场景，用于实现动画
+        this.frameSeq = [];
+        //记录当前动画在frameSeq中的索引
+        this.frameSeqIndex = 0;
+        //用于保存requestAnimationFrame()的返回值
+        this.rAF;
 
         //------------------------
         /*
@@ -214,10 +216,12 @@ class ClothSimulation extends React.Component {
             this.renderer.addActor(this.curScene[key].actor);
         });
 
-        //重置camera位置为默认值（小控件刷新有问题）
-        this.renderer.getActiveCamera().setPosition(0, 0, 1);
-        this.renderer.getActiveCamera().setViewUp(0, 1, 0);
-        this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
+        if (this.frameSeqIndex === 0) {
+            //重置camera位置为默认值（小控件刷新有问题）
+            this.renderer.getActiveCamera().setPosition(0, 0, 1);
+            this.renderer.getActiveCamera().setViewUp(0, 1, 0);
+            this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
+        }
 
         this.renderer.resetCamera();
         this.renderWindow.render();
@@ -320,7 +324,8 @@ class ClothSimulation extends React.Component {
                 })
                 .then(res => {
                     console.log("成功获取仿真结果模型", res);
-                    this.resetScene(res[0][0]);
+                    this.frameSeq = res[0];
+                    this.resetScene(this.frameSeq[0]);
                     this.setState({ data: res[1] });
                 })
                 .catch(err => {
@@ -398,6 +403,23 @@ class ClothSimulation extends React.Component {
     }
     //------------------------------------
 
+    drawFrame = () => {
+        if (this.frameSeqIndex === this.frameSeq.length) {
+            cancelAnimationFrame(this.rAF);
+            this.frameSeqIndex=0;
+            console.log("动画结束");
+            return;
+        }
+        this.resetScene(this.frameSeq[this.frameSeqIndex]);
+        this.frameSeqIndex++;
+        this.rAF = requestAnimationFrame(this.drawFrame);
+    }
+
+    stopDrawFrame=()=>{
+        cancelAnimationFrame(this.rAF);
+        console.log("动画暂停");
+    }
+
     render() {
         console.log("tree:", this.state.data);
         return (
@@ -413,14 +435,15 @@ class ClothSimulation extends React.Component {
                         </div>
 
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload}><span className="glyphicon glyphicon-plus">上传</span></button>
-
+                        <Button type="text" size="small" onClick={this.drawFrame}>播放动画</Button>
+                        <Button type="text" size="small" onClick={this.stopDrawFrame}>暂停动画</Button>
                     </div>
                     <div >
                         <PhysikaTreeNodeAttrModal
                             treeNodeAttr={this.state.treeNodeAttr}
                             treeNodeText={this.state.treeNodeText}
                             visible={this.state.isTreeNodeAttrModalShow}
-                            hideModal={() => this.hideTreeNodeAttrModal()}
+                            hideModal={this.hideTreeNodeAttrModal}
                             changeData={(obj) => this.changeData(obj)}
                         ></PhysikaTreeNodeAttrModal>
                     </div>

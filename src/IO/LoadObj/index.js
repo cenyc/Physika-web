@@ -3,53 +3,7 @@ import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 import HttpDataAccessHelper from 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-import { zip } from 'lodash';
 
-function test(frameSeq) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            let obj = {
-                test: 1
-            };
-            console.log("111");
-            //frameSeq.push(obj);
-            resolve(frameSeq);
-        }, 2000);
-    });
-}
-/*
-function loadLocalOBJ(file) {
-    const frameSeq = [];
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        //处理load事件，该事件在读取操作完成时触发
-        reader.onload = function onload(e) {
-            const objReader = vtkOBJReader.newInstance();
-            objReader.parseAsText(reader.result);
-            const nbOutputs = objReader.getNumberOfOutputPorts();
-            for (let i = 0; i < nbOutputs; i++) {
-                const polydata = reader.getOutputData(i);
-                const mapper = vtkMapper.newInstance();
-                const actor = vtkActor.newInstance();
-                let name = polydata.get('name').name;
-                if (!name) {
-                    name = i;
-                }
-
-                actor.setMapper(mapper);
-                mapper.setInputData(polydata);
-
-                const curFrame = {};
-                curFrame[name] = { polydata, mapper, actor };
-            }
-            frameSeq.push(curFrame);
-            resolve(frameSeq);
-        };
-        //开始读取指定的Blob中的内容
-        reader.readAsText(options.file);
-    });
-}
-*/
 function initializeObj(objReader) {
     let curFrame = {};
     const nbOutputs = objReader.getNumberOfOutputPorts();
@@ -89,11 +43,16 @@ function loadObj(options) {
                 fileReader.readAsText(options.file);
             }
             else {
-
+                const zip = new JSZip();
+                zip.loadAsync(options.file)
+                    .then(() => {
+                        //未完待续。。。
+                    })
             }
         }
         else if (options.fileURL) {
             if (options.ext === 'obj') {
+                //splitMode模式会将obj中的多个对象拆分存储，'usemtl'能否换成别的目前不清楚。。。
                 const objReader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
                 objReader.setUrl(options.fileURL)
                     .then(() => {
@@ -134,17 +93,16 @@ function loadObj(options) {
                         return Promise.all(fileContents);
                     })
                     .then(res => {
-                        const orderedObjReader = new Array(res.length);
-                        res.forEach(item => {
-                            //取余是为了防止不是从第0帧开始（中间不能有帧缺失！）
-                            orderedObjReader[item.frameIndex % res.length] = item.objReader;
+                        //使用Array内置sort排序，按照frameIndex升序排列
+                        res.sort(function (a, b) {
+                            return (a.frameIndex - b.frameIndex);
                         });
-                        orderedObjReader.forEach(item=>{
-                            frameSeq.push(initializeObj(item));
+                        res.forEach(item => {
+                            frameSeq.push(initializeObj(item.objReader));
                         })
                         resolve(frameSeq);
                     })
-                    .catch(err=>{
+                    .catch(err => {
                         console.log("Failed to fetch .zip through url: ", err);
                     });
             }
