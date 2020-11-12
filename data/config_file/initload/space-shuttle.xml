@@ -7,7 +7,7 @@
         <Field class="Real" name="质量"> 1.0 </Field>
     </Node>
     <Node class="2" name="spstob_2">
-        <Test class="test" name="test"></Test>
+        <Test class="test" name="11111111111111111111111111111"></Test>
     </Node>
     <Node class="3" name="spstob_3"></Node>
     <Node class="4" name="Metal"></Node>

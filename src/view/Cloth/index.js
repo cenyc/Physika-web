@@ -136,6 +136,10 @@ class ClothSimulation extends React.Component {
         this.frameSeqIndex = 0;
         //用于保存requestAnimationFrame()的返回值
         this.rAF;
+        //记录上次期望的绘制时间
+        this.lastTime = 0;
+        //动画的刷新率（requestAnimationFrame最大fps接近60）
+        this.fps = 5;
 
         //------------------------
         /*
@@ -216,13 +220,12 @@ class ClothSimulation extends React.Component {
             this.renderer.addActor(this.curScene[key].actor);
         });
 
-        //只有在载入第一帧场景时，才将camera属性置为默认值
-        if (this.frameSeqIndex === 0) {
-            //重置camera位置为默认值（小控件刷新有问题）
-            this.renderer.getActiveCamera().setPosition(0, 0, 1);
-            this.renderer.getActiveCamera().setViewUp(0, 1, 0);
-            this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
-        }
+        /*//单独设置按钮控制摄像头位置
+        //重置camera位置为默认值（小控件刷新有问题）
+        this.renderer.getActiveCamera().setPosition(0, 0, 1);
+        this.renderer.getActiveCamera().setViewUp(0, 1, 0);
+        this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
+        */
 
         this.renderer.resetCamera();
         this.renderWindow.render();
@@ -246,17 +249,17 @@ class ClothSimulation extends React.Component {
                 {
                     (item.tag === 'Node') &&
                     (this.curScene[item._attributes.name].actor.getVisibility()
-                        ? <BiShow type="regular" onClick={() => this.changeVisible(item)}></BiShow>
-                        : <BiHide type="regular" onClick={() => this.changeVisible(item)}></BiHide>)
+                        ? <BiShow onClick={() => this.changeVisible(item)}></BiShow>
+                        : <BiHide onClick={() => this.changeVisible(item)}></BiHide>)
                 }
                 <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
                 {
                     (item.tag === 'Node') &&
-                    <BiPointer type="regular" onClick={() => this.cellPick(item)}></BiPointer>
+                    <BiPointer onClick={() => this.cellPick(item)}></BiPointer>
                 }
                 {
                     (item.tag === 'Cell') &&
-                    <BiMinus type="regular" onClick={() => this.deleteNode(item.key)}></BiMinus>
+                    <BiMinus onClick={() => this.deleteNode(item.key)}></BiMinus>
                 }
             </div>
         );
@@ -406,14 +409,22 @@ class ClothSimulation extends React.Component {
 
     //2020.11.9 实现动画
     drawFrame = () => {
-        if (this.frameSeqIndex === this.frameSeq.length) {
-            cancelAnimationFrame(this.rAF);
-            this.frameSeqIndex = 0;
-            console.log("动画结束");
-            return;
+        const currentTime = new Date().getTime();
+        if (this.lastTime === 0) {
+            this.lastTime = currentTime;
         }
-        this.resetScene(this.frameSeq[this.frameSeqIndex]);
-        this.frameSeqIndex++;
+        const elapsed = currentTime - this.lastTime;
+        if (elapsed > (1000 / this.fps)) {
+            this.lastTime = currentTime - (elapsed % (1000 / this.fps));
+            if (this.frameSeqIndex === this.frameSeq.length) {
+                cancelAnimationFrame(this.rAF);
+                this.frameSeqIndex = 0;
+                console.log("动画结束");
+                return;
+            }
+            this.resetScene(this.frameSeq[this.frameSeqIndex]);
+            this.frameSeqIndex++;
+        }
         this.rAF = requestAnimationFrame(this.drawFrame);
     }
 
@@ -432,7 +443,7 @@ class ClothSimulation extends React.Component {
                     <div className="card-body pt-2">
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
                         <div className="pt-2">
-                            <Tree >
+                            <Tree style={{overflowX: 'auto',width:'176px',overflowY:'auto',height:'333px'}}>
                                 {this.renderTreeNodes(this.state.data)}
                             </Tree>
                         </div>
