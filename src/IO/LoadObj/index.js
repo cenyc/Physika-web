@@ -8,18 +8,18 @@ function initializeObj(objReader) {
     let curFrame = {};
     const nbOutputs = objReader.getNumberOfOutputPorts();
     for (let i = 0; i < nbOutputs; i++) {
-        const polydata = objReader.getOutputData(i);
+        const source = objReader.getOutputData(i);
         const mapper = vtkMapper.newInstance();
         const actor = vtkActor.newInstance();
-        let name = polydata.get('name').name;
+        let name = source.get('name').name;
         if (!name) {
             name = i;
         }
 
-        mapper.setInputData(polydata);
+        mapper.setInputData(source);
         actor.setMapper(mapper);
 
-        curFrame[name] = { polydata, mapper, actor };
+        curFrame[name] = { source, mapper, actor };
     }
     return curFrame;
 }
@@ -33,7 +33,7 @@ function loadObj(options) {
                 const objReader = vtkOBJReader.newInstance({ splitMode: 'usemtl' });
                 const fileReader = new FileReader();
                 //处理load事件，该事件在读取操作完成时触发
-                fileReader.onload = function onload(e) {
+                fileReader.onload = function onLoad(e) {
                     //const objReader = vtkOBJReader.newInstance();
                     objReader.parseAsText(fileReader.result);
                     frameSeq.push(initializeObj(objReader));

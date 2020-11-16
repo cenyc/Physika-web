@@ -21,8 +21,8 @@ import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
-import { physikaLoadObj } from '../../IO/LoadObj';
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
+import { physikaLoadObj } from '../../IO/LoadObj';
 
 /*
 //是否需要给treeNodeAttr设置默认值?
@@ -128,7 +128,7 @@ class ClothSimulation extends React.Component {
         //明确一个前提：
         //如果当前帧场景中包含不止一个obj，则这些obj应写在同一个文件中
         //curScene中保存了当前帧中所包含的obj
-        //curScene={name:{polydata, mapper, actor},...}
+        //curScene={name:{source, mapper, actor},...}
         this.curScene = {};
         //frameSeq保存了每帧场景，用于实现动画
         this.frameSeq = [];
@@ -167,10 +167,11 @@ class ClothSimulation extends React.Component {
         this.renderer.resetCamera();
         this.renderWindow.render();
     }
+
     /*
-        componentWillUnmount() {
-            console.log('子组件将卸载');
-        }
+    componentWillUnmount() {
+        console.log('子组件将卸载');
+    }
     */
 
     //导入初始化配置文件->加载初始模型->绘制模型->绘制树结构
@@ -443,7 +444,7 @@ class ClothSimulation extends React.Component {
                     <div className="card-body pt-2">
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
                         <div className="pt-2">
-                            <Tree style={{overflowX: 'auto',width:'176px',overflowY:'auto',height:'333px'}}>
+                            <Tree style={{ overflowX: 'auto', width: '176px', overflowY: 'auto', height: '333px' }}>
                                 {this.renderTreeNodes(this.state.data)}
                             </Tree>
                         </div>
