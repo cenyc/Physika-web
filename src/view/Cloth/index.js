@@ -443,13 +443,13 @@ class ClothSimulation extends React.Component {
                     <hr className="m-0" />
                     <div className="card-body pt-2">
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
-                        <div className="pt-2">
-                            <Tree style={{ overflowX: 'auto', width: '176px', overflowY: 'auto', height: '333px' }}>
+                        <div className="pt-2" style={{overflowY: 'auto', height: '333px'}}>
+                            <Tree style={{ overflowX: 'auto', width: '176px'}}>
                                 {this.renderTreeNodes(this.state.data)}
                             </Tree>
                         </div>
 
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload}><span className="glyphicon glyphicon-plus">上传</span></button>
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload}><span className="glyphicon glyphicon-plus">执行仿真</span></button>
                         <Button type="text" size="small" onClick={this.drawFrame}>播放动画</Button>
                         <Button type="text" size="small" onClick={this.stopDrawFrame}>暂停动画</Button>
                     </div>

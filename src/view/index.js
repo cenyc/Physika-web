@@ -83,10 +83,6 @@ class LeftNav extends Component {
                         <button className="btn btn-danger btn-sm btn-lg btn-block" type="button" onClick={this.click_create_simulation}>创建仿真</button>
                     </div>
                     <div id="createTree" className="container p-2"></div>
-
-                    <div className="container p-2">
-                        <button className="btn btn-danger btn-sm btn-lg btn-block" type="button">执行仿真</button>
-                    </div>
                 </div>
             </nav>
 
