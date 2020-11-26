@@ -145,7 +145,8 @@ app.post('/upload', function (req, res) {
 });
 */
 
-// 设置views路径
+//视图引擎设定
+//设置views路径
 app.set('views', path.join(__dirname,'../static/view'));
 //模板采用html作为扩展名
 app.set('view engine', 'html');
