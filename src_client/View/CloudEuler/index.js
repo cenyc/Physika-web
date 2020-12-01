@@ -82,11 +82,11 @@ class CloudEulerSimulation extends React.Component {
         physikaLoadConfig('fluid')
             .then(res => {
                 console.log("成功获取初始化配置");
-                let options = this.extractURL(res);
-                return Promise.all([physikaLoadVti(options), res]);
+                this.setState({data:res});
+                //除了加载初始化配置文件还需要什么？
             })
-            .then(res=>{
-                //---------
+            .catch(res=>{
+                console.log("Error loading: ", err);
             })
     }
 
@@ -102,4 +102,111 @@ class CloudEulerSimulation extends React.Component {
         console.log("throw error");
     }
 
+    //递归渲染每个树节点（这里必须用map遍历！因为需要返回数组）
+    renderTreeNodes = (data) => data.map((item, index) => {
+        item.title = (
+            <div>
+                {
+                    (item.tag === 'Node') &&
+                    (this.curScene[item._attributes.name].actor.getVisibility()
+                        ? <BiShow type="regular" onClick={() => this.changeVisible(item)}></BiShow>
+                        : <BiHide type="regular" onClick={() => this.changeVisible(item)}></BiHide>)
+                }
+                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
+                {
+                    (item.tag === 'Node') &&
+                    <BiPointer type="regular" onClick={() => this.cellPick(item)}></BiPointer>
+                }
+                {
+                    (item.tag === 'Cell') &&
+                    <BiMinus type="regular" onClick={() => this.deleteNode(item.key)}></BiMinus>
+                }
+            </div>
+        );
+
+        if (item.children) {
+            return (
+                <TreeNode title={item.title} key={item.key} >
+                    {this.renderTreeNodes(item.children)}
+                </TreeNode>
+            );
+        }
+
+        return <TreeNode {...item} />;
+    });
+
+    showTreeNodeAttrModal = (item) => {
+        this.setState({
+            isTreeNodeAttrModalShow: true,
+            treeNodeAttr: item._attributes,
+            treeNodeKey: item.key,
+            treeNodeText: item._text
+        });
+    }
+
+    hideTreeNodeAttrModal = () => {
+        this.setState({
+            isTreeNodeAttrModalShow: false
+        });
+    }
+
+    //接收TreeNodeAttrModal返回的结点数据并更新树
+    changeData = (obj) => {
+        //注意：这里直接改变this.state.data本身不会触发渲染，
+        //真正触发渲染的是hideTreeNodeAttrModal()函数的setState！
+        //官方并不建议直接修改this.state中的值，因为这样不会触发渲染，
+        //但是React的setState本身并不能处理nested object的更新。
+        //若该函数不再包含hideTreeNodeAttrModal()函数，则需要另想办法更新this.state.data！
+        let eachKey = this.state.treeNodeKey.split('-');
+        let count = 0;
+        const findTreeNodeKey = (node) => {
+            if (count === eachKey.length - 1) {
+                //找到treeNodeKey对应树结点，更新数据
+                if (obj.hasOwnProperty('_text')) {
+                    console.log("obj ",obj);
+                    node[eachKey[count]]._text = obj._text;
+                }
+                //若以后需修改_attributes属性，则在此添加代码
+                return;
+            }
+            findTreeNodeKey(node[eachKey[count++]].children);
+        };
+        findTreeNodeKey(this.state.data);
+        this.hideTreeNodeAttrModal();
+    }
+
+    render() {
+        console.log("tree:", this.state.data);
+        return (
+            <div className="w-100">
+                <div className="card border rounded-0"><span className="text-center m-1">云欧拉仿真</span>
+                    <hr className="m-0" />
+                    <div className="card-body pt-2">
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
+                        <div className="pt-2">
+                            <Tree >
+                                {this.renderTreeNodes(this.state.data)}
+                            </Tree>
+                        </div>
+
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload}><span className="glyphicon glyphicon-plus">上传</span></button>
+                    </div>
+                    <div >
+                        <PhysikaTreeNodeAttrModal
+                            treeNodeAttr={this.state.treeNodeAttr}
+                            treeNodeText={this.state.treeNodeText}
+                            visible={this.state.isTreeNodeAttrModalShow}
+                            hideModal={this.hideTreeNodeAttrModal}
+                            changeData={(obj) => this.changeData(obj)}
+                        ></PhysikaTreeNodeAttrModal>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+}
+
+export {
+    CloudEulerSimulation as Test
 }

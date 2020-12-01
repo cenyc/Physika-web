@@ -5,7 +5,8 @@ import ReactDOM from 'react-dom';
 import 'normalize.css';
 import $ from 'jquery';
 
-import { Test } from './test'
+//import { Test } from './test'
+import {Test} from './CloudEuler'
 import { PhysikaClothSimulation } from './Cloth'
 
 class LeftNav extends Component {

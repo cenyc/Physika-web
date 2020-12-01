@@ -24,6 +24,8 @@ import { physikaUploadConfig } from '../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from './TreeNodeAttrModal'
 import { physikaLoadObj } from '../IO/LoadObj';
 
+import GenericRenderWindow from 'vtk.js/Sources/Rendering/Misc/GenericRenderWindow'
+
 /*
 //是否需要给treeNodeAttr设置默认值?
 treeNodeAttr: {
@@ -117,6 +119,17 @@ class ClothSimulation extends React.Component {
     }
 
     componentDidMount() {
+        /*
+        this.genericRenderWindow = GenericRenderWindow.newInstance({
+            background: [0, 0, 0],
+            listenWindowResize: true,
+            rootContainer: geoViewer,
+        });
+        this.renderer = this.genericRenderWindow.getRenderer();
+        this.renderWindow = this.genericRenderWindow.getRenderWindow();
+        this.genericRenderWindow.setContainer(geoViewer);
+        this.genericRenderWindow.resize();
+        */
         //---------初始化渲染窗口
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
@@ -406,7 +419,7 @@ class ClothSimulation extends React.Component {
     drawFrame = () => {
         if (this.frameSeqIndex === this.frameSeq.length) {
             cancelAnimationFrame(this.rAF);
-            this.frameSeqIndex=0;
+            this.frameSeqIndex = 0;
             console.log("动画结束");
             return;
         }
@@ -415,7 +428,7 @@ class ClothSimulation extends React.Component {
         this.rAF = requestAnimationFrame(this.drawFrame);
     }
 
-    stopDrawFrame=()=>{
+    stopDrawFrame = () => {
         cancelAnimationFrame(this.rAF);
         console.log("动画暂停");
     }
@@ -454,5 +467,5 @@ class ClothSimulation extends React.Component {
 }
 
 export {
-    ClothSimulation as Test
+    //ClothSimulation as Test
 };

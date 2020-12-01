@@ -24,15 +24,6 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadObj } from '../../IO/LoadObj';
 
-/*
-//是否需要给treeNodeAttr设置默认值?
-treeNodeAttr: {
-    name: "",
-    class: "",
-    type: ""
-},
-*/
-
 //屏蔽全局浏览器右键菜单
 document.oncontextmenu = function () {
     return false;
@@ -303,7 +294,7 @@ class ClothSimulation extends React.Component {
         const findTreeNodeKey = (node) => {
             if (count === eachKey.length - 1) {
                 //找到treeNodeKey对应树结点，更新数据
-                if (!!obj._text) {
+                if (obj.hasOwnProperty('_text')) {
                     node[eachKey[count]]._text = obj._text;
                 }
                 //若以后需修改_attributes属性，则在此添加代码

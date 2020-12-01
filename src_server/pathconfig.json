@@ -1,14 +1,14 @@
 {
     "cloth":{
         "simType":1,
-        "initConfigFileName":"./data/config_file/initload/space-shuttle.xml",
+        "initConfigFileName":"./data/config_file/initialization/space-shuttle_i.xml",
         "callPythonFileName":"./src_server/test.py",
-        "uploadFileDirectory":"./data/config_file/upload/"
+        "uploadFileDirectory":"./data/user_upload_file"
     },
     "fluid":{
         "simType":2,
-        "initConfigFileName":"./data/config_file/initload/",
+        "initConfigFileName":"./data/config_file/initialization/euler_i.xml",
         "callPythonFileName":"./src_server/test.py",
-        "uploadFileDirectory":"./data/config_file/upload/"
+        "uploadFileDirectory":"./data/user_upload_file"
     }
 }

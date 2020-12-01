@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { Tree, Button, Modal, Form, InputNumber, Input, Row, Col } from 'antd';
+import { Button, Modal, Form, InputNumber, Input, Row, Col, Select, Switch } from 'antd';
 
-import { deepCopy, isObject } from '../../Common';
+const { Option } = Select;
 
 //TreeNodeAttrModal组件中Form的样式
 const formItemLayout = {
@@ -13,6 +13,7 @@ const formItemLayout = {
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
     const [form] = Form.useForm();
     const formInitialValues = {};
+    const selectOptions = [];
 
     useEffect(() => {
         if (form && visible) {
@@ -21,22 +22,49 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         }
     }, [visible]);
 
+    function isDisabled() {
+        return (treeNodeAttr.disabled === 'true');
+    }
+
+    function setSelectOptions() {
+        treeNodeAttr.enum.split(' ').forEach(item => {
+            selectOptions.push(item);
+        });
+        //注意大小括号：Array.map(item=>(不需要return))；Array.map(item=>{需要return}) 
+        return selectOptions.map((value, index) => (
+            <Option value={index} key={index}>{value}</Option>
+        ));
+    }
+
     //设置Form的初始化值
     function setFormInitialValues() {
         formInitialValues.name = treeNodeAttr.name;
         formInitialValues.class = treeNodeAttr.class;
-        //当结点不含有type时，formInitialValues.type=undefined！
-        formInitialValues.type = treeNodeAttr.type;
-        if (!!treeNodeText) {
+        if (treeNodeText !== undefined) {
             switch (treeNodeAttr.class) {
                 case 'Real':
                     formInitialValues.real = treeNodeText;
                     break;
+                case 'Unsigned':
+                    formInitialValues.unsigned = treeNodeText;
+                    break;
+                case 'Vector2f':
+                    let vector2f = treeNodeText.split(' ');
+                    formInitialValues.v2f_X = vector2f[0];
+                    formInitialValues.v2f_Y = vector2f[1];
+                    break;
                 case 'Vector3f':
                     let vector3f = treeNodeText.split(' ');
-                    formInitialValues.realX = vector3f[0];
-                    formInitialValues.realY = vector3f[1];
-                    formInitialValues.realZ = vector3f[2];
+                    formInitialValues.v3f_X = vector3f[0];
+                    formInitialValues.v3f_Y = vector3f[1];
+                    formInitialValues.v3f_Z = vector3f[2];
+                    break;
+                case 'Enum':
+                    formInitialValues.enum_value = selectOptions[treeNodeText];
+                    break;
+                case 'Bool':
+                    formInitialValues.checked = (treeNodeText === 'true');
+                    break;
             }
         }
     }
@@ -45,22 +73,33 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     function returnTreeNodeData(value) {
         let obj = {
             _attributes: treeNodeAttr,
-            _text: ''
+            //_text: ''
         };
-        Object.keys(obj._attributes).forEach((item) => {
-            //这里不能点引用item，会出大问题！（会将item作为一个新成员加入到obj._attributes中）
-            obj._attributes[item] = value[item];
-        });
-        if (value.hasOwnProperty('real')) {
-            obj._text = value.real;
+
+        if (treeNodeText !== undefined) {
+            switch (treeNodeAttr.class) {
+                case 'Real':
+                    obj._text = value.real + '';
+                    break;
+                case 'Unsigned':
+                    obj._text = value.unsigned + '';
+                    break;
+                case 'Vector2f':
+                    obj._text = value.v2f_X + ' ' + value.v2f_Y;
+                    break;
+                case 'Vector3f':
+                    obj._text = value.v3f_X + ' ' + value.v3f_Y + ' ' + value.v3f_Z;
+                    break;
+                case 'Enum':
+                    obj._text = value.enum_value + '';
+                    break;
+                case 'Bool':
+                    obj._text = value.checked ? 'true' : 'false';
+                    break;
+            }
         }
-        else if (value.hasOwnProperty('realX')) {
-            obj._text = value.realX + ' ' + value.realY + ' ' + value.realZ;
-        }
-        else {
-            console.log("There is no _text in this treeNode.");
-        }
-        changeData(deepCopy(obj));
+
+        changeData(obj);
     }
 
     return (
@@ -93,17 +132,40 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     <Input disabled={true} />
                 </Form.Item>
                 {
-                    (!!treeNodeAttr.type) &&
-                    <Form.Item name="type" label="Type" >
-                        <Input disabled={true} />
-                    </Form.Item>
-                }
-                {
                     (treeNodeAttr.class === 'Real') &&
                     <Form.Item name="real" label="Value"
                         rules={[{ required: true, message: 'Value cannot be empty!' }]}
                     >
-                        <InputNumber min={0} max={10000} step={0.1} />
+                        <InputNumber min={0} max={10000} step={0.1} disabled={isDisabled()} />
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'Unsigned') &&
+                    <Form.Item name='unsigned' label="Value"
+                        rules={[{ required: true, message: 'Value cannot be empty!' }]}
+                    >
+                        <InputNumber formatter={value => `${value}`.replace(/[^\d]+/g, '')} parser={value => value.replace(/[^\d]+/g, '')} disabled={isDisabled()} />
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'Vector2f') &&
+                    <Form.Item label="Value">
+                        <Row>
+                            <Col span={8}>
+                                <Form.Item name="v2f_X" label="X"
+                                    rules={[{ required: true, message: 'X cannot be empty!' }]}
+                                >
+                                    <InputNumber min={1} max={100} step={1} disabled={isDisabled()} />
+                                </Form.Item>
+                            </Col>
+                            <Col span={8}>
+                                <Form.Item name="v2f_Y" label="Y"
+                                    rules={[{ required: true, message: 'Y cannot be empty!' }]}
+                                >
+                                    <InputNumber min={1} max={100} step={1} disabled={isDisabled()} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
                     </Form.Item>
                 }
                 {
@@ -111,27 +173,53 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     <Form.Item label="Value">
                         <Row>
                             <Col span={8}>
-                                <Form.Item name="realX" label="X"
+                                <Form.Item name="v3f_X" label="X"
                                     rules={[{ required: true, message: 'X cannot be empty!' }]}
                                 >
-                                    <InputNumber min={-10} max={10} step={0.1} />
+                                    <InputNumber min={-10} max={10} step={0.1} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                                <Form.Item name="realY" label="Y"
+                                <Form.Item name="v3f_Y" label="Y"
                                     rules={[{ required: true, message: 'Y cannot be empty!' }]}
                                 >
-                                    <InputNumber min={-10} max={10} step={0.1} />
+                                    <InputNumber min={-10} max={10} step={0.1} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                                <Form.Item name="realZ" label="Z"
+                                <Form.Item name="v3f_Z" label="Z"
                                     rules={[{ required: true, message: 'Z cannot be empty!' }]}
                                 >
-                                    <InputNumber min={-10} max={10} step={0.1} />
+                                    <InputNumber min={-10} max={10} step={0.1} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                         </Row>
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'Enum') &&
+                    <Form.Item name="enum_value" label="Type"
+                        rules={[{ required: true }]}
+                    >
+                        <Select
+                            disabled={isDisabled()}
+                        >
+                            {setSelectOptions()}
+                        </Select>
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'Bool') &&
+                    <Form.Item name="checked" label="Switch"
+                        valuePropName="checked"
+                    >
+                        <Switch
+                            checkedChildren="Y"
+                            unCheckedChildren="N"
+                            disabled={isDisabled()}
+                        >
+                            {treeNodeAttr.name}
+                        </Switch>
                     </Form.Item>
                 }
             </Form>
