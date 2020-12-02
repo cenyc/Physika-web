@@ -9,6 +9,8 @@ const { spawn } = require('child_process');
 //加载xml
 const xml2js = require('xml-js');
 const fs = require('fs');
+//用于存储用户上传文件
+const multer = require('multer');
 
 const app = express();
 
@@ -117,23 +119,31 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
     });
 })
 
-/*
-//引入multer
-const multer = require('multer');
-const { resolve, parse } = require('path');
-
 const storage = multer.diskStorage({
     // destination:'public/uploads/'+new Date().getFullYear() + (new Date().getMonth()+1) + new Date().getDate(),
-    destination: './uploads/' + new Date().getFullYear() + (new Date().getMonth() + 1) + new Date().getDate(),
+    destination: function (req, file, cb){
+        let uploadFileDirectory=path.join(__dirname, '../data') + '/user_upload_file'
+        cb(null,uploadFileDirectory);
+    },
     filename(req, file, cb) {
-        const filenameArr = file.originalname.split('.');
-        cb(null, Date.now() + '.' + filenameArr[filenameArr.length - 1]);
+        //const filenameArr = file.originalname.split('.');
+        cb(null, file.originalname);
     }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
-app.use('/upload', upload.any());
+app.post('/uploadFile', upload.any(), function (req, res, next) {
+    const file = req.file
+    console.log(file);
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    res.send(file)
+});
+/*
 //在req.files中获取文件数据
 app.post('/upload', function (req, res) {
 
@@ -147,7 +157,7 @@ app.post('/upload', function (req, res) {
 
 //视图引擎设定
 //设置views路径
-app.set('views', path.join(__dirname,'../static/view'));
+app.set('views', path.join(__dirname, '../static/view'));
 //模板采用html作为扩展名
 app.set('view engine', 'html');
 //对于以html扩展名结尾的模板，采用ejs引擎

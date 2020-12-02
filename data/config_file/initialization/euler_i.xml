@@ -21,4 +21,7 @@
         <CFLMethod class="Bool" name="使用CFL条件" disabled="true">true</CFLMethod>
         <Frame class="Unsigned" name="模拟帧数" disabled="false">50</Frame>
     </Simulation>
+    <Upload class="" name="用户上传">
+        <ImageFile class="File" type="image" name="图片文件" disabled="false">null</ImageFile>
+    </Upload>
 </Scene>

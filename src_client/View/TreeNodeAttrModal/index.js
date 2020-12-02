@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Button, Modal, Form, InputNumber, Input, Row, Col, Select, Switch } from 'antd';
+import { Button, Modal, Form, InputNumber, Input, Row, Col, Select, Switch, Upload } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -8,6 +9,16 @@ const formItemLayout = {
     labelCol: { span: 4 },
     wrapperCol: { span: 20 },
 };
+
+const normFile = (e) => {
+    console.log('Upload event:', e);
+  
+    if (Array.isArray(e)) {
+      return e;
+    }
+  
+    return e && e.fileList;
+  };
 
 //使用Hook实现的树结点属性显示Modal
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
@@ -65,6 +76,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                 case 'Bool':
                     formInitialValues.checked = (treeNodeText === 'true');
                     break;
+                case 'File':
+                    formInitialValues.upload = (treeNodeText==='null')?[]:treeNodeText;
             }
         }
     }
@@ -220,6 +233,17 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         >
                             {treeNodeAttr.name}
                         </Switch>
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'File') &&
+                    <Form.Item name="upload" label="Upload"
+                        valuePropName="fileList"
+                        getValueFromEvent={normFile}
+                    >
+                        <Upload action="/uploadFile" listType="picture">
+                            <Button icon={<UploadOutlined />}>Click to upload</Button>
+                        </Upload>
                     </Form.Item>
                 }
             </Form>

@@ -57,7 +57,7 @@ function buildNode(node, tag) {
 
 //构建符合ant Tree数据结构data
 function buildDataStructure(config) {
-    //注意传入buildNode函数中的对象为initConfig.Node!（初始化传入的是根节点的tag）
+    //注意传入buildNode函数中的对象为initConfig.Scene!（初始化传入的是根节点的tag）
     let childNode = buildNode(config.Scene, 'Scene');
     console.log(childNode);
 
