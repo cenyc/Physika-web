@@ -52,7 +52,7 @@ class LeftNav extends Component {
                 <div className="container-fluid d-flex flex-column p-0">
                     <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
                         <div className="sidebar-brand-icon rotate-n-15"></div>
-                        <div className="sidebar-brand-text mx-3"><span>Physika Web</span></div>
+                        <div className="sidebar-brand-text mx-3"><span>云景仿真平台</span></div>
                     </a>
                     <hr className="sidebar-divider my-0" />
                     <div className="container">
@@ -122,8 +122,6 @@ function init() {
 
     }
 }
-
-
 
 export { init }
 
