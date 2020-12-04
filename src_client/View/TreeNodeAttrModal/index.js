@@ -12,20 +12,20 @@ const formItemLayout = {
 
 const normFile = (e) => {
     console.log('Upload event:', e);
-  
+
     if (Array.isArray(e)) {
-      return e;
+        return e;
     }
-  
+
     return e && e.fileList;
-  };
+};
 
 //使用Hook实现的树结点属性显示Modal
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
     const [form] = Form.useForm();
     const formInitialValues = {};
     const selectOptions = [];
-
+    const ooo={x:123};
     useEffect(() => {
         if (form && visible) {
             setFormInitialValues();
@@ -77,7 +77,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     formInitialValues.checked = (treeNodeText === 'true');
                     break;
                 case 'File':
-                    formInitialValues.upload = (treeNodeText==='null')?[]:treeNodeText;
+                    formInitialValues.upload = (treeNodeText === 'null') ? [] : treeNodeText;
             }
         }
     }
@@ -109,6 +109,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                 case 'Bool':
                     obj._text = value.checked ? 'true' : 'false';
                     break;
+                case 'File':
+                    obj._text = value.upload;
             }
         }
 
@@ -241,7 +243,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         valuePropName="fileList"
                         getValueFromEvent={normFile}
                     >
-                        <Upload action="/uploadFile" listType="picture">
+                        <Upload action="/uploadFile" listType="picture" data={ooo}>
                             <Button icon={<UploadOutlined />}>Click to upload</Button>
                         </Upload>
                     </Form.Item>

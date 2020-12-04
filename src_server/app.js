@@ -122,10 +122,11 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
 const storage = multer.diskStorage({
     // destination:'public/uploads/'+new Date().getFullYear() + (new Date().getMonth()+1) + new Date().getDate(),
     destination: function (req, file, cb){
+        console.log(req);
         let uploadFileDirectory=path.join(__dirname, '../data') + '/user_upload_file'
         cb(null,uploadFileDirectory);
     },
-    filename(req, file, cb) {
+    filename: function(req, file, cb) {
         //const filenameArr = file.originalname.split('.');
         cb(null, file.originalname);
     }
@@ -134,14 +135,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.post('/uploadFile', upload.any(), function (req, res, next) {
-    const file = req.file
-    console.log(file);
-    if (!file) {
-        const error = new Error('Please upload a file')
-        error.httpStatusCode = 400
-        return next(error)
+    const files = req.files;
+    //console.log(files);
+    if (!files) {
+        const error = new Error('Please upload a file');
+        error.httpStatusCode = 400;
+        return next(error);
     }
-    res.send(file)
+    res.send(files)
 });
 /*
 //在req.files中获取文件数据
