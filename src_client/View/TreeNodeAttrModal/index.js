@@ -10,22 +10,28 @@ const formItemLayout = {
     wrapperCol: { span: 20 },
 };
 
+//捕获upload事件对象
 const normFile = (e) => {
     console.log('Upload event:', e);
-
     if (Array.isArray(e)) {
         return e;
     }
-
+    if (e.fileList.length > 1) {
+        e.fileList.shift();
+    }
     return e && e.fileList;
 };
 
 //使用Hook实现的树结点属性显示Modal
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
     const [form] = Form.useForm();
+    //使用treeNodeText为form赋初值
     const formInitialValues = {};
+    //存储Select控件的Options
     const selectOptions = [];
-    const ooo={x:123};
+    //upload附带body内容
+    const uploadBodyContent = { x: 123 };
+
     useEffect(() => {
         if (form && visible) {
             setFormInitialValues();
@@ -242,8 +248,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     <Form.Item name="upload" label="Upload"
                         valuePropName="fileList"
                         getValueFromEvent={normFile}
+                        rules={[{ required: true, message: 'Please upload the corresponding file!' }]}
                     >
-                        <Upload action="/uploadFile" listType="picture" data={ooo}>
+                        <Upload action="/uploadFile" listType="picture" data={uploadBodyContent}>
                             <Button icon={<UploadOutlined />}>Click to upload</Button>
                         </Upload>
                     </Form.Item>

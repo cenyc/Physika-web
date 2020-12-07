@@ -76,22 +76,22 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
         //通过key获取对象的value：若key是变量，则只能使用obj[key]；
         //若key是唯一固定值，则可以使用obj['key']或obj.key。
         //获取上传配置文件所在目录
-        let uploadFileDirectory = config[reqBody.simType]['uploadFileDirectory'];
+        let uploadConfigFileDirectory = config[reqBody.simType]['uploadConfigFileDirectory'];
         //获取python脚本路径
         let callPythonFileName = config[reqBody.simType]['callPythonFileName'];
         //设置上传配置文件的文件名
-        let uploadFileName = uploadFileDirectory +
+        let uploadConfigFileName = uploadConfigFileDirectory + '/' +
             new Date().getFullYear() + (new Date().getMonth() + 1) + new Date().getDate() + '_' +
             new Date().getTime() + 'username' + '.xml';
         //写上传配置文件
-        fs.writeFile(uploadFileName, xml, (err) => {
+        fs.writeFile(uploadConfigFileName, xml, (err) => {
             if (err) {
                 return console.error(err);
             }
             //如果写成功则调用对应python脚本
             //spawn第二个参数是一个数组（array[0]:python脚本路径，array[1]:接受的第一个参数）
             let resLoadFileName;
-            const callPython = spawn('python', [callPythonFileName, uploadFileName]);
+            const callPython = spawn('python', [callPythonFileName, uploadConfigFileName]);
             callPython.stdout.on('data', function (data) {
                 //当脚本在控制台打印内容并返回收集输出数据的缓冲区时，将发出此事件
                 //为了将缓冲区数据转换为可读形式，使用了toString()。
@@ -121,12 +121,12 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
 
 const storage = multer.diskStorage({
     // destination:'public/uploads/'+new Date().getFullYear() + (new Date().getMonth()+1) + new Date().getDate(),
-    destination: function (req, file, cb){
-        console.log(req);
-        let uploadFileDirectory=path.join(__dirname, '../data') + '/user_upload_file'
-        cb(null,uploadFileDirectory);
+    destination: function (req, file, cb) {
+        console.log(req.body.x);
+        let uploadFileDirectory = path.join(__dirname, '../data') + '/user_file'
+        cb(null, uploadFileDirectory);
     },
-    filename: function(req, file, cb) {
+    filename: function (req, file, cb) {
         //const filenameArr = file.originalname.split('.');
         cb(null, file.originalname);
     }

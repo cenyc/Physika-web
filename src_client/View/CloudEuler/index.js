@@ -15,7 +15,24 @@ import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/Orien
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
-import {physikaLoadVti} from '../../IO/LoadVti'
+import { physikaLoadVti } from '../../IO/LoadVti'
+
+function getOrientationMarkerWidget(renderWindow) {
+    const axesActor = vtkAxesActor.newInstance();
+    const orientationMarkerWidget = vtkOrientationMarkerWidget.newInstance({
+        actor: axesActor,
+        interactor: renderWindow.getInteractor(),
+    });
+    orientationMarkerWidget.setViewportCorner(
+        vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT
+    );
+    //控制控件大小
+    orientationMarkerWidget.setViewportSize(0.3);
+    orientationMarkerWidget.setMinPixelSize(100);
+    orientationMarkerWidget.setMaxPixelSize(300);
+
+    return orientationMarkerWidget;
+}
 
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
@@ -26,7 +43,8 @@ class CloudEulerSimulation extends React.Component {
             isTreeNodeAttrModalShow: false,
             treeNodeAttr: {},
             treeNodeText: "",
-            treeNodeKey: -1
+            treeNodeKey: -1,
+            uploadDisabled: true
 
         };
     }
@@ -45,31 +63,14 @@ class CloudEulerSimulation extends React.Component {
         //frameSeq保存了每帧场景，用于实现动画
         this.frameSeq = [];
 
-        //------------------------
         /*
         //添加坐标轴：X：红，Y：黄，Z: 绿
         this.axesActor = vtkAxesActor.newInstance();
         this.renderer.addActor(this.axesActor);
         */
-
         //--------添加旋转控制控件
-        this.axesActor = vtkAxesActor.newInstance();
-        const orientationMarkerWidget = vtkOrientationMarkerWidget.newInstance({
-            actor: this.axesActor,
-            interactor: this.renderWindow.getInteractor(),
-        });
-        orientationMarkerWidget.setEnabled(true);
-        orientationMarkerWidget.setViewportCorner(
-            vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT
-        );
-        //控制控件大小
-        orientationMarkerWidget.setViewportSize(0.3);
-        orientationMarkerWidget.setMinPixelSize(100);
-        orientationMarkerWidget.setMaxPixelSize(300);
-        //-----------------------
-
-        this.renderer.resetCamera();
-        this.renderWindow.render();
+        this.orientationMarkerWidget=getOrientationMarkerWidget(this.renderWindow);
+    
     }
 
     /*
@@ -82,21 +83,29 @@ class CloudEulerSimulation extends React.Component {
         physikaLoadConfig('fluid')
             .then(res => {
                 console.log("成功获取初始化配置");
-                this.setState({data:res});
+                this.setState({
+                    data: res,
+                    uploadDisabled: false
+                });
                 //除了加载初始化配置文件还需要什么？
+
             })
-            .catch(res=>{
+            .catch(res => {
                 console.log("Error loading: ", err);
             })
     }
 
     //从配置文件中提取模型的url
     extractURL = (data) => {
-        for (const item of data[0].children) {
-            if (item.tag == 'Path') {
-                const url = item._text;
-                const ext = url.substring(url.lastIndexOf('.') + 1);
-                return { fileURL: url, ext: ext };
+        for (const item1 of data[0].children) {
+            if (item1.tag === 'SimulationRun') {
+                for (const item2 of item1.children) {
+                    if (item2.tag == 'Path') {
+                        const url = item2._text;
+                        const ext = url.substring(url.lastIndexOf('.') + 1);
+                        return { fileURL: url, ext: ext };
+                    }
+                }
             }
         }
         console.log("throw error");
@@ -116,10 +125,6 @@ class CloudEulerSimulation extends React.Component {
                 {
                     (item.tag === 'Node') &&
                     <BiPointer type="regular" onClick={() => this.cellPick(item)}></BiPointer>
-                }
-                {
-                    (item.tag === 'Cell') &&
-                    <BiMinus type="regular" onClick={() => this.deleteNode(item.key)}></BiMinus>
                 }
             </div>
         );
@@ -163,7 +168,7 @@ class CloudEulerSimulation extends React.Component {
             if (count === eachKey.length - 1) {
                 //找到treeNodeKey对应树结点，更新数据
                 if (obj.hasOwnProperty('_text')) {
-                    console.log("obj ",obj);
+                    console.log("obj ", obj);
                     node[eachKey[count]]._text = obj._text;
                 }
                 //若以后需修改_attributes属性，则在此添加代码
@@ -175,10 +180,43 @@ class CloudEulerSimulation extends React.Component {
         this.hideTreeNodeAttrModal();
     }
 
+    resetScene = (newScene) => {
+        //移除旧场景actor
+        this.renderer.removeActor(this.curScene.actor);
+        this.curScene = newScene;
+        console.log(this.curScene);
+        //添加新场景actor
+        this.renderer.addActor(this.curScene.actor);
+        this.renderer.resetCamera();
+        this.renderWindow.render();
+    }
+
+    upload = () => {
+        //第一个参数data，第二个参数仿真类型
+        physikaUploadConfig(this.state.data, 'fluid')
+            .then(res => {
+                console.log("成功上传配置并获取到仿真结果配置");
+                console.log(res);
+                let options = this.extractURL(res);
+                return Promise.all([physikaLoadVti(options), res]);
+            })
+            .then(res => {
+                console.log("成功获取仿真结果模型", res);
+                this.frameSeq = res[0];
+                this.resetScene(this.frameSeq[0]);
+                this.setState({ data: res[1] });
+                //显示方向标记部件
+                this.orientationMarkerWidget.setEnabled(true);
+            })
+            .catch(err => {
+                console.log("Error uploading: ", err);
+            });
+    }
+
     render() {
         console.log("tree:", this.state.data);
         return (
-            <div className="w-100">
+            <div className="w-100" >
                 <div className="card border rounded-0"><span className="text-center m-1">云欧拉仿真</span>
                     <hr className="m-0" />
                     <div className="card-body pt-2">
@@ -189,7 +227,7 @@ class CloudEulerSimulation extends React.Component {
                             </Tree>
                         </div>
 
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload}><span className="glyphicon glyphicon-plus">上传</span></button>
+                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload} disabled={this.state.uploadDisabled}><span className="glyphicon glyphicon-plus">上传</span></button>
                     </div>
                     <div >
                         <PhysikaTreeNodeAttrModal

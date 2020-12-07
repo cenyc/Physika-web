@@ -10,6 +10,11 @@ const buildJson = (father, children) => children.forEach(item => {
         buildJson(item, item.children);
         delete item.children;
     }
+    //2020.12.7 使用文件名代替File标签中的_text内容
+    if(item.tag==='File'){
+        item._text=item._text[0].name;
+    }
+
     delete item.key;
     delete item.tag;
 });

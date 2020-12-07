@@ -21,9 +21,9 @@
         <CFLMethod class="Bool" name="使用CFL条件" disabled="true">1</CFLMethod>
         <Frame class="Unsigned" name="模拟帧数" disabled="false">50</Frame>
     </Simulation>
-    <SimulationRun>
-        <Path class="String" name="仿真结果路径" disabled="true">density.vti</Path>
-        <Frame class="" name="帧数"></Frame>
+    <SimulationRun class="" name="模拟运行结果">
+        <Path class="String" name="仿真结果路径" disabled="true">./data/visualize_data/head-binary-zlib.vti</Path>
+        <Frame class="Unsigned" name="帧数"></Frame>
         <Animation class="" name="动画"></Animation>
     </SimulationRun>
 </Scene>

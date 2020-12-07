@@ -22,6 +22,6 @@
         <Frame class="Unsigned" name="模拟帧数" disabled="false">50</Frame>
     </Simulation>
     <Upload class="" name="用户上传">
-        <ImageFile class="File" type="image" name="图片文件" disabled="false">null</ImageFile>
+        <File class="File" type="image" name="图片文件" disabled="false">null</File>
     </Upload>
 </Scene>

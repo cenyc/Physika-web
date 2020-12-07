@@ -2,8 +2,6 @@ node_modules/
 
 dist/
 
-uploads/
-
 .vscode/
 
 data/config_file/upload

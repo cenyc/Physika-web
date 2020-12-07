@@ -2,13 +2,15 @@
     "cloth":{
         "simType":1,
         "initConfigFileName":"./data/config_file/initialization/space-shuttle_i.xml",
-        "callPythonFileName":"./src_server/test.py",
-        "uploadFileDirectory":"./data/user_upload_file"
+        "uploadConfigFileDirectory":"./data/config_file/upload",
+        "callPythonFileName":"./src_server/Python/cloth.py",
+        "uploadUserFileDirectory":"./data/user_file"
     },
     "fluid":{
         "simType":2,
         "initConfigFileName":"./data/config_file/initialization/euler_i.xml",
-        "callPythonFileName":"./src_server/test.py",
-        "uploadFileDirectory":"./data/user_upload_file"
+        "uploadConfigFileDirectory":"./data/config_file/upload",
+        "callPythonFileName":"./src_server/Python/fluid.py",
+        "uploadUserFileDirectory":"./data/user_file"
     }
 }
