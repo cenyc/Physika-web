@@ -12,6 +12,9 @@ import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
 //旋转控制控件
 import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
 
+import vtkVolumeController from 'vtk.js/Sources/Interaction/UI/VolumeController';
+//import style from './VolumeViewer.module.css';
+
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
@@ -69,8 +72,8 @@ class CloudEulerSimulation extends React.Component {
         this.renderer.addActor(this.axesActor);
         */
         //--------添加旋转控制控件
-        this.orientationMarkerWidget=getOrientationMarkerWidget(this.renderWindow);
-    
+        this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
+
     }
 
     /*
@@ -207,6 +210,16 @@ class CloudEulerSimulation extends React.Component {
                 this.setState({ data: res[1] });
                 //显示方向标记部件
                 this.orientationMarkerWidget.setEnabled(true);
+
+                
+                const controllerWidget = vtkVolumeController.newInstance({
+                    size: [400, 150],
+                    rescaleColorMap: true,
+                });
+                const isBackgroundDark = true;
+                controllerWidget.setContainer(widget);
+                controllerWidget.setupContent(this.renderWindow, this.curScene.actor, isBackgroundDark);
+                
             })
             .catch(err => {
                 console.log("Error uploading: ", err);
@@ -238,6 +251,7 @@ class CloudEulerSimulation extends React.Component {
                             changeData={(obj) => this.changeData(obj)}
                         ></PhysikaTreeNodeAttrModal>
                     </div>
+                    <div id="widget"></div>
                 </div>
             </div>
         );
