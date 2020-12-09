@@ -24,10 +24,18 @@ module.exports = {
         rules: [
             { test: entry, loader: "expose-loader?MyWebApp" },
             {
-                test:/\.js$/,
-                loader:'babel-loader',
-                include:path.join(__dirname,'src_client'),
-                exclude:/node_modules/
+                test: /\.js$/,
+                loader: 'babel-loader',
+                include: path.join(__dirname, 'src_client'),
+                exclude: /node_modules/
+            },
+            {
+                test: /\.worker\.js$/,
+                loader: 'worker-loader',
+                options: {
+                    inline: true,
+                    fallback: false
+                },
             },
         ].concat(rules),
     },
