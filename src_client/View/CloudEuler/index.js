@@ -1,7 +1,6 @@
 import 'bootstrap';
 import React from 'react';
 import { Tree, Button } from 'antd';
-import { BiShow, BiHide, BiPointer, BiMinus } from 'react-icons/bi'
 const { TreeNode } = Tree;
 //antd样式
 import 'antd/dist/antd.css';
@@ -13,7 +12,6 @@ import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
 import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
 
 import vtkVolumeController from 'vtk.js/Sources/Interaction/UI/VolumeController';
-//import style from './VolumeViewer.module.css';
 
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
@@ -57,7 +55,7 @@ class CloudEulerSimulation extends React.Component {
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
-            containerStyle: { height: '100%', width: '100%', position: 'absolute' }
+            //containerStyle: { height: '100%', width: '100%', position: 'absolute' }
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
@@ -118,17 +116,7 @@ class CloudEulerSimulation extends React.Component {
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
-                {
-                    (item.tag === 'Node') &&
-                    (this.curScene[item._attributes.name].actor.getVisibility()
-                        ? <BiShow type="regular" onClick={() => this.changeVisible(item)}></BiShow>
-                        : <BiHide type="regular" onClick={() => this.changeVisible(item)}></BiHide>)
-                }
                 <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
-                {
-                    (item.tag === 'Node') &&
-                    <BiPointer type="regular" onClick={() => this.cellPick(item)}></BiPointer>
-                }
             </div>
         );
 
@@ -211,15 +199,24 @@ class CloudEulerSimulation extends React.Component {
                 //显示方向标记部件
                 this.orientationMarkerWidget.setEnabled(true);
 
-                
+                //动态删除添加volume这个div
+                let geoViewer = document.getElementById("geoViewer");
+                if (document.getElementById("volumeController")) {
+                    geoViewer.removeChild(document.getElementById("volumeController"));
+                }
+                let volumeControllerContainer = document.createElement("div");
+                volumeControllerContainer.id="volumeController";
+                geoViewer.append(volumeControllerContainer);
+                //设置volumeController
                 const controllerWidget = vtkVolumeController.newInstance({
                     size: [400, 150],
                     rescaleColorMap: true,
                 });
                 const isBackgroundDark = true;
-                controllerWidget.setContainer(widget);
+                controllerWidget.setContainer(volumeControllerContainer);
                 controllerWidget.setupContent(this.renderWindow, this.curScene.actor, isBackgroundDark);
                 
+
             })
             .catch(err => {
                 console.log("Error uploading: ", err);
@@ -251,7 +248,6 @@ class CloudEulerSimulation extends React.Component {
                             changeData={(obj) => this.changeData(obj)}
                         ></PhysikaTreeNodeAttrModal>
                     </div>
-                    <div id="widget"></div>
                 </div>
             </div>
         );

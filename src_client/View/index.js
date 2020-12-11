@@ -39,7 +39,9 @@ class LeftNav extends Component {
             if (document.getElementById("geoViewer")) {
                 right_container.removeChild(document.getElementById("geoViewer"));
             }
-            right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
+            //注意style样式，决定了volumeController的位置
+            right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer" style="height: 100%; width: 100%; position: absolute; cursor: pointer;"></div>';
+            //right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
             ReactDOM.render(<Test />, document.getElementById("createTree"));
         }
     }
