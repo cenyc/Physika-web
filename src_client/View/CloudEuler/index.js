@@ -36,7 +36,7 @@ class CloudEulerSimulation extends React.Component {
             background: [0, 0, 0],
             rootContainer: geoViewer,
             //关键操作！！！能把canvas大小限制在div里了！
-            containerStyle: { height: 'inherit', width: 'inherit', position: 'relative' }
+            containerStyle: { height: 'inherit', width: 'inherit' }
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();

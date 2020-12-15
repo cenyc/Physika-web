@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Layout, Menu, Dropdown, Button,Row, Col} from 'antd';
+import { Layout, Menu, Dropdown, Button, Row, Col } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 
 import '../../static/css/antdesign.css'
@@ -39,7 +39,7 @@ class WebLayout extends React.Component {
             <Layout>
                 <Header className="header" style={{ backgroundColor: "#fff" }}>
                     <Row>
-                        <Col span={3} style={{ display: "flex", justifyContent: "center", alignItems: "center"}}>
+                        <Col span={3} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                             <div className="logo" style={{ textAlign: "center", fontSize: "20px" }}>
                                 云仿真平台
                             </div>
@@ -74,11 +74,11 @@ class WebLayout extends React.Component {
                                 minHeight: 280,
                             }}
                         >
-                            <div id="geoViewer" style={{ height: "100%", width: "100%"}}></div>
+                            <div id="geoViewer" style={{ height: "100%", width: "100%", position: "relative" }}></div>
                         </Content>
                     </Layout>
                 </Layout>
-            </Layout>
+            </Layout >
         );
     }
 }

@@ -103,7 +103,7 @@ class ClothSimulation extends React.Component {
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
-            containerStyle: { height: 'inherit', width: 'inherit', position: 'relative' }
+            containerStyle: { height: 'inherit', width: 'inherit' }
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
