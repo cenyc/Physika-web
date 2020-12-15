@@ -6,10 +6,6 @@ const { TreeNode } = Tree;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-//坐标轴
-import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
-//旋转控制控件
-import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
 
 import vtkVolumeController from 'vtk.js/Sources/Interaction/UI/VolumeController';
 
@@ -17,23 +13,7 @@ import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadVti } from '../../IO/LoadVti'
-
-function getOrientationMarkerWidget(renderWindow) {
-    const axesActor = vtkAxesActor.newInstance();
-    const orientationMarkerWidget = vtkOrientationMarkerWidget.newInstance({
-        actor: axesActor,
-        interactor: renderWindow.getInteractor(),
-    });
-    orientationMarkerWidget.setViewportCorner(
-        vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT
-    );
-    //控制控件大小
-    orientationMarkerWidget.setViewportSize(0.3);
-    orientationMarkerWidget.setMinPixelSize(100);
-    orientationMarkerWidget.setMaxPixelSize(300);
-
-    return orientationMarkerWidget;
-}
+import { getOrientationMarkerWidget } from '../Widget'
 
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
@@ -55,7 +35,8 @@ class CloudEulerSimulation extends React.Component {
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
-            //containerStyle: { height: '100%', width: '100%', position: 'absolute' }
+            //关键操作！！！能把canvas大小限制在div里了！
+            containerStyle: { height: 'inherit', width: 'inherit', position: 'relative' }
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
@@ -74,11 +55,13 @@ class CloudEulerSimulation extends React.Component {
 
     }
 
-    /*
+
     componentWillUnmount() {
         console.log('子组件将卸载');
+        let renderWindowDOM = document.getElementById("geoViewer");
+        renderWindowDOM.innerHTML = ``;
     }
-    */
+
 
     load = () => {
         physikaLoadConfig('fluid')
@@ -205,7 +188,7 @@ class CloudEulerSimulation extends React.Component {
                     geoViewer.removeChild(document.getElementById("volumeController"));
                 }
                 let volumeControllerContainer = document.createElement("div");
-                volumeControllerContainer.id="volumeController";
+                volumeControllerContainer.id = "volumeController";
                 geoViewer.append(volumeControllerContainer);
                 //设置volumeController
                 const controllerWidget = vtkVolumeController.newInstance({
@@ -215,7 +198,7 @@ class CloudEulerSimulation extends React.Component {
                 const isBackgroundDark = true;
                 controllerWidget.setContainer(volumeControllerContainer);
                 controllerWidget.setupContent(this.renderWindow, this.curScene.actor, isBackgroundDark);
-                
+
 
             })
             .catch(err => {

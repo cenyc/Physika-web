@@ -10,7 +10,7 @@
         "simType":2,
         "initConfigFileName":"./data/config_file/initialization/euler_i.xml",
         "uploadConfigFileDirectory":"./data/config_file/upload",
-        "callPythonFileName":"./src_server/Python/fluid.py",
+        "callPythonFileName":"E:/Cloud-main/python/run.py",
         "uploadUserFileDirectory":"./data/user_file"
     }
 }

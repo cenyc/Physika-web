@@ -1,129 +1,94 @@
-import 'react-bootstrap';
-import 'bootstrap';
-import React, { Component } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
-import 'normalize.css';
-import $ from 'jquery';
+import { Layout, Menu, Dropdown, Button,Row, Col} from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 
-//import { Test } from './test'
-import {Test} from './CloudEuler'
+import '../../static/css/antdesign.css'
+
+import { Test } from './CloudEuler'
 import { PhysikaClothSimulation } from './Cloth'
 
-class LeftNav extends Component {
+const { Header, Content, Sider } = Layout;
 
-    /**
-     * 创建仿真按钮触发事件
-     */
-    click_create_simulation() {
-        $("#selectSimModal").modal();
+class WebLayout extends React.Component {
+    state = {
+        item: 0
+    };
+
+    change = (e) => {
+        console.log(e);
+        this.setState({
+            item: e.key
+        });
     }
 
-    /**
-     * 选择仿真场景触发事件
-     */
-    click_select_simulation = () => {
-        let index = $("#simSelect option:selected").val();
-
-        let right_container = document.getElementById("content-wrapper");
-
-        if (index == 1) {
-            console.log("布料仿真");
-            if (document.getElementById("geoViewer")) {
-                right_container.removeChild(document.getElementById("geoViewer"));
-            }
-            right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
-            ReactDOM.render(<PhysikaClothSimulation />, document.getElementById("createTree"));
-        }
-        else if (index == 2) {
-            console.log("流体模拟");
-            if (document.getElementById("geoViewer")) {
-                right_container.removeChild(document.getElementById("geoViewer"));
-            }
-            //注意style样式，决定了volumeController的位置
-            right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer" style="height: 100%; width: 100%; position: absolute; cursor: pointer;"></div>';
-            //right_container.innerHTML = '<div className="container-fluid p-0" id="geoViewer"></div>';
-            ReactDOM.render(<Test />, document.getElementById("createTree"));
-        }
+    menu = () => {
+        return (
+            <Menu onClick={this.change}>
+                <Menu.Item key="1">流体</Menu.Item>
+                <Menu.Item key="2">布料</Menu.Item>
+            </Menu>
+        );
     }
+
+    //<Col span={3} style={{ display: "flex", justifyContent: "center", alignItems: "center", minWidth: "200px" }}></Col>
 
     render() {
 
         return (
-
-            <nav className="navbar navbar-light align-items-start sidebar sidebar-dark accordion p-0" style={{ backgroundColor: "rgb(174, 188, 197)" }}>
-                <div className="container-fluid d-flex flex-column p-0">
-                    <a className="navbar-brand d-flex justify-content-center align-items-center m-0" href="#">
-                        <div className="sidebar-brand-icon rotate-n-15"></div>
-                        <div className="sidebar-brand-text mx-3"><span>云景仿真平台</span></div>
-                    </a>
-                    <hr className="sidebar-divider my-0" />
-                    <div className="container">
-                        <div className="modal fade" id="selectSimModal" role="dialog">
-                            <div className="modal-dialog">
-                                <div className="modal-content">
-                                    <div className="modal-header">
-                                        <h4 className="modal-title">选择仿真情景</h4>
-                                        <button type="button" className="close" data-dismiss="modal">&times;</button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <form role="form">
-                                            <div className="form-group">
-                                                <select className="form-control" id="simSelect">
-                                                    <option value="1">布料仿真</option>
-                                                    <option value="2">流体模拟</option>
-                                                </select>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-default" data-dismiss="modal" onClick={this.click_select_simulation}>确定</button>
-                                    </div>
-                                </div>
+            <Layout>
+                <Header className="header" style={{ backgroundColor: "#fff" }}>
+                    <Row>
+                        <Col span={3} style={{ display: "flex", justifyContent: "center", alignItems: "center"}}>
+                            <div className="logo" style={{ textAlign: "center", fontSize: "20px" }}>
+                                云仿真平台
                             </div>
-                        </div>
-                    </div>
-                    <div className="container p-2">
-                        <button className="btn btn-danger btn-sm btn-lg btn-block" type="button" onClick={this.click_create_simulation}>创建仿真</button>
-                    </div>
-                    <div id="createTree" className="container p-2"></div>
-                </div>
-            </nav>
+                        </Col>
+                        <Col span={17}>
 
+                        </Col>
+                        <Col span={4} >
+                            <Dropdown overlay={this.menu} placement="bottomCenter">
+                                <Button>选择仿真类型<DownOutlined /></Button>
+                            </Dropdown>
+                        </Col>
+                    </Row>
+                </Header>
+                <Layout style={{ height: "93vh" }}>
+                    <Sider width={240} className="site-layout-background">
+                        {
+                            (this.state.item === "1") &&
+                            <Test></Test>
+                        }
+                        {
+                            (this.state.item === "2") &&
+                            <PhysikaClothSimulation></PhysikaClothSimulation>
+                        }
+                    </Sider>
+                    <Layout style={{ padding: '24px 24px 24px' }}>
+                        <Content
+                            className="site-layout-background"
+                            style={{
+                                padding: 0,
+                                margin: 0,
+                                minHeight: 280,
+                            }}
+                        >
+                            <div id="geoViewer" style={{ height: "100%", width: "100%"}}></div>
+                        </Content>
+                    </Layout>
+                </Layout>
+            </Layout>
         );
     }
 }
 
-/**
- * 首页初始化
- */
+
 function init() {
     window.onload = function () {
-        //首页左边布局
-        //let container = document.getElementById("wrapper");
-        //let x=document.getElementById("sidebar");
-        //render(<LeftNav />, x);
-        //首页右边布局
-        //let viewer = document.createElement("div");
-        //viewer.id = "content-wrapper";
-        //viewer.setAttribute("class", "d-flex flex-column")
-        //container.appendChild(viewer);
-        //render(<GeoViewer />, viewer);
-
-        //let right_container = document.getElementById("content-wrapper");
-        //ReactDOM.render(<GeoViewer />, right_container);
-        //let geoViewer = document.getElementById("geoViewer");
-        /*
-                const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-                    background: [0, 0, 0],
-                    rootContainer: geoViewer,
-                    containerStyle: { height: '100%', width: '100%', position: 'absolute' },
-                });
-        */
-        let left_container = document.getElementById("sidebar");
-        ReactDOM.render(<LeftNav />, left_container);
+        ReactDOM.render(<WebLayout />, webBody);
 
     }
 }
 
 export { init }
-

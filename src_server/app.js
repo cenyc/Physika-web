@@ -35,7 +35,8 @@ app.post('/loadConfig', jsonParser, function (req, res) {
     let pathConfigFileName = path.join(__dirname, 'pathconfig.json');
     fs.readFile(pathConfigFileName, 'utf-8', function (err, data) {
         if (err) {
-            return res.send('配置文件读取失败！');
+            console.log("Error: ", err)
+            res.json({ err: err });
         }
         //将json转化为js对象
         let config = JSON.parse(data);
@@ -69,7 +70,8 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
     let pathConfigFileName = path.join(__dirname, 'pathconfig.json');
     fs.readFile(pathConfigFileName, 'utf-8', function (err, data) {
         if (err) {
-            return res.send('配置文件读取失败！');
+            console.log("Error: ", err)
+            res.json({ err: err });
         }
         //将json转化为js对象
         let config = JSON.parse(data);
@@ -86,7 +88,8 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
         //写上传配置文件
         fs.writeFile(uploadConfigFileName, xml, (err) => {
             if (err) {
-                return console.error(err);
+                console.log("Error: ", err)
+                res.json({ err: err });
             }
             //如果写成功则调用对应python脚本
             //spawn第二个参数是一个数组（array[0]:python脚本路径，array[1]:接受的第一个参数）
@@ -105,7 +108,8 @@ app.post('/uploadConfig', jsonParser, function (req, res) {
                 //加载模拟返回的xml并解析为json
                 fs.readFile(resLoadFileName, 'utf-8', function (err, data) {
                     if (err) {
-                        return res.send('配置文件读取失败！');
+                        console.log("Error: ", err)
+                        res.json({ err: err });
                     }
                     let xml = data;
                     let options = { compact: true, ignoreComment: true };

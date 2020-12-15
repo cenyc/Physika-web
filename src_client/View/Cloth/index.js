@@ -7,22 +7,13 @@ const { TreeNode } = Tree;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-//坐标轴
-import vtkAxesActor from 'vtk.js/Sources/Rendering/Core/AxesActor';
-//旋转控制控件
-import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
-//obj读取器
-import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
-//actor
-import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
-//mapper
-import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 //面片拾取
 import vtkCellPicker from 'vtk.js/Sources/Rendering/Core/CellPicker';
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadObj } from '../../IO/LoadObj';
+import { getOrientationMarkerWidget } from '../Widget'
 
 //屏蔽全局浏览器右键菜单
 document.oncontextmenu = function () {
@@ -112,7 +103,7 @@ class ClothSimulation extends React.Component {
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
             background: [0, 0, 0],
             rootContainer: geoViewer,
-            containerStyle: { height: '100%', width: '100%', position: 'absolute' }
+            containerStyle: { height: 'inherit', width: 'inherit', position: 'relative' }
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
@@ -139,31 +130,15 @@ class ClothSimulation extends React.Component {
         this.renderer.addActor(this.axesActor);
         */
 
-        //--------添加旋转控制控件
-        this.axesActor = vtkAxesActor.newInstance();
-        const orientationMarkerWidget = vtkOrientationMarkerWidget.newInstance({
-            actor: this.axesActor,
-            interactor: this.renderWindow.getInteractor(),
-        });
-        orientationMarkerWidget.setEnabled(true);
-        orientationMarkerWidget.setViewportCorner(
-            vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT
-        );
-        //控制控件大小
-        orientationMarkerWidget.setViewportSize(0.3);
-        orientationMarkerWidget.setMinPixelSize(100);
-        orientationMarkerWidget.setMaxPixelSize(300);
-        //-----------------------
-
-        this.renderer.resetCamera();
-        this.renderWindow.render();
+        this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
     }
 
-    /*
     componentWillUnmount() {
         console.log('子组件将卸载');
+        //直接卸载geoViewer中的canvas！！
+        let renderWindowDOM = document.getElementById("geoViewer");
+        renderWindowDOM.innerHTML = ``;
     }
-    */
 
     //导入初始化配置文件->加载初始模型->绘制模型->绘制树结构
     load = () => {
@@ -177,6 +152,8 @@ class ClothSimulation extends React.Component {
                 console.log("成功获取初始化场景", res);
                 this.resetScene(res[0][0]);
                 this.setState({ data: res[1] });
+                //显示方向标记部件
+                this.orientationMarkerWidget.setEnabled(true);
             })
             .catch(err => {
                 console.log("Error loading: ", err);
@@ -434,8 +411,8 @@ class ClothSimulation extends React.Component {
                     <hr className="m-0" />
                     <div className="card-body pt-2">
                         <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
-                        <div className="pt-2" style={{overflowY: 'auto', height: '333px'}}>
-                            <Tree style={{ overflowX: 'auto', width: '176px'}}>
+                        <div className="pt-2" style={{ overflowY: 'auto', height: '333px' }}>
+                            <Tree style={{ overflowX: 'auto', width: '176px' }}>
                                 {this.renderTreeNodes(this.state.data)}
                             </Tree>
                         </div>
