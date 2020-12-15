@@ -19,7 +19,7 @@ npm run build
 ```
 运行项目
 ```shell script
-node app.js
+node .\src_server\app.js
 ```
 在浏览器访问http://localhost:8888 即可
 # 问题记录
@@ -28,7 +28,7 @@ node app.js
 + [ParaViewWeb api](https://kitware.github.io/paraviewweb/api/)
 + [Webpack文档](https://webpack.docschina.org/guides/)
 ***
-## ES6 and CommonJS
+## ES6 and CommonJS（当前版本无需参考）
 + 如果使用commonjs模式，在packge.json中加入
 >
   "type": "module",
