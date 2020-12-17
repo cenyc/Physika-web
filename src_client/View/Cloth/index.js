@@ -13,7 +13,7 @@ import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadObj } from '../../IO/LoadObj';
-import { getOrientationMarkerWidget } from '../Widget'
+import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
 //屏蔽全局浏览器右键菜单
 document.oncontextmenu = function () {
@@ -101,7 +101,7 @@ class ClothSimulation extends React.Component {
     componentDidMount() {
         //---------初始化渲染窗口
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-            background: [0, 0, 0],
+            background: [0.75, 0.76, 0.79],
             rootContainer: geoViewer,
             containerStyle: { height: 'inherit', width: 'inherit' }
         });

@@ -5,7 +5,7 @@ import { DownOutlined } from '@ant-design/icons';
 
 import '../../static/css/antdesign.css'
 
-import { Test } from './CloudEuler'
+import { PhysikaCloudEuler } from './CloudEuler'
 import { PhysikaClothSimulation } from './Cloth'
 
 const { Header, Content, Sider } = Layout;
@@ -58,7 +58,7 @@ class WebLayout extends React.Component {
                     <Sider width={240} className="site-layout-background">
                         {
                             (this.state.item === "1") &&
-                            <Test></Test>
+                            <PhysikaCloudEuler></PhysikaCloudEuler>
                         }
                         {
                             (this.state.item === "2") &&

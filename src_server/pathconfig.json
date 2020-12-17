@@ -6,11 +6,18 @@
         "callPythonFileName":"./src_server/Python/cloth.py",
         "uploadUserFileDirectory":"./data/user_file"
     },
-    "fluid":{
+    "fluid-":{
         "simType":2,
         "initConfigFileName":"./data/config_file/initialization/euler_i.xml",
         "uploadConfigFileDirectory":"./data/config_file/upload",
         "callPythonFileName":"E:/Cloud-main/python/run.py",
+        "uploadUserFileDirectory":"./data/user_file"
+    },
+    "fluid":{
+        "simType":2,
+        "initConfigFileName":"./data/config_file/initialization/euler_i.xml",
+        "uploadConfigFileDirectory":"./data/config_file/upload",
+        "callPythonFileName":"./src_server/Python/fluid.py",
         "uploadUserFileDirectory":"./data/user_file"
     }
 }

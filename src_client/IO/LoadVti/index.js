@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import vtkXMLImageDataReader from 'vtk.js/Sources/IO/XML/XMLImageDataReader';
 import vtkVolume from 'vtk.js/Sources/Rendering/Core/Volume';
 import vtkVolumeMapper from 'vtk.js/Sources/Rendering/Core/VolumeMapper';
@@ -103,6 +104,48 @@ function loadVti(options) {
             }
             else {
                 //读取url包含多个vti文件的zip？
+                const zip = new JSZip();
+                HttpDataAccessHelper.fetchBinary(options.fileURL)
+                    .then(res => {
+                        return zip.loadAsync(res);
+                    })
+                    .then(() => {
+                        const fileContents = [];
+                        zip.forEach((relativePath, zipEntry) => {
+                            //正则表达式：两个斜杠（/）之间是模式；反斜杠（\）代表转义；$代表匹配结束；i为标志，表示不区分大小写搜索。
+                            if (relativePath.match(/\.vti$/i)) {
+                                //记录帧序，因为Promise.all不保证fileContents中文件的顺序，所以需要之后利用帧序重排序。
+                                const frameIndex = relativePath.substring(relativePath.lastIndexOf('_') + 1, relativePath.lastIndexOf('.'));
+                                const promise = new Promise((resolve, reject) => {
+                                    zipEntry.async('arraybuffer')
+                                        .then(res => {
+                                            const vtiReader = new vtkXMLImageDataReader.newInstance();
+                                            vtiReader.parseAsArrayBuffer(res);
+                                            
+                                            resolve({ frameIndex: frameIndex, vtiReader: vtiReader });
+                                        })
+                                        .catch(err => {
+                                            reject(err);
+                                        });
+                                });
+                                fileContents.push(promise);
+                            }
+                        });
+                        return Promise.all(fileContents);
+                    })
+                    .then(res => {
+                        //使用Array内置sort排序，按照frameIndex升序排列
+                        res.sort(function (a, b) {
+                            return (a.frameIndex - b.frameIndex);
+                        });
+                        res.forEach(item => {
+                            frameSeq.push(initializeVti(item.vtiReader));
+                        })
+                        resolve(frameSeq);
+                    })
+                    .catch(err => {
+                        console.log("Failed to fetch .zip through url: ", err);
+                    });
             }
         }
         else {

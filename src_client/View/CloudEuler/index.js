@@ -1,19 +1,19 @@
 import 'bootstrap';
 import React from 'react';
-import { Tree, Button } from 'antd';
+import { Tree, Button, Slider } from 'antd';
 const { TreeNode } = Tree;
 //antd样式
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
 
-import vtkVolumeController from 'vtk.js/Sources/Interaction/UI/VolumeController';
+import vtkVolumeController from '../Widget/VolumeController'
 
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadVti } from '../../IO/LoadVti'
-import { getOrientationMarkerWidget } from '../Widget'
+import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
@@ -33,7 +33,8 @@ class CloudEulerSimulation extends React.Component {
     componentDidMount() {
         //---------初始化渲染窗口
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-            background: [0, 0, 0],
+            //background: [1.0, 1.0, 1.0],
+            background: [0.75, 0.76, 0.79],
             rootContainer: geoViewer,
             //关键操作！！！能把canvas大小限制在div里了！
             containerStyle: { height: 'inherit', width: 'inherit' }
@@ -53,6 +54,11 @@ class CloudEulerSimulation extends React.Component {
         //--------添加旋转控制控件
         this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
 
+        this.controllerWidget = vtkVolumeController.newInstance({
+            size: [400, 150],
+            rescaleColorMap: true,
+        });
+        
     }
 
 
@@ -182,6 +188,7 @@ class CloudEulerSimulation extends React.Component {
                 //显示方向标记部件
                 this.orientationMarkerWidget.setEnabled(true);
 
+
                 //动态删除添加volume这个div
                 let geoViewer = document.getElementById("geoViewer");
                 if (document.getElementById("volumeController")) {
@@ -190,6 +197,7 @@ class CloudEulerSimulation extends React.Component {
                 let volumeControllerContainer = document.createElement("div");
                 volumeControllerContainer.id = "volumeController";
                 geoViewer.append(volumeControllerContainer);
+                /*
                 //设置volumeController
                 const controllerWidget = vtkVolumeController.newInstance({
                     size: [400, 150],
@@ -198,12 +206,25 @@ class CloudEulerSimulation extends React.Component {
                 const isBackgroundDark = true;
                 controllerWidget.setContainer(volumeControllerContainer);
                 controllerWidget.setupContent(this.renderWindow, this.curScene.actor, isBackgroundDark);
+                */
+                this.controllerWidget.setContainer(volumeControllerContainer);
+                this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
 
 
             })
             .catch(err => {
                 console.log("Error uploading: ", err);
             });
+    }
+
+    onSliderChange = (value) => {
+        //console.log('onChange: ', value);
+    }
+
+    onSliderAfterChange = (value) => {
+        //console.log('onAfterChange: ', value);
+        this.resetScene(this.frameSeq[value]);
+        this.controllerWidget.changeActor(this.curScene.actor);
     }
 
     render() {
@@ -231,6 +252,10 @@ class CloudEulerSimulation extends React.Component {
                             changeData={(obj) => this.changeData(obj)}
                         ></PhysikaTreeNodeAttrModal>
                     </div>
+                    <div>
+                        <Slider defaultValue={0} max={7}
+                            onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
+                    </div>
                 </div>
             </div>
         );
@@ -239,5 +264,5 @@ class CloudEulerSimulation extends React.Component {
 }
 
 export {
-    CloudEulerSimulation as Test
+    CloudEulerSimulation as PhysikaCloudEuler
 }
