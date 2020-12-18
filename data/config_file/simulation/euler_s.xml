@@ -22,7 +22,7 @@
         <Frame class="Unsigned" name="模拟帧数" disabled="false">50</Frame>
     </Simulation>
     <SimulationRun class="" name="模拟运行结果">
-        <Path class="String" name="仿真结果路径" disabled="true">./data/visualize_data/head-binary-zlib.vti</Path>
+        <Path class="String" name="仿真结果路径">./data/visualize_data/cloud/cloud.zip</Path>
         <Frame class="Unsigned" name="帧数"></Frame>
         <Animation class="" name="动画"></Animation>
     </SimulationRun>

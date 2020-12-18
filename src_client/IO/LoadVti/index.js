@@ -19,14 +19,13 @@ function initializeVti(vtiReader) {
     mapper.setInputData(source);
     actor.setMapper(mapper);
 
+    /*
     //是否需要对体素进行一些通用的操作？
     const dataArray = source.getPointData().getScalars() || source.getPointData().getArrays()[0];
     const dataRange = dataArray.getRange();
-
     const lookupTable = vtkColorTransferFunction.newInstance();
     const piecewiseFunction = vtkPiecewiseFunction.newInstance();
 
-    /*
     lookupTable.addRGBPoint(0, 85 / 255.0, 0, 0);
     lookupTable.addRGBPoint(95, 1.0, 1.0, 1.0);
     lookupTable.addRGBPoint(225, 0.66, 0.66, 0.5);
@@ -34,7 +33,6 @@ function initializeVti(vtiReader) {
 
     piecewiseFunction.addPoint(0.0, 0.0);
     piecewiseFunction.addPoint(255.0, 1.0);
-    */
 
     const sampleDistance = 0.7 * Math.sqrt(
         source.getSpacing()
@@ -45,7 +43,6 @@ function initializeVti(vtiReader) {
     actor.getProperty().setRGBTransferFunction(0, lookupTable);
     actor.getProperty().setScalarOpacity(0, piecewiseFunction);
     actor.getProperty().setInterpolationTypeToLinear();
-
     //为了更好地查看体积，世界坐标中的绘制距离标量不透明度为1.0
     actor.getProperty().setScalarOpacityUnitDistance(
         0,
@@ -62,6 +59,8 @@ function initializeVti(vtiReader) {
     //默认良好设置
     actor.getProperty().setGradientOpacityMinimumOpacity(0, 0.0);
     actor.getProperty().setGradientOpacityMaximumOpacity(0, 1.0);
+    */
+
     actor.getProperty().setAmbient(0.2);
     actor.getProperty().setDiffuse(0.7);
     actor.getProperty().setSpecular(0.3);
@@ -121,7 +120,7 @@ function loadVti(options) {
                                         .then(res => {
                                             const vtiReader = new vtkXMLImageDataReader.newInstance();
                                             vtiReader.parseAsArrayBuffer(res);
-                                            
+
                                             resolve({ frameIndex: frameIndex, vtiReader: vtiReader });
                                         })
                                         .catch(err => {

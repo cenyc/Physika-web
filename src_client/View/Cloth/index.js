@@ -150,7 +150,7 @@ class ClothSimulation extends React.Component {
             })
             .then(res => {
                 console.log("成功获取初始化场景", res);
-                this.resetScene(res[0][0]);
+                this.updateScene(res[0][0]);
                 this.setState({ data: res[1] });
                 //显示方向标记部件
                 this.orientationMarkerWidget.setEnabled(true);
@@ -176,8 +176,8 @@ class ClothSimulation extends React.Component {
         console.log("throw error");
     }
 
-    //重置场景
-    resetScene = (newScene) => {
+    //更新场景
+    updateScene = (newScene) => {
         //移除旧场景actor
         Object.keys(this.curScene).forEach(key => {
             this.renderer.removeActor(this.curScene[key].actor);
@@ -298,7 +298,7 @@ class ClothSimulation extends React.Component {
                 .then(res => {
                     console.log("成功获取仿真结果模型", res);
                     this.frameSeq = res[0];
-                    this.resetScene(this.frameSeq[0]);
+                    this.updateScene(this.frameSeq[0]);
                     this.setState({ data: res[1] });
                 })
                 .catch(err => {
@@ -391,7 +391,7 @@ class ClothSimulation extends React.Component {
                 console.log("动画结束");
                 return;
             }
-            this.resetScene(this.frameSeq[this.frameSeqIndex]);
+            this.updateScene(this.frameSeq[this.frameSeqIndex]);
             this.frameSeqIndex++;
         }
         this.rAF = requestAnimationFrame(this.drawFrame);

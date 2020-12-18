@@ -101,16 +101,16 @@ function vtkVolumeController(publicAPI, model) {
     model.renderWindow.render();
   }
 
-  //更改actor
+  //在不同数据切换时，更改actor所触发的操作!
   publicAPI.changeActor = (actor) => {
     publicAPI.setActor(actor);
 
+    const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
+    const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
     const sourceDS = model.actor.getMapper().getInputData();
     const dataArray =
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
-    const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
-    const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
 
     model.widget.setDataArray(dataArray.getData());
     model.widget.setColorTransferFunction(lookupTable);

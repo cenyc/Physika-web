@@ -54,11 +54,6 @@ class CloudEulerSimulation extends React.Component {
         //--------添加旋转控制控件
         this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
 
-        this.controllerWidget = vtkVolumeController.newInstance({
-            size: [400, 150],
-            rescaleColorMap: true,
-        });
-        
     }
 
 
@@ -160,7 +155,7 @@ class CloudEulerSimulation extends React.Component {
         this.hideTreeNodeAttrModal();
     }
 
-    resetScene = (newScene) => {
+    updateScene = (newScene) => {
         //移除旧场景actor
         this.renderer.removeActor(this.curScene.actor);
         this.curScene = newScene;
@@ -183,11 +178,11 @@ class CloudEulerSimulation extends React.Component {
             .then(res => {
                 console.log("成功获取仿真结果模型", res);
                 this.frameSeq = res[0];
-                this.resetScene(this.frameSeq[0]);
+                this.updateScene(this.frameSeq[0]);
                 this.setState({ data: res[1] });
+
                 //显示方向标记部件
                 this.orientationMarkerWidget.setEnabled(true);
-
 
                 //动态删除添加volume这个div
                 let geoViewer = document.getElementById("geoViewer");
@@ -197,16 +192,11 @@ class CloudEulerSimulation extends React.Component {
                 let volumeControllerContainer = document.createElement("div");
                 volumeControllerContainer.id = "volumeController";
                 geoViewer.append(volumeControllerContainer);
-                /*
-                //设置volumeController
-                const controllerWidget = vtkVolumeController.newInstance({
+
+                this.controllerWidget = vtkVolumeController.newInstance({
                     size: [400, 150],
                     rescaleColorMap: true,
                 });
-                const isBackgroundDark = true;
-                controllerWidget.setContainer(volumeControllerContainer);
-                controllerWidget.setupContent(this.renderWindow, this.curScene.actor, isBackgroundDark);
-                */
                 this.controllerWidget.setContainer(volumeControllerContainer);
                 this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
 
@@ -223,7 +213,7 @@ class CloudEulerSimulation extends React.Component {
 
     onSliderAfterChange = (value) => {
         //console.log('onAfterChange: ', value);
-        this.resetScene(this.frameSeq[value]);
+        this.updateScene(this.frameSeq[value]);
         this.controllerWidget.changeActor(this.curScene.actor);
     }
 
