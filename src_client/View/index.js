@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { Layout, Menu, Dropdown, Button, Row, Col } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 
@@ -10,7 +9,7 @@ import { PhysikaClothSimulation } from './Cloth'
 
 const { Header, Content, Sider } = Layout;
 
-class WebLayout extends React.Component {
+class PhysikaWeb extends React.Component {
     state = {
         item: 0
     };
@@ -83,12 +82,4 @@ class WebLayout extends React.Component {
     }
 }
 
-
-function init() {
-    window.onload = function () {
-        ReactDOM.render(<WebLayout />, webBody);
-
-    }
-}
-
-export { init }
+export default PhysikaWeb;

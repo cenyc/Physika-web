@@ -112,7 +112,7 @@ function vtkVolumeController(publicAPI, model) {
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
 
-    model.widget.setDataArray(dataArray.getData());
+    //model.widget.setDataArray(dataArray.getData());
     model.widget.setColorTransferFunction(lookupTable);
     model.widget.applyOpacity(piecewiseFunction);
     model.colorDataRange = model.widget.getOpacityRange();
