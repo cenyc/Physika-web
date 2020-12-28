@@ -15,6 +15,10 @@ import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadVti } from '../../IO/LoadVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
+import WebworkerPromise from 'webworker-promise';
+
+import WorkerTest from './test.worker';
+
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
         super(props);
@@ -54,6 +58,8 @@ class CloudEulerSimulation extends React.Component {
         //--------添加旋转控制控件
         this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
 
+        this.worker = new WorkerTest();
+        this.workerPromise = new WebworkerPromise(this.worker);
     }
 
 
@@ -65,6 +71,10 @@ class CloudEulerSimulation extends React.Component {
 
 
     load = () => {
+        this.workerPromise.postMessage().then(res => {
+            console.log("***", res);
+        });
+
         physikaLoadConfig('fluid')
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -73,9 +83,8 @@ class CloudEulerSimulation extends React.Component {
                     uploadDisabled: false
                 });
                 //除了加载初始化配置文件还需要什么？
-
             })
-            .catch(res => {
+            .catch(err => {
                 console.log("Error loading: ", err);
             })
     }

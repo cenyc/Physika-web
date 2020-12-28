@@ -24,6 +24,8 @@ module.exports = {
             {
                 test: /\.js$/,
                 include: path.join(__dirname, 'src_client'),
+                //并不能解决not cacheable的问题
+                //exclude: [/\.worker\.js$/,/node_modules/],
                 exclude: /node_modules/,
                 use: [
                     {

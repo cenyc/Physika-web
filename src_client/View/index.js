@@ -36,7 +36,7 @@ class PhysikaWeb extends React.Component {
         this.setState({
             item: e.key
         });
-        socketExample();
+        //socketExample();
     }
 
     menu = () => {
