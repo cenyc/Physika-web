@@ -181,8 +181,8 @@ app.get('/', function (req, res) {
     res.render('index');
 });
 
-// 启动一个服务，监听从8888端口进入的所有连接请求
 /*
+// 启动一个服务，监听从8888端口进入的所有连接请求
 var server = app.listen(8888, function () {
     var host = server.address().address;
     var port = server.address().port;

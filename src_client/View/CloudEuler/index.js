@@ -1,6 +1,6 @@
 import 'bootstrap';
 import React from 'react';
-import { Tree, Button, Slider } from 'antd';
+import { Tree, Button, Slider, Divider } from 'antd';
 const { TreeNode } = Tree;
 //antd样式
 import 'antd/dist/antd.css';
@@ -15,9 +15,14 @@ import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadVti } from '../../IO/LoadVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
-import WebworkerPromise from 'webworker-promise';
 
-import WorkerTest from './test.worker';
+import WebworkerPromise from 'webworker-promise';
+import WorkerTest from '../../test.worker';
+
+import vtkXMLImageDataReader from 'vtk.js/Sources/IO/XML/XMLImageDataReader';
+import vtkVolume from 'vtk.js/Sources/Rendering/Core/Volume';
+import vtkVolumeMapper from 'vtk.js/Sources/Rendering/Core/VolumeMapper';
+
 
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
@@ -29,7 +34,11 @@ class CloudEulerSimulation extends React.Component {
             treeNodeAttr: {},
             treeNodeText: "",
             treeNodeKey: -1,
-            uploadDisabled: true
+            uploadDisabled: true,
+
+            curFrameIndex: 0,
+            totalFrame: 0,
+            isSliderShow: false,
 
         };
     }
@@ -58,8 +67,9 @@ class CloudEulerSimulation extends React.Component {
         //--------添加旋转控制控件
         this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
 
-        this.worker = new WorkerTest();
-        this.workerPromise = new WebworkerPromise(this.worker);
+
+        this.worker = new WebworkerPromise(new WorkerTest());
+        this.worker.postMessage({init:true});
     }
 
 
@@ -71,9 +81,49 @@ class CloudEulerSimulation extends React.Component {
 
 
     load = () => {
-        this.workerPromise.postMessage().then(res => {
-            console.log("***", res);
+
+        this.worker.postMessage(
+            { data: 123 }
+        ).then(res => {
+            console.log("/////",res);
+            const vtiReader = new vtkXMLImageDataReader.newInstance();
+            vtiReader.parseAsArrayBuffer(res);
+            const source = vtiReader.getOutputData(0);
+            const mapper = vtkVolumeMapper.newInstance();
+            const actor = vtkVolume.newInstance();
+
+            mapper.setInputData(source);
+            actor.setMapper(mapper);
+
+            actor.getProperty().setAmbient(0.2);
+            actor.getProperty().setDiffuse(0.7);
+            actor.getProperty().setSpecular(0.3);
+            actor.getProperty().setSpecularPower(8.0);
+
+            this.curScene = { source, mapper, actor };
+            //显示方向标记部件
+            this.orientationMarkerWidget.setEnabled(true);
+
+            //动态删除添加volume这个div
+            let geoViewer = document.getElementById("geoViewer");
+            if (document.getElementById("volumeController")) {
+                geoViewer.removeChild(document.getElementById("volumeController"));
+            }
+            let volumeControllerContainer = document.createElement("div");
+            volumeControllerContainer.id = "volumeController";
+            geoViewer.append(volumeControllerContainer);
+
+            this.controllerWidget = vtkVolumeController.newInstance({
+                size: [400, 150],
+                rescaleColorMap: true,
+            });
+            this.controllerWidget.setContainer(volumeControllerContainer);
+            this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
+
+            this.updateScene(this.curScene);
+            this.controllerWidget.changeActor(this.curScene.actor);
         });
+
 
         physikaLoadConfig('fluid')
             .then(res => {
@@ -176,44 +226,53 @@ class CloudEulerSimulation extends React.Component {
     }
 
     upload = () => {
-        //第一个参数data，第二个参数仿真类型
-        physikaUploadConfig(this.state.data, 'fluid')
-            .then(res => {
-                console.log("成功上传配置并获取到仿真结果配置");
-                console.log(res);
-                let options = this.extractURL(res);
-                return Promise.all([physikaLoadVti(options), res]);
-            })
-            .then(res => {
-                console.log("成功获取仿真结果模型", res);
-                this.frameSeq = res[0];
-                this.updateScene(this.frameSeq[0]);
-                this.setState({ data: res[1] });
+        this.setState({
+            uploadDisabled: true
+        }, () => {
+            //第一个参数data，第二个参数仿真类型
+            physikaUploadConfig(this.state.data, 'fluid')
+                .then(res => {
+                    console.log("成功上传配置并获取到仿真结果配置");
+                    console.log(res);
+                    let options = this.extractURL(res);
+                    return Promise.all([physikaLoadVti(options), res]);
+                })
+                .then(res => {
+                    console.log("成功获取仿真结果模型", res);
+                    this.frameSeq = res[0];
+                    this.updateScene(this.frameSeq[0]);
+                    this.setState({
+                        data: res[1],
+                        totalFrame: this.frameSeq.length - 1,
+                        uploadDisabled: false,
+                        isSliderShow: true
+                    });
 
-                //显示方向标记部件
-                this.orientationMarkerWidget.setEnabled(true);
+                    //显示方向标记部件
+                    this.orientationMarkerWidget.setEnabled(true);
 
-                //动态删除添加volume这个div
-                let geoViewer = document.getElementById("geoViewer");
-                if (document.getElementById("volumeController")) {
-                    geoViewer.removeChild(document.getElementById("volumeController"));
-                }
-                let volumeControllerContainer = document.createElement("div");
-                volumeControllerContainer.id = "volumeController";
-                geoViewer.append(volumeControllerContainer);
+                    //动态删除添加volume这个div
+                    let geoViewer = document.getElementById("geoViewer");
+                    if (document.getElementById("volumeController")) {
+                        geoViewer.removeChild(document.getElementById("volumeController"));
+                    }
+                    let volumeControllerContainer = document.createElement("div");
+                    volumeControllerContainer.id = "volumeController";
+                    geoViewer.append(volumeControllerContainer);
 
-                this.controllerWidget = vtkVolumeController.newInstance({
-                    size: [400, 150],
-                    rescaleColorMap: true,
+                    this.controllerWidget = vtkVolumeController.newInstance({
+                        size: [400, 150],
+                        rescaleColorMap: true,
+                    });
+                    this.controllerWidget.setContainer(volumeControllerContainer);
+                    this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
+
+
+                })
+                .catch(err => {
+                    console.log("Error uploading: ", err);
                 });
-                this.controllerWidget.setContainer(volumeControllerContainer);
-                this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
-
-
-            })
-            .catch(err => {
-                console.log("Error uploading: ", err);
-            });
+        });
     }
 
     onSliderChange = (value) => {
@@ -251,10 +310,15 @@ class CloudEulerSimulation extends React.Component {
                             changeData={(obj) => this.changeData(obj)}
                         ></PhysikaTreeNodeAttrModal>
                     </div>
-                    <div>
-                        <Slider defaultValue={0} max={7}
-                            onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
-                    </div>
+                    {
+                        (this.state.isSliderShow) &&
+                        <div>
+                            <Divider>当前展示帧序号</Divider>
+                            <Slider defaultValue={0} max={this.state.totalFrame}
+                                onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
+                        </div>
+                    }
+
                 </div>
             </div>
         );

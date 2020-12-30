@@ -9,34 +9,15 @@ import { PhysikaClothSimulation } from './Cloth'
 
 const { Header, Content, Sider } = Layout;
 
-function socketExample() {
-    console.log('Creating socket');
-    let socket = new WebSocket('ws://localhost:8888/');
-    socket.onopen = function () {
-
-        console.log('Socket open.');
-        socket.send(JSON.stringify({ message: 'What is the meaning of life, the universe and everything?' }));
-        console.log('Message sent.')
-    };
-    socket.onmessage = function (message) {
-
-        console.log('Socket server message', message);
-        let data = JSON.parse(message.data);
-        document.getElementById('response').innerHTML = JSON.stringify(data, null, 2);
-    };
-}
-
 class PhysikaWeb extends React.Component {
     state = {
         item: 0
     };
 
     change = (e) => {
-        console.log(e);
         this.setState({
             item: e.key
         });
-        //socketExample();
     }
 
     menu = () => {
