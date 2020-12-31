@@ -42,13 +42,13 @@ function fetchBinary(url, options = {}) {
 
 let ws;
 
-registerWebworker(async function (message, emit) {
+registerWebworker(async function (wwMessage, emit) {
     return new Promise((resolve, reject) => {
 
-        if (message.init) {
+        if (wwMessage.init) {
             console.log('Creating socket');
             ws = new WebSocket('ws://localhost:8888/');
-            ws.binaryType='arraybuffer';
+            ws.binaryType = 'arraybuffer';
             ws.onopen = function () {
                 console.log('Socket open.');
             }
@@ -62,14 +62,14 @@ registerWebworker(async function (message, emit) {
             console.error("WebSocket error observed:", event);
         };
 
-        if (message.data) {
-            let data = JSON.stringify(message.data);
-            console.log("////////", data);
-            ws.send(data);
+        if (wwMessage.data) {
+            console.log("Client socket message:", wwMessage.data);
+            let wsMessage = JSON.stringify(wwMessage.data);
+            ws.send(wsMessage);
         }
 
-        ws.onmessage = function (message) {
-            let arrayBuffer=message.data;
+        ws.onmessage = function (wsMessage) {
+            let arrayBuffer = wsMessage.data;
             console.log('Socket server message', arrayBuffer);
             resolve(new registerWebworker.TransferableResponse(arrayBuffer, [arrayBuffer]));
         };

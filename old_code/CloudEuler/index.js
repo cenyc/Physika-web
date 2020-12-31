@@ -24,7 +24,6 @@ import vtkVolume from 'vtk.js/Sources/Rendering/Core/Volume';
 import vtkVolumeMapper from 'vtk.js/Sources/Rendering/Core/VolumeMapper';
 
 
-
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
         super(props);
@@ -57,14 +56,9 @@ class CloudEulerSimulation extends React.Component {
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
         //curScene={{source, mapper, actor},...}
         this.curScene = {};
-        //frameSeq保存了每帧场景，用于实现动画（是否还需要？）
+        //frameSeq保存了每帧场景，用于实现动画
         this.frameSeq = [];
 
-        //resultInfo
-        this.resultInfo;
-        //frameStateArray保存每一帧仿真模型的当前状态：
-        // 0（未获取）、1（正在获取）、2（在indexedDB中）、3（在内存对象中（无法获知js对象在内存中的大小，没法设定内存对象大小。。。））
-        this.frameStateArray;
         /*
         //添加坐标轴：X：红，Y：黄，Z: 绿
         this.axesActor = vtkAxesActor.newInstance();
@@ -75,7 +69,7 @@ class CloudEulerSimulation extends React.Component {
 
 
         this.worker = new WebworkerPromise(new WorkerTest());
-        this.worker.postMessage({ init: true });
+        this.worker.postMessage({init:true});
     }
 
 
@@ -91,10 +85,10 @@ class CloudEulerSimulation extends React.Component {
 
         this.worker.postMessage(
             {
-                data: { fileName: 'head-binary-zlib.vti' }
+                data:{fileName: 'head-binary-zlib.vti'}
             }
         ).then(res => {
-            console.log("/////", res);
+            console.log("/////",res);
             const vtiReader = new vtkXMLImageDataReader.newInstance();
             vtiReader.parseAsArrayBuffer(res);
             const source = vtiReader.getOutputData(0);
@@ -232,41 +226,6 @@ class CloudEulerSimulation extends React.Component {
         this.renderer.addActor(this.curScene.actor);
         this.renderer.resetCamera();
         this.renderWindow.render();
-    }
-
-    parseSimulationResult = (data) => {
-        for (const item1 of data[0].children) {
-            if (item1.tag === 'SimulationRun') {
-                const resultInfo = {
-                    fileInfo: {},
-                    description: {}
-                };
-                for (const item2 of item1.children) {
-                    if (item2.tag == 'FileName') {
-                        fileInfo.fileName = item2._text;
-                    }
-                    if (item2.tag == 'FrameSum') {
-                        fileInfo.FrameSum = item2._text;
-                    }
-                }
-                //解析仿真结果其他数据(放在description中)
-                return resultInfo;
-            }
-        }
-        console.log("throw error");
-    }
-
-    upload_x = () => {
-        this.setState({
-            uploadDisabled: true
-        }, () => {
-            //第一个参数data，第二个参数仿真类型
-            physikaUploadConfig(this.state.data, 'fluid')
-                .then(res => {
-                    console.log("成功上传配置并获取到仿真结果配置");
-                    console.log(res);
-                })
-        })
     }
 
     upload = () => {
