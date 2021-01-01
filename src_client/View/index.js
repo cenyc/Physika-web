@@ -55,7 +55,7 @@ class PhysikaWeb extends React.Component {
                     </Row>
                 </Header>
                 <Layout style={{ height: "93vh" }}>
-                    <Sider width={240} className="site-layout-background">
+                    <Sider width={250} className="site-layout-background" style={{overflow:'scroll'}}>
                         {
                             (this.state.item === "1") &&
                             <PhysikaCloudEuler></PhysikaCloudEuler>

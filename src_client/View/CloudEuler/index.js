@@ -1,7 +1,8 @@
 import 'bootstrap';
 import React from 'react';
-import { Tree, Button, Slider, Divider } from 'antd';
+import { Tree, Button, Slider, Divider, Descriptions, Collapse } from 'antd';
 const { TreeNode } = Tree;
+const { Panel } = Collapse;
 //antd样式
 import 'antd/dist/antd.css';
 //渲染窗口
@@ -23,7 +24,39 @@ import vtkXMLImageDataReader from 'vtk.js/Sources/IO/XML/XMLImageDataReader';
 import vtkVolume from 'vtk.js/Sources/Rendering/Core/Volume';
 import vtkVolumeMapper from 'vtk.js/Sources/Rendering/Core/VolumeMapper';
 
-
+function parseSimulationResult(data) {
+    let simRunObj;
+    for (let i = 0; i < data[0].children.length; i++) {
+        if (data[0].children[i].tag === 'SimulationRun') {
+            simRunObj = data[0].children[i];
+            data[0].children.splice(i, 1);
+        }
+    }
+    const resultInfo = {
+        fileName: '',
+        frameSum: 0,
+        animation: false,
+        description: []
+    }
+    for (const item of simRunObj.children) {
+        if (item.tag === 'FileName') {
+            resultInfo.fileName = item._text;
+        }
+        if (item.tag === 'FrameSum') {
+            resultInfo.frameSum = item._text;
+        }
+        if (item.tag === 'Animation') {
+            resultInfo.animation = (item._text === 'true');
+        }
+        resultInfo.description.push(
+            {
+                name: item._attributes.name,
+                content: item._text
+            }
+        );
+    }
+    return resultInfo;
+}
 
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
@@ -31,16 +64,19 @@ class CloudEulerSimulation extends React.Component {
         this.state = {
 
             data: [],
-            isTreeNodeAttrModalShow: false,
             treeNodeAttr: {},
             treeNodeText: "",
             treeNodeKey: -1,
             uploadDisabled: true,
 
             curFrameIndex: 0,
-            totalFrame: 0,
-            isSliderShow: false,
+            //结果展示信息
+            description: [],
 
+            isTreeNodeAttrModalShow: false,
+            uploadDisabled: true,
+            isSliderShow: false,
+            animation: false,
         };
     }
 
@@ -55,24 +91,25 @@ class CloudEulerSimulation extends React.Component {
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
-        //curScene={{source, mapper, actor},...}
+        //添加旋转控制控件
+        this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
+        //显示方向标记部件
+        this.orientationMarkerWidget.setEnabled(true);
+        //curScene={source, mapper, actor}
         this.curScene = {};
         //frameSeq保存了每帧场景，用于实现动画（是否还需要？）
         this.frameSeq = [];
 
-        //resultInfo
-        this.resultInfo;
+        //文件名
+        this.fileName = '';
+        //总帧数
+        this.frameSum = 0;
         //frameStateArray保存每一帧仿真模型的当前状态：
         // 0（未获取）、1（正在获取）、2（在indexedDB中）、3（在内存对象中（无法获知js对象在内存中的大小，没法设定内存对象大小。。。））
         this.frameStateArray;
-        /*
-        //添加坐标轴：X：红，Y：黄，Z: 绿
-        this.axesActor = vtkAxesActor.newInstance();
-        this.renderer.addActor(this.axesActor);
-        */
-        //--------添加旋转控制控件
-        this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
 
+        //判断是否第一次加载vtk控件
+        this.isFirstLoad = true;
 
         this.worker = new WebworkerPromise(new WorkerTest());
         this.worker.postMessage({ init: true });
@@ -88,52 +125,6 @@ class CloudEulerSimulation extends React.Component {
 
 
     load = () => {
-
-        this.worker.postMessage(
-            {
-                data: { fileName: 'head-binary-zlib.vti' }
-            }
-        ).then(res => {
-            console.log("/////", res);
-            const vtiReader = new vtkXMLImageDataReader.newInstance();
-            vtiReader.parseAsArrayBuffer(res);
-            const source = vtiReader.getOutputData(0);
-            const mapper = vtkVolumeMapper.newInstance();
-            const actor = vtkVolume.newInstance();
-
-            mapper.setInputData(source);
-            actor.setMapper(mapper);
-
-            actor.getProperty().setAmbient(0.2);
-            actor.getProperty().setDiffuse(0.7);
-            actor.getProperty().setSpecular(0.3);
-            actor.getProperty().setSpecularPower(8.0);
-
-            this.curScene = { source, mapper, actor };
-            //显示方向标记部件
-            this.orientationMarkerWidget.setEnabled(true);
-
-            //动态删除添加volume这个div
-            let geoViewer = document.getElementById("geoViewer");
-            if (document.getElementById("volumeController")) {
-                geoViewer.removeChild(document.getElementById("volumeController"));
-            }
-            let volumeControllerContainer = document.createElement("div");
-            volumeControllerContainer.id = "volumeController";
-            geoViewer.append(volumeControllerContainer);
-
-            this.controllerWidget = vtkVolumeController.newInstance({
-                size: [400, 150],
-                rescaleColorMap: true,
-            });
-            this.controllerWidget.setContainer(volumeControllerContainer);
-            this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
-
-            this.updateScene(this.curScene);
-            this.controllerWidget.changeActor(this.curScene.actor);
-        });
-
-
         physikaLoadConfig('fluid')
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -141,27 +132,28 @@ class CloudEulerSimulation extends React.Component {
                     data: res,
                     uploadDisabled: false
                 });
-                //除了加载初始化配置文件还需要什么？
+                //如果不是第一次加载，则清空原场景
+                if (!this.isFirstLoad) {
+                    this.renderer.removeActor(this.curScene.actor);
+                    this.curScene = {};
+                    let geoViewer = document.getElementById("geoViewer");
+                    if (document.getElementById("volumeController")) {
+                        geoViewer.removeChild(document.getElementById("volumeController"));
+                    }
+                    this.renderer.resetCamera();
+                    this.renderWindow.render();
+                    this.setState({
+                        curFrameIndex: 0,
+                        description: [],
+                        isSliderShow: false,
+                        animation: false,
+                    });
+                    this.isFirstLoad = true;
+                }
             })
             .catch(err => {
                 console.log("Error loading: ", err);
             })
-    }
-
-    //从配置文件中提取模型的url
-    extractURL = (data) => {
-        for (const item1 of data[0].children) {
-            if (item1.tag === 'SimulationRun') {
-                for (const item2 of item1.children) {
-                    if (item2.tag == 'Path') {
-                        const url = item2._text;
-                        const ext = url.substring(url.lastIndexOf('.') + 1);
-                        return { fileURL: url, ext: ext };
-                    }
-                }
-            }
-        }
-        console.log("throw error");
     }
 
     //递归渲染每个树节点（这里必须用map遍历！因为需要返回数组）
@@ -234,39 +226,22 @@ class CloudEulerSimulation extends React.Component {
         this.renderWindow.render();
     }
 
-    parseSimulationResult = (data) => {
-        for (const item1 of data[0].children) {
-            if (item1.tag === 'SimulationRun') {
-                const resultInfo = {
-                    fileInfo: {},
-                    description: {}
-                };
-                for (const item2 of item1.children) {
-                    if (item2.tag == 'FileName') {
-                        fileInfo.fileName = item2._text;
-                    }
-                    if (item2.tag == 'FrameSum') {
-                        fileInfo.FrameSum = item2._text;
-                    }
-                }
-                //解析仿真结果其他数据(放在description中)
-                return resultInfo;
-            }
+    initVolumeController = () => {
+        //动态删除添加volume这个div
+        let geoViewer = document.getElementById("geoViewer");
+        if (document.getElementById("volumeController")) {
+            geoViewer.removeChild(document.getElementById("volumeController"));
         }
-        console.log("throw error");
-    }
+        let volumeControllerContainer = document.createElement("div");
+        volumeControllerContainer.id = "volumeController";
+        geoViewer.append(volumeControllerContainer);
 
-    upload_x = () => {
-        this.setState({
-            uploadDisabled: true
-        }, () => {
-            //第一个参数data，第二个参数仿真类型
-            physikaUploadConfig(this.state.data, 'fluid')
-                .then(res => {
-                    console.log("成功上传配置并获取到仿真结果配置");
-                    console.log(res);
-                })
-        })
+        this.controllerWidget = vtkVolumeController.newInstance({
+            size: [400, 150],
+            rescaleColorMap: true,
+        });
+        this.controllerWidget.setContainer(volumeControllerContainer);
+        this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
     }
 
     upload = () => {
@@ -277,46 +252,61 @@ class CloudEulerSimulation extends React.Component {
             physikaUploadConfig(this.state.data, 'fluid')
                 .then(res => {
                     console.log("成功上传配置并获取到仿真结果配置");
-                    console.log(res);
-                    let options = this.extractURL(res);
-                    return Promise.all([physikaLoadVti(options), res]);
-                })
-                .then(res => {
-                    console.log("成功获取仿真结果模型", res);
-                    this.frameSeq = res[0];
-                    this.updateScene(this.frameSeq[0]);
+                    const resultInfo = parseSimulationResult(res);
+                    this.fileName = resultInfo.fileName;
+                    this.frameSum = resultInfo.frameSum;
+
+                    this.fetchModel(0);
+
                     this.setState({
-                        data: res[1],
-                        totalFrame: this.frameSeq.length - 1,
+                        description: resultInfo.description,
+                        animation: resultInfo.animation,
                         uploadDisabled: false,
-                        isSliderShow: true
+                        isSliderShow: true,
+                        isDescriptionShow: true,
                     });
-
-                    //显示方向标记部件
-                    this.orientationMarkerWidget.setEnabled(true);
-
-                    //动态删除添加volume这个div
-                    let geoViewer = document.getElementById("geoViewer");
-                    if (document.getElementById("volumeController")) {
-                        geoViewer.removeChild(document.getElementById("volumeController"));
-                    }
-                    let volumeControllerContainer = document.createElement("div");
-                    volumeControllerContainer.id = "volumeController";
-                    geoViewer.append(volumeControllerContainer);
-
-                    this.controllerWidget = vtkVolumeController.newInstance({
-                        size: [400, 150],
-                        rescaleColorMap: true,
-                    });
-                    this.controllerWidget.setContainer(volumeControllerContainer);
-                    this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
-
-
                 })
-                .catch(err => {
-                    console.log("Error uploading: ", err);
-                });
-        });
+        })
+    }
+
+    fetchModel = (frameIndex) => {
+        this.worker.postMessage({
+            data: { fileName: this.fileName + '_' + frameIndex + '.vti' }
+        })
+            .then(res => {
+                const vtiReader = new vtkXMLImageDataReader.newInstance();
+                vtiReader.parseAsArrayBuffer(res);
+                const source = vtiReader.getOutputData(0);
+                const mapper = vtkVolumeMapper.newInstance();
+                const actor = vtkVolume.newInstance();
+
+                mapper.setInputData(source);
+                actor.setMapper(mapper);
+
+                actor.getProperty().setAmbient(0.2);
+                actor.getProperty().setDiffuse(0.7);
+                actor.getProperty().setSpecular(0.3);
+                actor.getProperty().setSpecularPower(8.0);
+
+                const newScene = { source, mapper, actor };
+
+                if (this.isFirstLoad) {
+                    this.updateScene(newScene);
+                    //初始化体素渲染控制控件
+                    this.initVolumeController();
+                    this.isFirstLoad = false;
+                }
+                else {
+                    this.updateScene(newScene);
+                    this.controllerWidget.changeActor(this.curScene.actor);
+                }
+
+                this.setState({ curFrameIndex: frameIndex });
+
+            })
+            .catch(err => {
+                console.log("Error uploading: ", err);
+            });
     }
 
     onSliderChange = (value) => {
@@ -324,50 +314,58 @@ class CloudEulerSimulation extends React.Component {
     }
 
     onSliderAfterChange = (value) => {
-        //console.log('onAfterChange: ', value);
-        this.updateScene(this.frameSeq[value]);
-        this.controllerWidget.changeActor(this.curScene.actor);
+        console.log('onAfterChange: ', value);
+        if (value !== this.state.curFrameIndex) {
+            this.fetchModel(value);
+        }
+
     }
+
+    renderDescriptions = () => this.state.description.map((item, index) => {
+        return <Descriptions.Item label={item.name} key={index}>{item.content}</Descriptions.Item>
+    })
 
     render() {
         console.log("tree:", this.state.data);
         return (
-            <div className="w-100" >
-                <div className="card border rounded-0"><span className="text-center m-1">云欧拉仿真</span>
-                    <hr className="m-0" />
-                    <div className="card-body pt-2">
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.load}><span className="glyphicon glyphicon-plus">加载场景</span></button>
-                        <div className="pt-2">
-                            <Tree >
-                                {this.renderTreeNodes(this.state.data)}
-                            </Tree>
-                        </div>
-
-                        <button className="btn btn-danger btn-sm p-0 btn-block" type="button" onClick={this.upload} disabled={this.state.uploadDisabled}><span className="glyphicon glyphicon-plus">上传</span></button>
-                    </div>
-                    <div >
-                        <PhysikaTreeNodeAttrModal
-                            treeNodeAttr={this.state.treeNodeAttr}
-                            treeNodeText={this.state.treeNodeText}
-                            visible={this.state.isTreeNodeAttrModalShow}
-                            hideModal={this.hideTreeNodeAttrModal}
-                            changeData={(obj) => this.changeData(obj)}
-                        ></PhysikaTreeNodeAttrModal>
-                    </div>
-                    {
-                        (this.state.isSliderShow) &&
-                        <div>
-                            <Divider>当前展示帧序号</Divider>
-                            <Slider defaultValue={0} max={this.state.totalFrame}
-                                onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
-                        </div>
-                    }
-
+            <div>
+                <Divider>云欧拉仿真</Divider>
+                <Collapse defaultActiveKey={['1']}>
+                    <Panel header="仿真初始化" key="1">
+                        <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>
+                        <Tree>
+                            {this.renderTreeNodes(this.state.data)}
+                        </Tree>
+                        <br />
+                        <Button type="primary" size={'small'} block onClick={this.upload} disabled={this.state.uploadDisabled}>开始仿真</Button>
+                    </Panel>
+                    <Panel header="仿真结果信息" key="2">
+                        <Descriptions column={1} layout={'horizontal'}>
+                            {this.renderDescriptions()}
+                        </Descriptions>
+                    </Panel>
+                    <Panel header="仿真展示控制" key="3">
+                        {
+                            (this.state.isSliderShow) &&
+                            <div>
+                                <Slider defaultValue={0} max={this.frameSum - 1}
+                                    onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
+                            </div>
+                        }
+                    </Panel>
+                </Collapse>
+                <div >
+                    <PhysikaTreeNodeAttrModal
+                        treeNodeAttr={this.state.treeNodeAttr}
+                        treeNodeText={this.state.treeNodeText}
+                        visible={this.state.isTreeNodeAttrModalShow}
+                        hideModal={this.hideTreeNodeAttrModal}
+                        changeData={(obj) => this.changeData(obj)}
+                    ></PhysikaTreeNodeAttrModal>
                 </div>
             </div>
-        );
+        )
     }
-
 }
 
 export {
