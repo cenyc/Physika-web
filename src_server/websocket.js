@@ -1,4 +1,5 @@
 const fs = require('fs');
+const JSZip = require('jszip');
 const path = require('path');
 
 const WSServer = require('ws').Server;
@@ -25,7 +26,37 @@ wss.on('connection', function connection(ws) {
         console.log(err);
       }
       console.log(data.buffer);
-      ws.send(data.buffer);
+      //对文件进行压缩
+      const zip = new JSZip();
+      zip.file(messageObj.fileName, data.buffer);
+      zip.generateAsync({
+        type: 'arraybuffer',
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 9
+        }
+      }).then(res => {
+        if (Math.random() > 0.5) {
+          console.log('res', res);
+          ws.send(res);
+        }
+        else {
+          setTimeout(() => {
+            console.log('res', res);
+            ws.send(res);
+          }, 7000);
+        }
+      })
+      /*
+      if (Math.random() > 0.5) {
+        ws.send(data.buffer);
+      }
+      else {
+        setTimeout(() => {
+          ws.send(data.buffer);
+        }, 5000);
+      }
+      */
 
     });
   });

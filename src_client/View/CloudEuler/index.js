@@ -1,4 +1,4 @@
-import 'bootstrap';
+'use strict';
 import React from 'react';
 import { Tree, Button, Slider, Divider, Descriptions, Collapse } from 'antd';
 const { TreeNode } = Tree;
@@ -13,16 +13,12 @@ import vtkVolumeController from '../Widget/VolumeController'
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
-import { physikaLoadVti } from '../../IO/LoadVti'
+import { physikaInitVti } from '../../IO/InitVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
 
 import WebworkerPromise from 'webworker-promise';
-import WorkerTest from '../../test.worker';
-
-import vtkXMLImageDataReader from 'vtk.js/Sources/IO/XML/XMLImageDataReader';
-import vtkVolume from 'vtk.js/Sources/Rendering/Core/Volume';
-import vtkVolumeMapper from 'vtk.js/Sources/Rendering/Core/VolumeMapper';
+import WSWorker from '../../ws.worker';
 
 function parseSimulationResult(data) {
     let simRunObj;
@@ -58,6 +54,8 @@ function parseSimulationResult(data) {
     return resultInfo;
 }
 
+//load:重新加载初始化文件，并清空界面；upload：只会清空界面。
+
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
         super(props);
@@ -69,14 +67,13 @@ class CloudEulerSimulation extends React.Component {
             treeNodeKey: -1,
             uploadDisabled: true,
 
-            curFrameIndex: 0,
             //结果展示信息
             description: [],
 
             isTreeNodeAttrModalShow: false,
             uploadDisabled: true,
-            isSliderShow: false,
             animation: false,
+            isSliderShow: false,
         };
     }
 
@@ -95,34 +92,64 @@ class CloudEulerSimulation extends React.Component {
         this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
         //显示方向标记部件
         this.orientationMarkerWidget.setEnabled(true);
-        //curScene={source, mapper, actor}
-        this.curScene = {};
-        //frameSeq保存了每帧场景，用于实现动画（是否还需要？）
-        this.frameSeq = [];
-
         //文件名
         this.fileName = '';
         //总帧数
         this.frameSum = 0;
+        //当前帧序号
+        this.curFrameIndex = 0;
+        //curScene={source, mapper, actor}
+        this.curScene = {};
         //frameStateArray保存每一帧仿真模型的当前状态：
         // 0（未获取）、1（正在获取）、2（在indexedDB中）、3（在内存对象中（无法获知js对象在内存中的大小，没法设定内存对象大小。。。））
-        this.frameStateArray;
+        this.frameStateArray = [];
+        //fetchFrameQueue保存未获取帧的获取序列
+        this.fetchFrameQueue = [];
+        //加载到内存中的帧
+        this.frameSeq = [];
+        this.workerLock = false;
+        this.fetchModelTimer = null;
 
-        //判断是否第一次加载vtk控件
-        this.isFirstLoad = true;
-
-        this.worker = new WebworkerPromise(new WorkerTest());
-        this.worker.postMessage({ init: true });
+        this.wsWorker = new WebworkerPromise(new WSWorker());
+        this.wsWorker.postMessage({ init: true });
     }
-
 
     componentWillUnmount() {
         console.log('子组件将卸载');
         let renderWindowDOM = document.getElementById("geoViewer");
         renderWindowDOM.innerHTML = ``;
-        this.worker.terminate();
+        this.wsWorker.terminate();
+        //关闭定时器
+        if (this.fetchModelTimer !== null) {
+            clearInterval(this.fetchModelTimer);
+        }
     }
 
+    clean = () => {
+        this.renderer.removeActor(this.curScene.actor);
+        this.curFrameIndex = 0;
+        this.curScene = {};
+        this.frameStateArray = [];
+        this.fetchFrameQueue = [];
+        this.frameSeq = [];
+        this.workerLock = false;
+        if (this.fetchModelTimer !== null) {
+            clearInterval(this.fetchModelTimer);
+        }
+
+        let geoViewer = document.getElementById("geoViewer");
+        if (document.getElementById("volumeController")) {
+            geoViewer.removeChild(document.getElementById("volumeController"));
+        }
+        this.renderer.resetCamera();
+        this.renderWindow.render();
+
+        this.setState({
+            description: [],
+            animation: false,
+            isSliderShow: false,
+        });
+    }
 
     load = () => {
         physikaLoadConfig('fluid')
@@ -132,24 +159,7 @@ class CloudEulerSimulation extends React.Component {
                     data: res,
                     uploadDisabled: false
                 });
-                //如果不是第一次加载，则清空原场景
-                if (!this.isFirstLoad) {
-                    this.renderer.removeActor(this.curScene.actor);
-                    this.curScene = {};
-                    let geoViewer = document.getElementById("geoViewer");
-                    if (document.getElementById("volumeController")) {
-                        geoViewer.removeChild(document.getElementById("volumeController"));
-                    }
-                    this.renderer.resetCamera();
-                    this.renderWindow.render();
-                    this.setState({
-                        curFrameIndex: 0,
-                        description: [],
-                        isSliderShow: false,
-                        animation: false,
-                    });
-                    this.isFirstLoad = true;
-                }
+                this.clean();
             })
             .catch(err => {
                 console.log("Error loading: ", err);
@@ -219,7 +229,6 @@ class CloudEulerSimulation extends React.Component {
         //移除旧场景actor
         this.renderer.removeActor(this.curScene.actor);
         this.curScene = newScene;
-        console.log(this.curScene);
         //添加新场景actor
         this.renderer.addActor(this.curScene.actor);
         this.renderer.resetCamera();
@@ -229,9 +238,6 @@ class CloudEulerSimulation extends React.Component {
     initVolumeController = () => {
         //动态删除添加volume这个div
         let geoViewer = document.getElementById("geoViewer");
-        if (document.getElementById("volumeController")) {
-            geoViewer.removeChild(document.getElementById("volumeController"));
-        }
         let volumeControllerContainer = document.createElement("div");
         volumeControllerContainer.id = "volumeController";
         geoViewer.append(volumeControllerContainer);
@@ -245,8 +251,9 @@ class CloudEulerSimulation extends React.Component {
     }
 
     upload = () => {
+        this.clean();
         this.setState({
-            uploadDisabled: true
+            uploadDisabled: true,
         }, () => {
             //第一个参数data，第二个参数仿真类型
             physikaUploadConfig(this.state.data, 'fluid')
@@ -255,57 +262,90 @@ class CloudEulerSimulation extends React.Component {
                     const resultInfo = parseSimulationResult(res);
                     this.fileName = resultInfo.fileName;
                     this.frameSum = resultInfo.frameSum;
-
-                    this.fetchModel(0);
-
                     this.setState({
                         description: resultInfo.description,
                         animation: resultInfo.animation,
+                    });
+                    //强制加载第0帧，然后再显示其他内容！
+                    if (this.frameSum > 0) {
+                        for (let i = 0; i < this.frameSum; i++) {
+                            //根据帧总数初始化this.frameStateArray
+                            this.frameStateArray.push(0);
+                            //初始化获取帧序列
+                            this.fetchFrameQueue.push(i);
+                        }
+                        this.fetchFrameQueue.shift();
+                        console.log(this.frameStateArray, this.fetchFrameQueue, this.frameSum);
+                        return this.wsWorker.postMessage({
+                            data: { fileName: this.fileName + '_0.vti' }
+                        });
+                    }
+                    else {
+                        return Promise.reject('模拟帧数不大于0！');
+                    }
+                })
+                .then(res => {
+                    //第一帧获取时在开启获取定时器之前，故不需要锁
+                    //开启获取定时器
+                    this.fetchModelTimer = setInterval(this.checkFrameQueue, 1000);
+                    //注意后缀！
+                    return physikaInitVti(res, 'zip');
+                })
+                .then(res => {
+                    //第0帧的state为已获取
+                    this.frameStateArray[0] = 2;
+                    //将第0帧加入framSeq
+                    this.frameSeq[0] = res;
+                    this.updateScene(res);
+                    this.initVolumeController();
+                    this.setState({
                         uploadDisabled: false,
                         isSliderShow: true,
-                        isDescriptionShow: true,
                     });
                 })
-        })
+                .catch(err => {
+                    console.log("Error uploading: ", err);
+                })
+        });
+    }
+
+    checkFrameQueue = () => {
+        //如果获取帧队列不为空 且 worker未上锁
+        if (this.fetchFrameQueue.length !== 0 && !this.workerLock) {
+            //开启worker锁
+            this.workerLock = true;
+            this.fetchModel(this.fetchFrameQueue.shift());
+        }
+        if (this.fetchFrameQueue.length === 0) {
+            clearInterval(this.fetchModelTimer);
+            console.log("获取完毕，清除定时器", this.fetchFrameQueue);
+        }
     }
 
     fetchModel = (frameIndex) => {
-        this.worker.postMessage({
+        //设定当前帧状态为获取中
+        this.frameStateArray[frameIndex] = 1;
+        this.wsWorker.postMessage({
             data: { fileName: this.fileName + '_' + frameIndex + '.vti' }
         })
             .then(res => {
-                const vtiReader = new vtkXMLImageDataReader.newInstance();
-                vtiReader.parseAsArrayBuffer(res);
-                const source = vtiReader.getOutputData(0);
-                const mapper = vtkVolumeMapper.newInstance();
-                const actor = vtkVolume.newInstance();
-
-                mapper.setInputData(source);
-                actor.setMapper(mapper);
-
-                actor.getProperty().setAmbient(0.2);
-                actor.getProperty().setDiffuse(0.7);
-                actor.getProperty().setSpecular(0.3);
-                actor.getProperty().setSpecularPower(8.0);
-
-                const newScene = { source, mapper, actor };
-
-                if (this.isFirstLoad) {
-                    this.updateScene(newScene);
-                    //初始化体素渲染控制控件
-                    this.initVolumeController();
-                    this.isFirstLoad = false;
-                }
-                else {
-                    this.updateScene(newScene);
+                ////关闭worker锁
+                this.workerLock = false;
+                return physikaInitVti(res, 'zip');
+            })
+            .then(res => {
+                //设定当前帧状态为以获取
+                this.frameStateArray[frameIndex] = 2;
+                //将当前帧加入frameSeq
+                this.frameSeq[frameIndex] = res;
+                if (frameIndex === this.curFrameIndex) {
+                    this.updateScene(res);
                     this.controllerWidget.changeActor(this.curScene.actor);
                 }
-
-                this.setState({ curFrameIndex: frameIndex });
-
+                console.log('获取到第', frameIndex, '帧，', this.frameStateArray, this.frameSeq, this.fetchFrameQueue);
             })
             .catch(err => {
-                console.log("Error uploading: ", err);
+                console.log("Error fetchModel: ", err);
             });
     }
 
@@ -315,15 +355,34 @@ class CloudEulerSimulation extends React.Component {
 
     onSliderAfterChange = (value) => {
         console.log('onAfterChange: ', value);
-        if (value !== this.state.curFrameIndex) {
-            this.fetchModel(value);
+        this.curFrameIndex = value;
+        if (this.frameStateArray[value] === 0) {
+            //未获取
+            console.log("-------", this.fetchFrameQueue);
+            //考虑到value在数组中的位置，前方数组可能比后面大，
+            //执行过多的push会导致效率太低，考虑将数组变为队列应该可以改善效率
+            const pos = this.fetchFrameQueue.indexOf(value);
+            const frontArray = this.fetchFrameQueue.splice(0, pos);
+            for (const item of frontArray) {
+                this.fetchFrameQueue.push(item);
+            }
+            console.log("-------", this.fetchFrameQueue);
         }
-
+        else if (this.frameStateArray[value] === 1) {
+            //获取中,不管！
+        }
+        else if (this.frameStateArray[value] === 2) {
+            //目前假设以获取
+            this.updateScene(this.frameSeq[value]);
+            this.controllerWidget.changeActor(this.curScene.actor);
+        }
     }
 
     renderDescriptions = () => this.state.description.map((item, index) => {
         return <Descriptions.Item label={item.name} key={index}>{item.content}</Descriptions.Item>
     })
+
+
 
     render() {
         console.log("tree:", this.state.data);
@@ -347,10 +406,8 @@ class CloudEulerSimulation extends React.Component {
                     <Panel header="仿真展示控制" key="3">
                         {
                             (this.state.isSliderShow) &&
-                            <div>
-                                <Slider defaultValue={0} max={this.frameSum - 1}
-                                    onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
-                            </div>
+                            <Slider defaultValue={0} max={this.frameSum - 1}
+                                onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
                         }
                     </Panel>
                 </Collapse>

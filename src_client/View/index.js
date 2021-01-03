@@ -1,18 +1,24 @@
 import React from 'react';
 import { Layout, Menu, Dropdown, Button, Row, Col } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
-
 import '../../static/css/antdesign.css'
-
 import { PhysikaCloudEuler } from './CloudEuler'
 import { PhysikaClothSimulation } from './Cloth'
 
 const { Header, Content, Sider } = Layout;
 
+import WebworkerPromise from 'webworker-promise';
+import WSWorker from '../ws.worker'
+
 class PhysikaWeb extends React.Component {
     state = {
         item: 0
     };
+
+    componentDidMount(){
+        //this.wsWorker = new WebworkerPromise(new WSWorker());
+        //this.wsWorker.postMessage({ init: true });
+    }
 
     change = (e) => {
         this.setState({
