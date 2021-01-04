@@ -16,9 +16,10 @@ import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitVti } from '../../IO/InitVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
-
 import WebworkerPromise from 'webworker-promise';
-import WSWorker from '../../ws.worker';
+import WSWorker from '../../Worker/ws.worker';
+
+import db from '../../db';
 
 function parseSimulationResult(data) {
     let simRunObj;
@@ -112,6 +113,8 @@ class CloudEulerSimulation extends React.Component {
 
         this.wsWorker = new WebworkerPromise(new WSWorker());
         this.wsWorker.postMessage({ init: true });
+
+        this.uploadDate=null;
     }
 
     componentWillUnmount() {
@@ -250,8 +253,11 @@ class CloudEulerSimulation extends React.Component {
         this.controllerWidget.setupContent(this.renderWindow, this.curScene.actor, true);
     }
 
+    //现在upload不更新data！
     upload = () => {
         this.clean();
+        //存储提交日期用于区分新旧数据，并删除旧数据
+        this.uploadDate=Date.now();
         this.setState({
             uploadDisabled: true,
         }, () => {
@@ -288,6 +294,14 @@ class CloudEulerSimulation extends React.Component {
                     //第一帧获取时在开启获取定时器之前，故不需要锁
                     //开启获取定时器
                     this.fetchModelTimer = setInterval(this.checkFrameQueue, 1000);
+                    //存入indexeddDB
+                    db.table('model').add({
+                        userID:'li',uploadDate:this.uploadDate,frameIndex:0,arrayBuffer:res
+                    }).then(id=>{
+                        console.log(id,"成功存入第0帧！");
+                    }).catch(err=>{
+                        console.log(err);
+                    })
                     //注意后缀！
                     return physikaInitVti(res, 'zip');
                 })
@@ -329,7 +343,7 @@ class CloudEulerSimulation extends React.Component {
             data: { fileName: this.fileName + '_' + frameIndex + '.vti' }
         })
             .then(res => {
-                ////关闭worker锁
+                //关闭worker锁
                 this.workerLock = false;
                 return physikaInitVti(res, 'zip');
             })
@@ -356,33 +370,35 @@ class CloudEulerSimulation extends React.Component {
     onSliderAfterChange = (value) => {
         console.log('onAfterChange: ', value);
         this.curFrameIndex = value;
-        if (this.frameStateArray[value] === 0) {
-            //未获取
-            console.log("-------", this.fetchFrameQueue);
-            //考虑到value在数组中的位置，前方数组可能比后面大，
-            //执行过多的push会导致效率太低，考虑将数组变为队列应该可以改善效率
-            const pos = this.fetchFrameQueue.indexOf(value);
-            const frontArray = this.fetchFrameQueue.splice(0, pos);
-            for (const item of frontArray) {
-                this.fetchFrameQueue.push(item);
-            }
-            console.log("-------", this.fetchFrameQueue);
-        }
-        else if (this.frameStateArray[value] === 1) {
-            //获取中,不管！
-        }
-        else if (this.frameStateArray[value] === 2) {
-            //目前假设以获取
-            this.updateScene(this.frameSeq[value]);
-            this.controllerWidget.changeActor(this.curScene.actor);
+        switch (this.frameStateArray[value]) {
+            case 0:
+                //未获取
+                console.log("-------", this.fetchFrameQueue);
+                //考虑到value在数组中的位置，前方数组可能比后面大，
+                //执行过多的push会导致效率太低，考虑将数组变为队列应该可以改善效率
+                const pos = this.fetchFrameQueue.indexOf(value);
+                const frontArray = this.fetchFrameQueue.splice(0, pos);
+                for (const item of frontArray) {
+                    this.fetchFrameQueue.push(item);
+                }
+                console.log("-------", this.fetchFrameQueue);
+                break;
+            case 1:
+                //获取中,不管！
+                break;
+            case 2:
+                //目前假设以获取
+                this.updateScene(this.frameSeq[value]);
+                this.controllerWidget.changeActor(this.curScene.actor);
+                break;
+            default:
+                break;
         }
     }
 
     renderDescriptions = () => this.state.description.map((item, index) => {
         return <Descriptions.Item label={item.name} key={index}>{item.content}</Descriptions.Item>
     })
-
-
 
     render() {
         console.log("tree:", this.state.data);
@@ -392,7 +408,7 @@ class CloudEulerSimulation extends React.Component {
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="仿真初始化" key="1">
                         <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>
-                        <Tree>
+                        <Tree style={{ overflowX: 'auto', width: '200px' }}>
                             {this.renderTreeNodes(this.state.data)}
                         </Tree>
                         <br />

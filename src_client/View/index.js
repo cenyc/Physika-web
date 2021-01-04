@@ -8,7 +8,7 @@ import { PhysikaClothSimulation } from './Cloth'
 const { Header, Content, Sider } = Layout;
 
 import WebworkerPromise from 'webworker-promise';
-import WSWorker from '../ws.worker'
+import WSWorker from '../Worker/ws.worker'
 
 class PhysikaWeb extends React.Component {
     state = {

@@ -19,7 +19,7 @@
         <SimulationMethod class="Enum" name="仿真类型" disabled="false">0</SimulationMethod>
         <Gravity class="Vector3f" name="重力" disabled="true">0.0 -9.8 0.0</Gravity>
         <CFLMethod class="Bool" name="使用CFL条件" disabled="true">true</CFLMethod>
-        <Frame class="Unsigned" name="模拟帧数" disabled="false">50</Frame>
+        <Frame class="Unsigned" name="模拟帧数" disabled="false">5</Frame>
     </Simulation>
     <!-- <Upload class="" name="用户上传">
         <File class="File" type="image" name="图片文件" disabled="false">null</File>
