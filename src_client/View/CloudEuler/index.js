@@ -115,6 +115,7 @@ class CloudEulerSimulation extends React.Component {
         this.wsWorker.postMessage({ init: true });
 
         this.uploadDate=null;
+        this.loadTag=0;
     }
 
     componentWillUnmount() {
@@ -155,6 +156,10 @@ class CloudEulerSimulation extends React.Component {
     }
 
     load = () => {
+        if(this.workerLock){
+            this.loadTag=1;
+            return;
+        }
         physikaLoadConfig('fluid')
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -255,6 +260,10 @@ class CloudEulerSimulation extends React.Component {
 
     //现在upload不更新data！
     upload = () => {
+        if(this.workerLock){
+            this.loadTag=2;
+            return;
+        }
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
         this.uploadDate=Date.now();
@@ -332,7 +341,7 @@ class CloudEulerSimulation extends React.Component {
         }
         if (this.fetchFrameQueue.length === 0) {
             clearInterval(this.fetchModelTimer);
-            console.log("获取完毕，清除定时器", this.fetchFrameQueue);
+            console.log("获取帧队列为空，清除定时器", this.fetchFrameQueue);
         }
     }
 
@@ -345,7 +354,20 @@ class CloudEulerSimulation extends React.Component {
             .then(res => {
                 //关闭worker锁
                 this.workerLock = false;
-                return physikaInitVti(res, 'zip');
+                if(this.loadTag===0){
+                    return physikaInitVti(res, 'zip');
+                }
+                else{
+                    if(this.loadTag===1){
+                        this.loadTag=0;
+                        this.load();
+                    }
+                    if(this.loadTag===2){
+                        this.loadTag=0;
+                        this.upload();
+                    }
+                    return Promise.reject('忽略该帧！')
+                }
             })
             .then(res => {
                 //设定当前帧状态为以获取
