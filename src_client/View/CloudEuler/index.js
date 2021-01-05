@@ -102,20 +102,24 @@ class CloudEulerSimulation extends React.Component {
         //curScene={source, mapper, actor}
         this.curScene = {};
         //frameStateArray保存每一帧仿真模型的当前状态：
-        // 0（未获取）、1（正在获取）、2（在indexedDB中）、3（在内存对象中（无法获知js对象在内存中的大小，没法设定内存对象大小。。。））
+        // 0（未获取）、1（正在获取）、2（已获取，未存入indexedDB）、3（在indexedDB中）、4（在内存对象中（无法获知js对象在内存中的大小，没法设定内存对象大小。。。））
         this.frameStateArray = [];
         //fetchFrameQueue保存未获取帧的获取序列
         this.fetchFrameQueue = [];
         //加载到内存中的帧
         this.frameSeq = [];
+        //控制给worker发送信息的锁
         this.workerLock = false;
+        //获取模型操作的定时器
         this.fetchModelTimer = null;
 
         this.wsWorker = new WebworkerPromise(new WSWorker());
         this.wsWorker.postMessage({ init: true });
 
-        this.uploadDate=null;
-        this.loadTag=0;
+        //记录本次upload的时间
+        this.uploadDate = null;
+        //用于标记是否在workerLock为true的情况下触发了load方法
+        this.loadTag = 0;
     }
 
     componentWillUnmount() {
@@ -140,6 +144,9 @@ class CloudEulerSimulation extends React.Component {
         if (this.fetchModelTimer !== null) {
             clearInterval(this.fetchModelTimer);
         }
+        db.table('model').where('uploadDate').below(Date.now()).delete()
+            .then(() => { console.log('删除旧数据成功!') })
+            .catch(err => { console.log('删除旧数据出错! ' + err) });
 
         let geoViewer = document.getElementById("geoViewer");
         if (document.getElementById("volumeController")) {
@@ -156,8 +163,8 @@ class CloudEulerSimulation extends React.Component {
     }
 
     load = () => {
-        if(this.workerLock){
-            this.loadTag=1;
+        if (this.workerLock) {
+            this.loadTag = 1;
             return;
         }
         physikaLoadConfig('fluid')
@@ -260,13 +267,13 @@ class CloudEulerSimulation extends React.Component {
 
     //现在upload不更新data！
     upload = () => {
-        if(this.workerLock){
-            this.loadTag=2;
+        if (this.workerLock) {
+            this.loadTag = 2;
             return;
         }
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
-        this.uploadDate=Date.now();
+        this.uploadDate = Date.now();
         this.setState({
             uploadDisabled: true,
         }, () => {
@@ -303,14 +310,8 @@ class CloudEulerSimulation extends React.Component {
                     //第一帧获取时在开启获取定时器之前，故不需要锁
                     //开启获取定时器
                     this.fetchModelTimer = setInterval(this.checkFrameQueue, 1000);
-                    //存入indexeddDB
-                    db.table('model').add({
-                        userID:'li',uploadDate:this.uploadDate,frameIndex:0,arrayBuffer:res
-                    }).then(id=>{
-                        console.log(id,"成功存入第0帧！");
-                    }).catch(err=>{
-                        console.log(err);
-                    })
+                    //存入indexedDB
+                    this.writeModel(0, res);
                     //注意后缀！
                     return physikaInitVti(res, 'zip');
                 })
@@ -354,35 +355,68 @@ class CloudEulerSimulation extends React.Component {
             .then(res => {
                 //关闭worker锁
                 this.workerLock = false;
-                if(this.loadTag===0){
+                if (this.loadTag === 0) {
+                    //设定当前帧状态为以获取但未存入indexedDB
+                    this.frameStateArray[frameIndex] = 2;
+                    console.log('获取到第', frameIndex, '帧，', this.frameStateArray, this.fetchFrameQueue);
+                    //将模型写入indexedDB
+                    this.writeModel(frameIndex, res);
                     return physikaInitVti(res, 'zip');
                 }
-                else{
-                    if(this.loadTag===1){
-                        this.loadTag=0;
+                else {
+                    if (this.loadTag === 1) {
+                        this.loadTag = 0;
                         this.load();
                     }
-                    if(this.loadTag===2){
-                        this.loadTag=0;
+                    if (this.loadTag === 2) {
+                        this.loadTag = 0;
                         this.upload();
                     }
                     return Promise.reject('忽略该帧！')
                 }
             })
             .then(res => {
-                //设定当前帧状态为以获取
-                this.frameStateArray[frameIndex] = 2;
                 //将当前帧加入frameSeq
-                this.frameSeq[frameIndex] = res;
+                //this.frameSeq[frameIndex] = res;
                 if (frameIndex === this.curFrameIndex) {
                     this.updateScene(res);
                     this.controllerWidget.changeActor(this.curScene.actor);
                 }
-                console.log('获取到第', frameIndex, '帧，', this.frameStateArray, this.frameSeq, this.fetchFrameQueue);
             })
             .catch(err => {
                 console.log("Error fetchModel: ", err);
             });
+    }
+
+    writeModel = (frameIndex, arrayBuffer) => {
+        db.table('model').add({
+            userID: 'li', uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
+        }).then(id => {
+            this.frameStateArray[frameIndex] = 3;
+            console.log(id, '成功存入第' + frameIndex + '帧！', this.frameStateArray);
+        }).catch(err => {
+            console.log(err);
+        })
+    }
+
+    readModel = (uploadDate, frameIndex) => {
+        //then后面if判断
+        db.table('model').get({
+            uploadDate: uploadDate, frameIndex: frameIndex
+        }).then(model => {
+            return physikaInitVti(model.arrayBuffer, 'zip');
+        }).then(res => {
+            if (uploadDate === this.uploadDate && frameIndex === this.curFrameIndex) {
+                this.updateScene(res);
+                this.controllerWidget.changeActor(this.curScene.actor);
+            }
+            else {
+                //快速改变已获取帧数可以看到如下显示
+                console.log('Old model ' + frameIndex + ' is no longer uesd!')
+            }
+        }).catch(err => {
+            console.log('Error readModel: ', err);
+        });
     }
 
     onSliderChange = (value) => {
@@ -391,30 +425,39 @@ class CloudEulerSimulation extends React.Component {
 
     onSliderAfterChange = (value) => {
         console.log('onAfterChange: ', value);
-        this.curFrameIndex = value;
-        switch (this.frameStateArray[value]) {
-            case 0:
-                //未获取
-                console.log("-------", this.fetchFrameQueue);
-                //考虑到value在数组中的位置，前方数组可能比后面大，
-                //执行过多的push会导致效率太低，考虑将数组变为队列应该可以改善效率
-                const pos = this.fetchFrameQueue.indexOf(value);
-                const frontArray = this.fetchFrameQueue.splice(0, pos);
-                for (const item of frontArray) {
-                    this.fetchFrameQueue.push(item);
-                }
-                console.log("-------", this.fetchFrameQueue);
-                break;
-            case 1:
-                //获取中,不管！
-                break;
-            case 2:
-                //目前假设以获取
-                this.updateScene(this.frameSeq[value]);
-                this.controllerWidget.changeActor(this.curScene.actor);
-                break;
-            default:
-                break;
+        if (value !== this.curFrameIndex) {
+            this.curFrameIndex = value;
+            switch (this.frameStateArray[value]) {
+                case 0:
+                    //未获取
+                    console.log("-------", this.fetchFrameQueue);
+                    //考虑到value在数组中的位置，前方数组可能比后面大，
+                    //执行过多的push会导致效率太低，考虑将数组变为队列应该可以改善效率
+                    const pos = this.fetchFrameQueue.indexOf(value);
+                    const frontArray = this.fetchFrameQueue.splice(0, pos);
+                    for (const item of frontArray) {
+                        this.fetchFrameQueue.push(item);
+                    }
+                    console.log("-------", this.fetchFrameQueue);
+                    break;
+                case 1:
+                    //获取中,不管！
+                    break;
+                case 2:
+                    //以获取，但未存入indexedDB
+                    setTimeout(() => {
+                        if (value === this.curFrameIndex) {
+                            //这里可能有问题！
+                            this.readModel(this.uploadDate, value);
+                            console.log('尝试从indexedDB中读第' + value + '帧！');
+                        }
+                    }, 1000);
+                    break;
+                case 3:
+                    this.readModel(this.uploadDate, value);
+                default:
+                    break;
+            }
         }
     }
 
