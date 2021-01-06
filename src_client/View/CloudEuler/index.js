@@ -1,6 +1,6 @@
 'use strict';
 import React from 'react';
-import { Tree, Button, Slider, Divider, Descriptions, Collapse } from 'antd';
+import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber } from 'antd';
 const { TreeNode } = Tree;
 const { Panel } = Collapse;
 //antd样式
@@ -70,6 +70,7 @@ class CloudEulerSimulation extends React.Component {
 
             //结果展示信息
             description: [],
+            inputFrameIndex: 0,
 
             isTreeNodeAttrModalShow: false,
             uploadDisabled: true,
@@ -311,18 +312,19 @@ class CloudEulerSimulation extends React.Component {
                     //开启获取定时器
                     this.fetchModelTimer = setInterval(this.checkFrameQueue, 1000);
                     //存入indexedDB
+                    //注意：先执行完下一个then中的updateScene等操作才会执行写数据（writeModel中的异步操作放在当前微任务队列最后）
                     this.writeModel(0, res);
                     //注意后缀！
                     return physikaInitVti(res, 'zip');
                 })
                 .then(res => {
-                    //第0帧的state为已获取
                     this.frameStateArray[0] = 2;
                     //将第0帧加入framSeq
                     this.frameSeq[0] = res;
                     this.updateScene(res);
                     this.initVolumeController();
                     this.setState({
+                        inputFrameIndex: 0,
                         uploadDisabled: false,
                         isSliderShow: true,
                     });
@@ -419,13 +421,9 @@ class CloudEulerSimulation extends React.Component {
         });
     }
 
-    onSliderChange = (value) => {
-        //console.log('onChange: ', value);
-    }
-
-    onSliderAfterChange = (value) => {
-        console.log('onAfterChange: ', value);
-        if (value !== this.curFrameIndex) {
+    changeInput = (value) => {
+        console.log('changeInput: ', value);
+        this.setState({ inputFrameIndex: value }, () => {
             this.curFrameIndex = value;
             switch (this.frameStateArray[value]) {
                 case 0:
@@ -444,21 +442,24 @@ class CloudEulerSimulation extends React.Component {
                     //获取中,不管！
                     break;
                 case 2:
-                    //以获取，但未存入indexedDB
+                    //已获取，但未存入indexedDB
+                    let uploadDate = this.uploadDate;
                     setTimeout(() => {
                         if (value === this.curFrameIndex) {
                             //这里可能有问题！
-                            this.readModel(this.uploadDate, value);
+                            this.readModel(uploadDate, value);
                             console.log('尝试从indexedDB中读第' + value + '帧！');
                         }
                     }, 1000);
                     break;
                 case 3:
                     this.readModel(this.uploadDate, value);
+                    break;
                 default:
                     break;
             }
-        }
+        })
+
     }
 
     renderDescriptions = () => this.state.description.map((item, index) => {
@@ -487,12 +488,21 @@ class CloudEulerSimulation extends React.Component {
                     <Panel header="仿真展示控制" key="3">
                         {
                             (this.state.isSliderShow) &&
-                            <Slider defaultValue={0} max={this.frameSum - 1}
-                                onChange={this.onSliderChange} onAfterChange={this.onSliderAfterChange}></Slider>
+                            <div>
+                                <Slider min={0} max={this.frameSum - 1} value={this.state.inputFrameIndex} onChange={this.changeInput} />
+                                <Row>
+                                    <Col span={13} style={{ alignItems: 'center', display: 'flex' }}>
+                                        <span className="ant-rate-text">当前帧序号：</span>
+                                    </Col>
+                                    <Col span={3}>
+                                        <InputNumber min={0} max={this.frameSum - 1} value={this.state.inputFrameIndex} onChange={this.changeInput} />
+                                    </Col>
+                                </Row>
+                            </div>
                         }
                     </Panel>
                 </Collapse>
-                <div >
+                <div>
                     <PhysikaTreeNodeAttrModal
                         treeNodeAttr={this.state.treeNodeAttr}
                         treeNodeText={this.state.treeNodeText}
