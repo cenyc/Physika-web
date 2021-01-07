@@ -1,6 +1,6 @@
 import macro from 'vtk.js/Sources/macro';
 import vtkColorMaps from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction/ColorMaps';
-import vtkPiecewiseGaussianWidget from 'vtk.js/Sources/Interaction/Widgets/PiecewiseGaussianWidget';
+import vtkPiecewiseGaussianWidget from '../PiecewiseGaussianWidget';
 
 import svgLogo from 'vtk.js/Sources/Interaction/UI/Icons/Logo.svg';
 import svgEdge from 'vtk.js/Sources/Interaction/UI/Icons/Contrast.svg';
@@ -112,7 +112,7 @@ function vtkVolumeController(publicAPI, model) {
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
 
-    //model.widget.setDataArray(dataArray.getData());
+    model.widget.setDataArray(dataArray.getData());
     model.widget.setColorTransferFunction(lookupTable);
     model.widget.applyOpacity(piecewiseFunction);
     model.colorDataRange = model.widget.getOpacityRange();

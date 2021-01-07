@@ -1,6 +1,13 @@
 {
-    "cloth":{
-        "simType":1,
+    "0":{
+        "simType":"CloudEuler",
+        "initConfigFileName":"./data/config_file/initialization/20201231_test.xml",
+        "uploadConfigFileDirectory":"./data/config_file/upload",
+        "callPythonFileName":"./src_server/Python/cloud_euler.py",
+        "uploadUserFileDirectory":"./data/user_file"
+    },
+    "1":{
+        "simType":"CloudMesh",
         "initConfigFileName":"./data/config_file/initialization/space-shuttle_i.xml",
         "uploadConfigFileDirectory":"./data/config_file/upload",
         "callPythonFileName":"./src_server/Python/cloth.py",
@@ -11,13 +18,6 @@
         "initConfigFileName":"./data/config_file/initialization/euler_i.xml",
         "uploadConfigFileDirectory":"./data/config_file/upload",
         "callPythonFileName":"E:/Cloud-main/python/run.py",
-        "uploadUserFileDirectory":"./data/user_file"
-    },
-    "fluid":{
-        "simType":2,
-        "initConfigFileName":"./data/config_file/initialization/20201231_test.xml",
-        "uploadConfigFileDirectory":"./data/config_file/upload",
-        "callPythonFileName":"./src_server/Python/fluid.py",
         "uploadUserFileDirectory":"./data/user_file"
     }
 }

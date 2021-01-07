@@ -54,6 +54,10 @@ registerWebworker(async function (wwMessage, emit) {
             }
         }
 
+        if(wwMessage.close){
+            ws.close();
+        }
+
         ws.onclose = function () {
             console.log('Socket close.');
         }
@@ -65,7 +69,19 @@ registerWebworker(async function (wwMessage, emit) {
         if (wwMessage.data) {
             console.log("Client socket message:", wwMessage.data);
             let wsMessage = JSON.stringify(wwMessage.data);
-            ws.send(wsMessage);
+            switch (ws.readyState) {
+                case ws.CONNECTING:
+                    setTimeout(() => {
+                        ws.send(wsMessage);
+                    }, 1000);
+                    break;
+                case ws.OPEN:
+                    ws.send(wsMessage);
+                    break;     
+                default:
+                    reject(new Error('Socket closed!'));
+                    break;
+            }
         }
 
         ws.onmessage = function (wsMessage) {

@@ -10,9 +10,14 @@ const { Header, Content, Sider } = Layout;
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../Worker/ws.worker'
 
+//屏蔽全局浏览器右键菜单
+document.oncontextmenu = function () {
+    return false;
+}
+
 class PhysikaWeb extends React.Component {
     state = {
-        item: 0
+        item: -1
     };
 
     componentDidMount(){
@@ -29,8 +34,8 @@ class PhysikaWeb extends React.Component {
     menu = () => {
         return (
             <Menu onClick={this.change}>
-                <Menu.Item key="1">流体</Menu.Item>
-                <Menu.Item key="2">布料</Menu.Item>
+                <Menu.Item key="0">云欧拉仿真</Menu.Item>
+                <Menu.Item key="1">布料</Menu.Item>
             </Menu>
         );
     }
@@ -63,11 +68,11 @@ class PhysikaWeb extends React.Component {
                 <Layout style={{ height: "93vh" }}>
                     <Sider width={250} className="site-layout-background" style={{overflow:'scroll'}}>
                         {
-                            (this.state.item === "1") &&
+                            (this.state.item === "0") &&
                             <PhysikaCloudEuler></PhysikaCloudEuler>
                         }
                         {
-                            (this.state.item === "2") &&
+                            (this.state.item === "1") &&
                             <PhysikaClothSimulation></PhysikaClothSimulation>
                         }
                     </Sider>

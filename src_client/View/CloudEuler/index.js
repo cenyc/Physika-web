@@ -1,4 +1,3 @@
-'use strict';
 import React from 'react';
 import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber } from 'antd';
 const { TreeNode } = Tree;
@@ -7,7 +6,6 @@ const { Panel } = Collapse;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-
 import vtkVolumeController from '../Widget/VolumeController'
 
 import { physikaLoadConfig } from '../../IO/LoadConfig'
@@ -15,48 +13,16 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitVti } from '../../IO/InitVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
+import {parseSimulationResult} from '../../Common'
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-function parseSimulationResult(data) {
-    let simRunObj;
-    for (let i = 0; i < data[0].children.length; i++) {
-        if (data[0].children[i].tag === 'SimulationRun') {
-            simRunObj = data[0].children[i];
-            data[0].children.splice(i, 1);
-        }
-    }
-    const resultInfo = {
-        fileName: '',
-        frameSum: 0,
-        animation: false,
-        description: []
-    }
-    for (const item of simRunObj.children) {
-        if (item.tag === 'FileName') {
-            resultInfo.fileName = item._text;
-        }
-        if (item.tag === 'FrameSum') {
-            resultInfo.frameSum = item._text;
-        }
-        if (item.tag === 'Animation') {
-            resultInfo.animation = (item._text === 'true');
-        }
-        resultInfo.description.push(
-            {
-                name: item._attributes.name,
-                content: item._text
-            }
-        );
-    }
-    return resultInfo;
-}
+const simtype=0;
 
 //load:重新加载初始化文件，并清空界面；upload：只会清空界面。
-
 class CloudEulerSimulation extends React.Component {
     constructor(props) {
         super(props);
@@ -66,7 +32,6 @@ class CloudEulerSimulation extends React.Component {
             treeNodeAttr: {},
             treeNodeText: "",
             treeNodeKey: -1,
-            uploadDisabled: true,
 
             //结果展示信息
             description: [],
@@ -92,8 +57,6 @@ class CloudEulerSimulation extends React.Component {
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
         //添加旋转控制控件
         this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
-        //显示方向标记部件
-        this.orientationMarkerWidget.setEnabled(true);
         //文件名
         this.fileName = '';
         //总帧数
@@ -108,25 +71,26 @@ class CloudEulerSimulation extends React.Component {
         //fetchFrameQueue保存未获取帧的获取序列
         this.fetchFrameQueue = [];
         //加载到内存中的帧
-        this.frameSeq = [];
+        //this.frameSeq = [];
         //控制给worker发送信息的锁
         this.workerLock = false;
         //获取模型操作的定时器
         this.fetchModelTimer = null;
-
-        this.wsWorker = new WebworkerPromise(new WSWorker());
-        this.wsWorker.postMessage({ init: true });
-
         //记录本次upload的时间
         this.uploadDate = null;
         //用于标记是否在workerLock为true的情况下触发了load方法
         this.loadTag = 0;
+        //worker创建及WebSocket初始化
+        this.wsWorker = new WebworkerPromise(new WSWorker());
+        this.wsWorker.postMessage({ init: true });
     }
 
     componentWillUnmount() {
         console.log('子组件将卸载');
         let renderWindowDOM = document.getElementById("geoViewer");
         renderWindowDOM.innerHTML = ``;
+        //关闭WebSocket
+        this.wsWorker.postMessage({ close: true });
         this.wsWorker.terminate();
         //关闭定时器
         if (this.fetchModelTimer !== null) {
@@ -140,15 +104,14 @@ class CloudEulerSimulation extends React.Component {
         this.curScene = {};
         this.frameStateArray = [];
         this.fetchFrameQueue = [];
-        this.frameSeq = [];
-        this.workerLock = false;
+        //this.frameSeq = [];
+        //this.workerLock = false;
         if (this.fetchModelTimer !== null) {
             clearInterval(this.fetchModelTimer);
         }
         db.table('model').where('uploadDate').below(Date.now()).delete()
             .then(() => { console.log('删除旧数据成功!') })
             .catch(err => { console.log('删除旧数据出错! ' + err) });
-
         let geoViewer = document.getElementById("geoViewer");
         if (document.getElementById("volumeController")) {
             geoViewer.removeChild(document.getElementById("volumeController"));
@@ -168,7 +131,7 @@ class CloudEulerSimulation extends React.Component {
             this.loadTag = 1;
             return;
         }
-        physikaLoadConfig('fluid')
+        physikaLoadConfig(simtype)
             .then(res => {
                 console.log("成功获取初始化配置");
                 this.setState({
@@ -279,7 +242,7 @@ class CloudEulerSimulation extends React.Component {
             uploadDisabled: true,
         }, () => {
             //第一个参数data，第二个参数仿真类型
-            physikaUploadConfig(this.state.data, 'fluid')
+            physikaUploadConfig(this.state.data, simtype)
                 .then(res => {
                     console.log("成功上传配置并获取到仿真结果配置");
                     const resultInfo = parseSimulationResult(res);
@@ -320,9 +283,11 @@ class CloudEulerSimulation extends React.Component {
                 .then(res => {
                     this.frameStateArray[0] = 2;
                     //将第0帧加入framSeq
-                    this.frameSeq[0] = res;
+                    //this.frameSeq[0] = res;
                     this.updateScene(res);
                     this.initVolumeController();
+                    //显示方向标记部件
+                    this.orientationMarkerWidget.setEnabled(true);
                     this.setState({
                         inputFrameIndex: 0,
                         uploadDisabled: false,
@@ -358,7 +323,7 @@ class CloudEulerSimulation extends React.Component {
                 //关闭worker锁
                 this.workerLock = false;
                 if (this.loadTag === 0) {
-                    //设定当前帧状态为以获取但未存入indexedDB
+                    //设定当前帧状态为已获取但未存入indexedDB
                     this.frameStateArray[frameIndex] = 2;
                     console.log('获取到第', frameIndex, '帧，', this.frameStateArray, this.fetchFrameQueue);
                     //将模型写入indexedDB

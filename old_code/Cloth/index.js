@@ -13,9 +13,76 @@ import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaLoadObj } from '../../IO/LoadObj';
-import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget';
+import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
 
-const simtype=1;
+//屏蔽全局浏览器右键菜单
+document.oncontextmenu = function () {
+    return false;
+}
+
+//添加拾取的面片对应的树节点
+function addPickedCell(cellId, node) {
+    //添加pick对象
+    let hasPickObj = false;
+    if (!node.hasOwnProperty('children')) {
+        node.children = [];
+    }
+    let pickObjIndex = node.children.length;
+    node.children.forEach((item, index) => {
+        if (item.tag == 'Pick') {
+            hasPickObj = true;
+            pickObjIndex = index;
+        }
+    });
+    if (!hasPickObj) {
+        let pickOBj = {
+            children: [],
+            key: `${node.key}-${node.children.length}`,
+            tag: 'Pick',
+            _attributes: {
+                class: 'Pick',
+                name: '面片拾取'
+            }
+        };
+        node.children.push(pickOBj);
+    }
+    //添加面对象
+    const pickObj = node.children[pickObjIndex];
+    let hasCellObj = false;
+    let cellObjIndex = pickObj.children.length;
+    pickObj.children.forEach((item, index) => {
+        if (item._attributes.name == `cell-${cellId}`) {
+            hasCellObj = true;
+            cellObjIndex = index;
+        }
+    });
+    if (!hasCellObj) {
+        let cellObj = {
+            children: [],
+            key: `${pickObj.key}-${pickObj.children.length}`,
+            tag: 'Cell',
+            _attributes: {
+                class: 'Cell',
+                name: `cell-${cellId}`
+            }
+        };
+        pickObj.children.push(cellObj);
+    }
+    const cellObj = pickObj.children[cellObjIndex];
+    if (cellObj.children.length === 0) {
+        let fieldeObj = {
+            key: `${cellObj.key}-0`,
+            tag: 'Field',
+            _text: '0.0 0.0 0.0',
+            _attributes: {
+                class: 'Vector3f',
+                name: '施加力'
+            }
+        };
+        cellObj.children.push(fieldeObj);
+    }
+    return cellObj.children[0];
+}
 
 class ClothSimulation extends React.Component {
     constructor(props) {
@@ -23,15 +90,11 @@ class ClothSimulation extends React.Component {
         this.state = {
 
             data: [],
+            isTreeNodeAttrModalShow: false,
             treeNodeAttr: {},
             treeNodeText: "",
-            treeNodeKey: -1,
+            treeNodeKey: -1
 
-            description: [],
-
-            isTreeNodeAttrModalShow: false,
-            uploadDisabled: true,
-            isSliderShow: false,
         };
     }
 
@@ -44,17 +107,30 @@ class ClothSimulation extends React.Component {
         });
         this.renderer = this.fullScreenRenderer.getRenderer();
         this.renderWindow = this.fullScreenRenderer.getRenderWindow();
-        this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
         //明确一个前提：
         //如果当前帧场景中包含不止一个obj，则这些obj应写在同一个文件中
         //curScene中保存了当前帧中所包含的obj
         //curScene={name:{source, mapper, actor},...}
         this.curScene = {};
-        this.fileName = '';
-        this.frameSum = 0;
-        //worker创建及WebSocket初始化
-        this.wsWorker = new WebworkerPromise(new WSWorker());
-        this.wsWorker.postMessage({ init: true });
+        //frameSeq保存了每帧场景，用于实现动画
+        this.frameSeq = [];
+        //记录当前动画在frameSeq中的索引
+        this.frameSeqIndex = 0;
+        //用于保存requestAnimationFrame()的返回值
+        this.rAF;
+        //记录上次期望的绘制时间
+        this.lastTime = 0;
+        //动画的刷新率（requestAnimationFrame最大fps接近60）
+        this.fps = 5;
+
+        //------------------------
+        /*
+        //添加坐标轴：X：红，Y：黄，Z: 绿
+        this.axesActor = vtkAxesActor.newInstance();
+        this.renderer.addActor(this.axesActor);
+        */
+
+        this.orientationMarkerWidget = getOrientationMarkerWidget(this.renderWindow);
     }
 
     componentWillUnmount() {
@@ -62,38 +138,42 @@ class ClothSimulation extends React.Component {
         //直接卸载geoViewer中的canvas！！
         let renderWindowDOM = document.getElementById("geoViewer");
         renderWindowDOM.innerHTML = ``;
-        //关闭WebSocket
-        this.wsWorker.postMessage({ close: true });
-        this.wsWorker.terminate();
     }
 
-    clean = () => {
-        Object.keys(this.curScene).forEach(key => {
-            this.renderer.removeActor(this.curScene[key].actor);
-        });
-        this.curScene = {};
-        this.renderer.resetCamera();
-        this.renderWindow.render();
-
-        this.setState({
-            description: [],
-            animation: false,
-            isSliderShow: false,
-        });
-    }
-
+    //导入初始化配置文件->加载初始模型->绘制模型->绘制树结构
     load = () => {
-        physikaLoadConfig(simtype)
+        physikaLoadConfig('cloth')
             .then(res => {
                 console.log("成功获取初始化配置");
-                this.setState({
-                    data: res,
-                    uploadDisabled: false
-                });
+                let options = this.extractURL(res);
+                return Promise.all([physikaLoadObj(options), res]);
+            })
+            .then(res => {
+                console.log("成功获取初始化场景", res);
+                this.updateScene(res[0][0]);
+                this.setState({ data: res[1] });
+                //显示方向标记部件
+                this.orientationMarkerWidget.setEnabled(true);
             })
             .catch(err => {
                 console.log("Error loading: ", err);
             });
+    }
+
+    //从配置文件中提取模型的url
+    extractURL = (data) => {
+        //2020.11.7 Array遍历：
+        //若需要break/return，只能用for版本；
+        //若需要使用返回的新数组，则应用map（不能跳出，除非throw）;
+        //若只是遍历数组，则应用forEach（不能跳出，除非throw）。
+        for (const item of data[0].children) {
+            if (item.tag == 'Path') {
+                const url = item._text;
+                const ext = url.substring(url.lastIndexOf('.') + 1);
+                return { fileURL: url, ext: ext };
+            }
+        }
+        console.log("throw error");
     }
 
     //更新场景
@@ -103,10 +183,19 @@ class ClothSimulation extends React.Component {
             this.renderer.removeActor(this.curScene[key].actor);
         });
         this.curScene = newScene;
+        console.log(this.curScene);
         //添加新场景actor
         Object.keys(this.curScene).forEach(key => {
             this.renderer.addActor(this.curScene[key].actor);
         });
+
+        /*//单独设置按钮控制摄像头位置
+        //重置camera位置为默认值（小控件刷新有问题）
+        this.renderer.getActiveCamera().setPosition(0, 0, 1);
+        this.renderer.getActiveCamera().setViewUp(0, 1, 0);
+        this.renderer.getActiveCamera().setFocalPoint(0, 0, 0);
+        */
+
         this.renderer.resetCamera();
         this.renderWindow.render();
     }
