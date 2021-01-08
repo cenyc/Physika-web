@@ -2,7 +2,6 @@
   "name": "physika-web",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/view/index.mjs",
   "scripts": {
     "build": "webpack --mode development",
     "build:debug": "webpack --display-modules",

@@ -22,8 +22,8 @@
         <Frame class="Unsigned" name="模拟帧数" disabled="false">50</Frame>
     </Simulation>
         <Test name="test">
-        <LongName name="long name.................................................">123</LongName>
-    </Test>
+            <LongName name="long name.................................................">123</LongName>
+        </Test>
     <!-- <Upload class="" name="用户上传">
         <File class="File" type="image" name="图片文件" disabled="false">null</File>
     </Upload> -->

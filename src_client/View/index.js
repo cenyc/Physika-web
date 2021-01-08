@@ -35,7 +35,7 @@ class PhysikaWeb extends React.Component {
         return (
             <Menu onClick={this.change}>
                 <Menu.Item key="0">云欧拉仿真</Menu.Item>
-                <Menu.Item key="1">布料</Menu.Item>
+                <Menu.Item key="1">单张图像构建三维云</Menu.Item>
             </Menu>
         );
     }

@@ -70,7 +70,7 @@ function initializeVti(vtiReader) {
 
 function initVti(arraybuffer, ext) {
     return new Promise((resolve, reject) => {
-        const vtiReader = new vtkXMLImageDataReader.newInstance();
+        const vtiReader = vtkXMLImageDataReader.newInstance();
         if (ext === 'vti') {
             vtiReader.parseAsArrayBuffer(arraybuffer);
             resolve(initializeVti(vtiReader));

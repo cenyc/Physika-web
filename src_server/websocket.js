@@ -67,7 +67,14 @@ wss.on('close', function close() {
   console.log('Socket close.');
 });
 
+
+const port = process.env.PORT||8888;
+server.listen(port,()=>{
+  console.log('Listening at http://localhost:%s', port);
+})
+/*
 server.listen(8888, function () {
   var port = server.address().port;
   console.log('Listening at http://localhost:%s', port);
 });
+*/

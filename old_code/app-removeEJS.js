@@ -1,6 +1,7 @@
 // 引入模块
 const express = require('express');
 const path = require('path');
+const ejs = require('ejs');
 //引入body-parser用于解析post的body
 const bodyParser = require('body-parser');
 //
@@ -147,16 +148,43 @@ app.post('/uploadFile', upload.any(), function (req, res, next) {
     }
     res.send(files)
 });
-
-app.use(express.static(path.join(__dirname, '../dist')));
-
 /*
-// 对所有(/)URL或路由返回index.html
-app.get('/sdd', function (req, res) {
-    console.log('index...');
-    //res.sendFile(path.join(__dirname, '../dist/index.html'))
+//在req.files中获取文件数据
+app.post('/upload', function (req, res) {
+
+    const path = '/home/cenyc/Sources/Physika-web/'+req.files[0].path
+    const execSync = require('child_process').execSync;
+    const output = execSync('cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
+    console.log('sync: ' + 'cd /home/cenyc/Sources/PhysIKA/build/bin/Release && python app_elasticity.py -p '+path)
+    res.send('上传成功')
 });
 */
+/*
+//视图引擎设定
+//设置views路径
+app.set('views', path.join(__dirname, './dist'));
+//模板采用html作为扩展名
+app.set('view engine', 'html');
+//对于以html扩展名结尾的模板，采用ejs引擎
+app.engine('html', ejs.renderFile);
+*/
+/*
+// app.use配置
+//把static设置为静态资源文件夹，可以让浏览器访问
+app.use('/static', express.static(path.join(__dirname, '../static')));
+app.use('/dist', express.static(path.join(__dirname, '../dist')));
+//2020.10.8 新建data文件夹，包含配置文件和可视化数据
+app.use('/data', express.static(path.join(__dirname, '../data')));
+*/
+
+app.use(express.static(path.join(__dirname, '../dist')));
+// 对所有(/)URL或路由返回index.html
+app.get('/', function (req, res) {
+    console.log('index...');
+    //res.render('index');
+    res.sendFile(path.join(__dirname, './dist/index.html'))
+});
+
 /*
 // 启动一个服务，监听从8888端口进入的所有连接请求
 var server = app.listen(8888, function () {

@@ -75,7 +75,7 @@ function loadVti(options) {
     return new Promise((resolve, reject) => {
         if (options.file) {
             if (options.ext === 'vti') {
-                const vtiReader = new vtkXMLImageDataReader.newInstance();
+                const vtiReader = vtkXMLImageDataReader.newInstance();
                 const fileReader = new FileReader();
                 fileReader.onload = function onLoad(e) {
                     vtiReader.parseAsArrayBuffer(fileReader.result);
@@ -90,7 +90,7 @@ function loadVti(options) {
         }
         else if (options.fileURL) {
             if (options.ext === 'vti') {
-                const vtiReader = new vtkXMLImageDataReader.newInstance();
+                const vtiReader = vtkXMLImageDataReader.newInstance();
                 HttpDataAccessHelper.fetchBinary(options.fileURL)
                     .then(res => {
                         vtiReader.parseAsArrayBuffer(res);

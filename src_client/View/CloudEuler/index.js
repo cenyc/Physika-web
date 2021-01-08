@@ -13,14 +13,14 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitVti } from '../../IO/InitVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
-import {parseSimulationResult} from '../../Common'
+import { parseSimulationResult } from '../../Common'
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-const simtype=0;
+const simtype = 0;
 
 //load:重新加载初始化文件，并清空界面；upload：只会清空界面。
 class CloudEulerSimulation extends React.Component {

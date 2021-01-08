@@ -1,21 +1,21 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-
-//const rules = require('./node_modules/paraviewweb/config/webpack.loaders.js');
+/*
 const plugins = [
     new HtmlWebpackPlugin({
         inject: 'body',
     }),
 ];
-
-const entry = path.join(__dirname, './src_client/index.js');
-const outputPath = path.join(__dirname, './dist');
-
+*/
 module.exports = {
-    plugins,
-    entry,
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: './static/view/index.html',
+        }),
+    ],
+    entry: path.join(__dirname, './src_client/index.js'),
     output: {
-        path: outputPath,
+        path: path.join(__dirname, './dist'),
         filename: 'physika-web.js',
         libraryTarget: 'umd',
     },
@@ -24,8 +24,6 @@ module.exports = {
             {
                 test: /\.js$/,
                 include: path.join(__dirname, 'src_client'),
-                //并不能解决not cacheable的问题
-                //exclude: [/\.worker\.js$/,/node_modules/],
                 exclude: /node_modules/,
                 use: [
                     {
@@ -37,18 +35,18 @@ module.exports = {
                     },
                 ],
             },
-            {
-                test: /\.js$/,
-                include: /node_modules(\/|\\)vtk.js(\/|\\)/,
-                use: [
-                    {
-                        loader: 'babel-loader',
-                        options: {
-                            presets: ['@babel/preset-env', '@babel/preset-react'],
-                        },
-                    },
-                ],
-            },
+            // {
+            //     test: /\.js$/,
+            //     include: /node_modules(\/|\\)vtk.js(\/|\\)/,
+            //     use: [
+            //         {
+            //             loader: 'babel-loader',
+            //             options: {
+            //                 presets: ['@babel/preset-env', '@babel/preset-react'],
+            //             },
+            //         },
+            //     ],
+            // },
             {
                 test: /\.worker\.js$/,
                 loader: 'worker-loader',
@@ -87,8 +85,8 @@ module.exports = {
             },
         ]
     },
-    node: {
-        fs: "empty",
-        net: 'empty',
-    },
+    // node: {
+    //     fs: "empty",
+    //     net: 'empty',
+    // },
 };
