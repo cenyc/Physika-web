@@ -13,9 +13,7 @@ server.on('request', app);
 const VDPath = path.join(__dirname, '../data/visualize_data');
 
 wss.on('connection', function connection(ws) {
-
   ws.on('message', function incoming(message) {
-
     ws.binaryType = 'arraybuffer';
 
     let messageObj = JSON.parse(message);
@@ -70,7 +68,7 @@ wss.on('close', function close() {
 
 const port = process.env.PORT||8888;
 server.listen(port,()=>{
-  console.log('Listening at http://localhost:%s', port);
+  console.log('Listening at http://localhost:%s/index.html', port);
 })
 /*
 server.listen(8888, function () {

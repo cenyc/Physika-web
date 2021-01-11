@@ -7,9 +7,6 @@ import { PhysikaClothSimulation } from './Cloth'
 
 const { Header, Content, Sider } = Layout;
 
-import WebworkerPromise from 'webworker-promise';
-import WSWorker from '../Worker/ws.worker'
-
 //屏蔽全局浏览器右键菜单
 document.oncontextmenu = function () {
     return false;
@@ -21,8 +18,11 @@ class PhysikaWeb extends React.Component {
     };
 
     componentDidMount(){
-        //this.wsWorker = new WebworkerPromise(new WSWorker());
-        //this.wsWorker.postMessage({ init: true });
+        window.localStorage.userID='localUser';
+    }
+
+    componentWillUnmount(){
+
     }
 
     change = (e) => {

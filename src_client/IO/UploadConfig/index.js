@@ -11,8 +11,9 @@ const buildJson = (father, children) => children.forEach(item => {
         delete item.children;
     }
     //2020.12.7 使用文件名代替File标签中的_text内容
-    if(item.tag==='File'){
-        item._text=item._text[0].name;
+    if (item.tag === 'File') {
+        const tmp = item._text[0];
+        item._text = tmp.uploadDate + '_' + tmp.name;
     }
 
     delete item.key;
@@ -20,7 +21,7 @@ const buildJson = (father, children) => children.forEach(item => {
 });
 
 //上传数据到服务器
-function uploadConfig(data, simType) {
+function uploadConfig(data, extraInfo) {
     console.log("开始上传");
     //jsonObj为导出xml的json对象
     let jsonObj = {};
@@ -39,8 +40,8 @@ function uploadConfig(data, simType) {
     console.log(jsonObj);
     //reqBody为传入后端的请求对象
     let reqBody = {
-        "simType": simType,
-        "jsonObj": jsonObj
+        extraInfo: extraInfo,
+        jsonObj: jsonObj
     };
 
     //fetch是异步操作，
@@ -58,7 +59,7 @@ function uploadConfig(data, simType) {
             }
             console.log("发生了值得注意的其他错误！");
             return Promise.reject(res);
-        }).then(res=>{
+        }).then(res => {
             console.log(res);
             resolve(buildDataStructure(res));
         }).catch(err => {

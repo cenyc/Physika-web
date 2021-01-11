@@ -13,14 +13,14 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitVti } from '../../IO/InitVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
-import { parseSimulationResult } from '../../Common'
+import { parseSimulationResult,checkUploadConfig} from '../../Common'
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-const simtype = 0;
+const simType = 0;
 
 //load:重新加载初始化文件，并清空界面；upload：只会清空界面。
 class CloudEulerSimulation extends React.Component {
@@ -104,8 +104,6 @@ class CloudEulerSimulation extends React.Component {
         this.curScene = {};
         this.frameStateArray = [];
         this.fetchFrameQueue = [];
-        //this.frameSeq = [];
-        //this.workerLock = false;
         if (this.fetchModelTimer !== null) {
             clearInterval(this.fetchModelTimer);
         }
@@ -131,7 +129,7 @@ class CloudEulerSimulation extends React.Component {
             this.loadTag = 1;
             return;
         }
-        physikaLoadConfig(simtype)
+        physikaLoadConfig(simType)
             .then(res => {
                 console.log("成功获取初始化配置");
                 this.setState({
@@ -235,14 +233,24 @@ class CloudEulerSimulation extends React.Component {
             this.loadTag = 2;
             return;
         }
+        if(!checkUploadConfig(this.state.data)){
+            return;
+        }
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
         this.uploadDate = Date.now();
+        //console.log(new Date(this.uploadDate));
         this.setState({
             uploadDisabled: true,
         }, () => {
+            //设置后端存储使用的额外信息
+            const extraInfo={
+                userID:window.localStorage.userID,
+                uploadDate:this.uploadDate,
+                simType:simType,
+            }
             //第一个参数data，第二个参数仿真类型
-            physikaUploadConfig(this.state.data, simtype)
+            physikaUploadConfig(this.state.data, extraInfo)
                 .then(res => {
                     console.log("成功上传配置并获取到仿真结果配置");
                     const resultInfo = parseSimulationResult(res);
@@ -282,8 +290,6 @@ class CloudEulerSimulation extends React.Component {
                 })
                 .then(res => {
                     this.frameStateArray[0] = 2;
-                    //将第0帧加入framSeq
-                    //this.frameSeq[0] = res;
                     this.updateScene(res);
                     this.initVolumeController();
                     //显示方向标记部件
@@ -343,8 +349,6 @@ class CloudEulerSimulation extends React.Component {
                 }
             })
             .then(res => {
-                //将当前帧加入frameSeq
-                //this.frameSeq[frameIndex] = res;
                 if (frameIndex === this.curFrameIndex) {
                     this.updateScene(res);
                     this.controllerWidget.changeActor(this.curScene.actor);

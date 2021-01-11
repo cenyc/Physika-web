@@ -116,4 +116,34 @@ function parseSimulationResult(data) {
     return resultInfo;
 }
 
-export { deepCopy, isObject, parseSimulationResult, addPickedCell };
+function checkUploadConfig(data) {
+    let passTag = true;
+    let errorTag = false;
+    const check = (children) => {
+        for (const item of children) {
+            if (item.children) {
+                const path = check(item.children);
+                if(errorTag){
+                    return item._attributes.name + '->' + path;
+                }
+                continue;
+            }
+            if (item.tag === 'File' && item._text === 'null') {
+                errorTag = true;
+                return item._attributes.name + '不能为空！';
+            }
+            if(!item._text){
+                errorTag = true;
+                return item._attributes.name + '不能为空！';
+            }
+        }
+    }
+    let errorPath = check(data);
+    if (errorTag) {
+        alert('警告：' + errorPath);
+        passTag = false;
+    }
+    return passTag;
+}
+
+export { deepCopy, isObject, parseSimulationResult, addPickedCell, checkUploadConfig };

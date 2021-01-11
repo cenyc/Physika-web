@@ -12,12 +12,12 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitObj } from '../../IO/InitObj';
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget';
-import { parseSimulationResult } from '../../Common'
+import { parseSimulationResult,checkUploadConfig} from '../../Common'
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
-const simtype = 1;
+const simType = 1;
 
 class ClothSimulation extends React.Component {
     constructor(props) {
@@ -82,7 +82,7 @@ class ClothSimulation extends React.Component {
     }
 
     load = () => {
-        physikaLoadConfig(simtype)
+        physikaLoadConfig(simType)
             .then(res => {
                 console.log("成功获取初始化配置");
                 this.setState({
@@ -181,12 +181,22 @@ class ClothSimulation extends React.Component {
         this.hideTreeNodeAttrModal();
     }
 
+
+
     upload = () => {
+        if(!checkUploadConfig(this.state.data)){
+            return;
+        }
         this.clean();
         this.setState({
             uploadDisabled: true,
         }, () => {
-            physikaUploadConfig(this.state.data, simtype)
+            const extraInfo={
+                userID:window.localStorage.userID,
+                uploadDate:Date.now(),
+                simType:simType,
+            }
+            physikaUploadConfig(this.state.data, extraInfo)
                 .then(res => {
                     console.log("成功上传配置并获取到仿真结果配置");
                     const resultInfo = parseSimulationResult(res);

@@ -30,7 +30,10 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     //存储Select控件的Options
     const selectOptions = [];
     //upload附带body内容
-    const uploadBodyContent = { x: 123 };
+    const uploadBodyContent = {
+        userID: window.localStorage.userID,
+        uploadDate: Date.now(),
+    };
 
     useEffect(() => {
         if (form && visible) {
@@ -116,6 +119,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     obj._text = value.checked ? 'true' : 'false';
                     break;
                 case 'File':
+                    value.upload[0].uploadDate=uploadBodyContent.uploadDate;
                     obj._text = value.upload;
             }
         }

@@ -4,4 +4,6 @@ dist/
 
 .vscode/
 
-data/config_file/upload
+data/visualize_data
+
+data/user_path
