@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tree, Button, Divider, Descriptions, Collapse} from 'antd';
+import { Tree, Button, Divider, Descriptions, Collapse } from 'antd';
 const { TreeNode } = Tree;
 const { Panel } = Collapse;
 //antd样式
@@ -12,7 +12,7 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitObj } from '../../IO/InitObj';
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget';
-import { parseSimulationResult,checkUploadConfig} from '../../Common'
+import { parseSimulationResult, checkUploadConfig } from '../../Common'
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
@@ -53,6 +53,8 @@ class ClothSimulation extends React.Component {
         this.curScene = {};
         this.fileName = '';
         this.frameSum = 0;
+        //记录本次upload的时间
+        this.uploadDate = null;
         //worker创建及WebSocket初始化
         this.wsWorker = new WebworkerPromise(new WSWorker());
         this.wsWorker.postMessage({ init: true });
@@ -184,17 +186,20 @@ class ClothSimulation extends React.Component {
 
 
     upload = () => {
-        if(!checkUploadConfig(this.state.data)){
+        if (!checkUploadConfig(this.state.data)) {
             return;
         }
         this.clean();
+        //this.uploadDate = Date.now();
+        //测试就将uploadDate调为1；
+        this.uploadDate = 1;
         this.setState({
             uploadDisabled: true,
         }, () => {
-            const extraInfo={
-                userID:window.localStorage.userID,
-                uploadDate:Date.now(),
-                simType:simType,
+            const extraInfo = {
+                userID: window.localStorage.userID,
+                uploadDate: this.uploadDate,
+                simType: simType,
             }
             physikaUploadConfig(this.state.data, extraInfo)
                 .then(res => {
@@ -207,7 +212,11 @@ class ClothSimulation extends React.Component {
                     });
                     if (this.frameSum > 0) {
                         return this.wsWorker.postMessage({
-                            data: { fileName: this.fileName + '.obj' }
+                            data: {
+                                userID: window.localStorage.userID,
+                                uploadDate: this.uploadDate,
+                                fileName: this.fileName + '.obj'
+                            }
                         });
                     }
                     else {

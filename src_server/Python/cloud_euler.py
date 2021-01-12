@@ -7,5 +7,5 @@ import os
 #print(sys.argv[2])
 #print(sys.argv[3])
 #print(sys.argv[4])
-path=os.getcwd()+"/data/config_file/simulation/cloud_euler.xml"
+path=os.getcwd()+"/data/user_file/localUser/0/sim_config_file.xml"
 sys.stdout.write(path)

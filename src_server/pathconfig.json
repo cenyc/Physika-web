@@ -1,5 +1,5 @@
 {
-    "userPath":"C:/Users/lenovo/AppData/Roaming/nvm/v10.15.3/Physika-web/data/user_path",
+    "userPath":"C:/Users/lenovo/AppData/Roaming/nvm/v10.15.3/Physika-web/data/user_file",
     "0":{
         "simType":"CloudEuler",
         "initConfigFileName":"./data/init_config_file/cloud_euler.xml",
@@ -7,10 +7,8 @@
     },
     "1":{
         "simType":"CloudMesh",
-        "initConfigFileName":"./data/config_file/initialization/cloud_mesh.xml",
-        "uploadConfigFileDirectory":"./data/config_file/upload",
-        "callPythonFileName":"./src_server/Python/cloud_mesh.py",
-        "uploadUserFileDirectory":"./data/user_file"
+        "initConfigFileName":"./data/init_config_file/cloud_mesh.xml",
+        "callPythonFileName":"./src_server/Python/cloud_mesh.py"
     },
     "fluid-":{
         "simType":2,

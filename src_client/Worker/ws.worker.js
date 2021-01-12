@@ -1,45 +1,4 @@
 import registerWebworker from 'webworker-promise/lib/register';
-/*
-registerWebworker(async function (message, emit) {
-    return new Promise((resolve, reject) => {
-        console.log(message);
-        fetchBinary('http://localhost:8888/data/visualize_data/head-binary-zlib.vti')
-            .then(res => {
-                resolve(res);
-            })
-            .catch(err => {
-                console.log(err);
-            })
-    })
-
-})
-
-function fetchBinary(url, options = {}) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        xhr.onreadystatechange = (e) => {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200 || xhr.status === 0) {
-                    resolve(xhr.response);
-                } else {
-                    reject({ xhr, e });
-                }
-            }
-        };
-
-        if (options && options.progressCallback) {
-            xhr.addEventListener('progress', options.progressCallback);
-        }
-
-        // Make request
-        xhr.open('GET', url, true);
-        xhr.responseType = 'arraybuffer';
-        xhr.send();
-    });
-}
-*/
-
 let ws;
 
 registerWebworker(async function (wwMessage, emit) {
@@ -63,7 +22,7 @@ registerWebworker(async function (wwMessage, emit) {
         }
 
         ws.onerror = function (event) {
-            console.error("WebSocket error observed:", event);
+            console.error("Socket error.", event);
         };
 
         if (wwMessage.data) {

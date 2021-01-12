@@ -13,7 +13,7 @@ import { physikaUploadConfig } from '../../IO/UploadConfig'
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal'
 import { physikaInitVti } from '../../IO/InitVti'
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget'
-import { parseSimulationResult,checkUploadConfig} from '../../Common'
+import { parseSimulationResult, checkUploadConfig } from '../../Common'
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
@@ -233,21 +233,22 @@ class CloudEulerSimulation extends React.Component {
             this.loadTag = 2;
             return;
         }
-        if(!checkUploadConfig(this.state.data)){
+        if (!checkUploadConfig(this.state.data)) {
             return;
         }
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
-        this.uploadDate = Date.now();
-        //console.log(new Date(this.uploadDate));
+        //this.uploadDate = Date.now();
+        //测试就将uploadDate调为0；
+        this.uploadDate = 0;
         this.setState({
             uploadDisabled: true,
         }, () => {
             //设置后端存储使用的额外信息
-            const extraInfo={
-                userID:window.localStorage.userID,
-                uploadDate:this.uploadDate,
-                simType:simType,
+            const extraInfo = {
+                userID: window.localStorage.userID,
+                uploadDate: this.uploadDate,
+                simType: simType,
             }
             //第一个参数data，第二个参数仿真类型
             physikaUploadConfig(this.state.data, extraInfo)
@@ -271,7 +272,11 @@ class CloudEulerSimulation extends React.Component {
                         this.fetchFrameQueue.shift();
                         console.log(this.frameStateArray, this.fetchFrameQueue, this.frameSum);
                         return this.wsWorker.postMessage({
-                            data: { fileName: this.fileName + '_0.vti' }
+                            data: {
+                                userID: window.localStorage.userID,
+                                uploadDate: this.uploadDate,
+                                fileName: this.fileName + '_0.vti'
+                            }
                         });
                     }
                     else {
@@ -323,7 +328,11 @@ class CloudEulerSimulation extends React.Component {
         //设定当前帧状态为获取中
         this.frameStateArray[frameIndex] = 1;
         this.wsWorker.postMessage({
-            data: { fileName: this.fileName + '_' + frameIndex + '.vti' }
+            data: {
+                userID: window.localStorage.userID,
+                uploadDate: this.uploadDate,
+                fileName: this.fileName + '_' + frameIndex + '.vti'
+            }
         })
             .then(res => {
                 //关闭worker锁
@@ -361,7 +370,7 @@ class CloudEulerSimulation extends React.Component {
 
     writeModel = (frameIndex, arrayBuffer) => {
         db.table('model').add({
-            userID: 'li', uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
+            userID: window.localStorage.userID, uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
         }).then(id => {
             this.frameStateArray[frameIndex] = 3;
             console.log(id, '成功存入第' + frameIndex + '帧！', this.frameStateArray);
