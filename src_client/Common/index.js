@@ -128,7 +128,7 @@ function checkUploadConfig(data) {
                 }
                 continue;
             }
-            if (item.tag === 'File' && item._text === 'null') {
+            if (item._attributes.class === 'File' && item._text === 'null') {
                 errorTag = true;
                 return item._attributes.name + '不能为空！';
             }

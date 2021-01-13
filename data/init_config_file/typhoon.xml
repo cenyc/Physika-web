@@ -12,4 +12,10 @@
     <Display class="" name="显示控制">
         <Range class="Vector2u" name="显示区域大小" disabled="false">200 200</Range>
     </Display>
+    <!-- <SimulationRun name="仿真运行结果">
+        <FileName name="仿真文件名">cloud</FileName>
+        <FrameSum name="帧总数">7</FrameSum>
+        <Animation name="是否支持动画">false</Animation>
+        <Item name="其他信息">歪比巴布</Item>
+    </SimulationRun> -->
 </Scene>

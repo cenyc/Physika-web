@@ -68,13 +68,18 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                 case 'Unsigned':
                     formInitialValues.unsigned = treeNodeText;
                     break;
+                case 'Vector2u':
+                    const vector2u = treeNodeText.split(' ');
+                    formInitialValues.v2u_X = vector2u[0];
+                    formInitialValues.v2u_Y = vector2u[1];
+                    break;
                 case 'Vector2f':
-                    let vector2f = treeNodeText.split(' ');
+                    const vector2f = treeNodeText.split(' ');
                     formInitialValues.v2f_X = vector2f[0];
                     formInitialValues.v2f_Y = vector2f[1];
                     break;
                 case 'Vector3f':
-                    let vector3f = treeNodeText.split(' ');
+                    const vector3f = treeNodeText.split(' ');
                     formInitialValues.v3f_X = vector3f[0];
                     formInitialValues.v3f_Y = vector3f[1];
                     formInitialValues.v3f_Z = vector3f[2];
@@ -87,13 +92,14 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     break;
                 case 'File':
                     formInitialValues.upload = (treeNodeText === 'null') ? [] : treeNodeText;
+                    break;
             }
         }
     }
 
     //返回树结点修改后的数据
     function returnTreeNodeData(value) {
-        let obj = {
+        const obj = {
             _attributes: treeNodeAttr,
             //_text: ''
         };
@@ -105,6 +111,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     break;
                 case 'Unsigned':
                     obj._text = value.unsigned + '';
+                    break;
+                case 'Vector2u':
+                    obj._text = value.v2u_X + ' ' + value.v2u_Y;
                     break;
                 case 'Vector2f':
                     obj._text = value.v2f_X + ' ' + value.v2f_Y;
@@ -119,8 +128,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     obj._text = value.checked ? 'true' : 'false';
                     break;
                 case 'File':
-                    value.upload[0].uploadDate=uploadBodyContent.uploadDate;
+                    value.upload[0].uploadDate = uploadBodyContent.uploadDate;
                     obj._text = value.upload;
+                    break;
             }
         }
 
@@ -170,6 +180,27 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         rules={[{ required: true, message: 'Value cannot be empty!' }]}
                     >
                         <InputNumber formatter={value => `${value}`.replace(/[^\d]+/g, '')} parser={value => value.replace(/[^\d]+/g, '')} disabled={isDisabled()} />
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'Vector2u') &&
+                    <Form.Item label="Value">
+                        <Row>
+                            <Col span={8}>
+                                <Form.Item name="v2u_X" label="X"
+                                    rules={[{ required: true, message: 'X cannot be empty!' }]}
+                                >
+                                    <InputNumber formatter={value => `${value}`.replace(/[^\d]+/g, '')} parser={value => value.replace(/[^\d]+/g, '')} disabled={isDisabled()} />
+                                </Form.Item>
+                            </Col>
+                            <Col span={8}>
+                                <Form.Item name="v2u_Y" label="Y"
+                                    rules={[{ required: true, message: 'Y cannot be empty!' }]}
+                                >
+                                    <InputNumber formatter={value => `${value}`.replace(/[^\d]+/g, '')} parser={value => value.replace(/[^\d]+/g, '')} disabled={isDisabled()} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
                     </Form.Item>
                 }
                 {
@@ -254,7 +285,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         getValueFromEvent={normFile}
                         rules={[{ required: true, message: 'Please upload the corresponding file!' }]}
                     >
-                        <Upload action="/uploadFile" listType="picture" data={uploadBodyContent}>
+                        <Upload action="/uploadFile" listType="picture" accept={treeNodeAttr.accept} data={uploadBodyContent}>
                             <Button icon={<UploadOutlined />}>Click to upload</Button>
                         </Upload>
                     </Form.Item>
