@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Scene class="" name="场景">
     <Fluid class="" name="流体">
-        <Start class="Vector2f" name="起始位置" disabled="false">30 30</Start>
-        <End class="Vector2f" name="结束位置" disabled="false">34 34</End>
+        <Start class="Vector2u" name="起始位置" disabled="false">30 30</Start>
+        <End class="Vector2u" name="结束位置" disabled="false">34 34</End>
         <Vortex class="Real" name="涡旋抑制系数" disabled="false">0.7</Vortex>
         <Noise class="Enum" enum="无噪声 高斯噪声" name="源噪声" disabled="true">0</Noise>
     </Fluid>

@@ -129,7 +129,11 @@ class ClothSimulation extends React.Component {
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
-                <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
+                {
+                    item._text
+                        ? <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
+                        : <span className="ant-rate-text">{item._attributes.name}</span>
+                }
             </div>
         );
 

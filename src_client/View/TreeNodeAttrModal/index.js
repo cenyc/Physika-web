@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Modal, Form, InputNumber, Input, Row, Col, Select, Switch, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 
@@ -8,18 +8,6 @@ const { Option } = Select;
 const formItemLayout = {
     labelCol: { span: 4 },
     wrapperCol: { span: 20 },
-};
-
-//捕获upload事件对象
-const normFile = (e) => {
-    console.log('Upload event:', e);
-    if (Array.isArray(e)) {
-        return e;
-    }
-    if (e.fileList.length > 1) {
-        e.fileList.shift();
-    }
-    return e && e.fileList;
 };
 
 //使用Hook实现的树结点属性显示Modal
@@ -35,12 +23,34 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         uploadDate: Date.now(),
     };
 
+    const [okDisabled, setOkDisabled] = useState(false);
+
     useEffect(() => {
         if (form && visible) {
             setFormInitialValues();
             form.resetFields();
         }
+        //当类型为上传文件时初始化为禁止保存
+        if (treeNodeAttr.class === 'File') {
+            setOkDisabled(true);
+        }
+        else {
+            setOkDisabled(false);
+        }
     }, [visible]);
+
+    //捕获upload事件对象
+    function normFile(e) {
+        console.log('Upload event:', e);
+        if (e.fileList.length > 1) {
+            e.fileList.shift();
+        }
+        //如果文件上传成功，则可以保存
+        if (e.fileList[0].status === 'done') {
+            setOkDisabled(false);
+        }
+        return e && e.fileList;
+    };
 
     function isDisabled() {
         return (treeNodeAttr.disabled === 'true');
@@ -128,8 +138,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     obj._text = value.checked ? 'true' : 'false';
                     break;
                 case 'File':
-                    value.upload[0].uploadDate = uploadBodyContent.uploadDate;
                     obj._text = value.upload;
+                    obj._text[0].uploadDate = uploadBodyContent.uploadDate;
                     break;
             }
         }
@@ -148,11 +158,13 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         returnTreeNodeData(value);
                     })
                     .catch(info => {
-
                         console.log('Validate Failed:', info);
                     });
             }}
             onCancel={hideModal}
+            okText="保存"
+            cancelText="取消"
+            okButtonProps={{ disabled: okDisabled }}
         >
             <Form
                 {...formItemLayout}
@@ -285,7 +297,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         getValueFromEvent={normFile}
                         rules={[{ required: true, message: 'Please upload the corresponding file!' }]}
                     >
-                        <Upload action="/uploadFile" listType="picture" accept={treeNodeAttr.accept} data={uploadBodyContent}>
+                        <Upload action="/uploadFile" listType="picture" showUploadList={{ showRemoveIcon: false }}
+                            accept={treeNodeAttr.accept} data={uploadBodyContent}>
                             <Button icon={<UploadOutlined />}>Click to upload</Button>
                         </Upload>
                     </Form.Item>
