@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Dropdown, Button, Row, Col, Avatar } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined, UserOutlined } from '@ant-design/icons';
 import '../../static/css/antdesign.css'
 import { PhysikaCloudEuler } from './CloudEuler'
 import { PhysikaClothSimulation } from './Cloth'
@@ -18,10 +18,6 @@ function PhysikaWeb() {
     const [userStatus, setUserStatus] = useState(false);
     const [visible, setVisible] = useState(false);
 
-    useEffect(() => {
-        window.localStorage.userID = 'localUser';
-    }, []);
-
     const simTypeMenu = (
         <Menu onClick={auth}>
             <Menu.Item key='0'>云欧拉仿真</Menu.Item>
@@ -30,11 +26,16 @@ function PhysikaWeb() {
     )
 
     const userMenu = (
-        <Menu onClick={userAction}>
-            <Menu.Item key="0">注销</Menu.Item>
-        </Menu>
+        window.localStorage.userID
+            ? <Menu onClick={userAction}>
+                <Menu.Item key="0">注销</Menu.Item>
+            </Menu>
+            : <Menu onClick={userAction}>
+                <Menu.Item key="0">登录</Menu.Item>
+            </Menu>
     )
 
+    //用户选择仿真类型前需要进行认证
     function auth(e) {
         setSimType(e.key);
         if (!window.localStorage.userID) {
@@ -46,14 +47,27 @@ function PhysikaWeb() {
         }
     }
 
+    //登录/注册成功
     function changeUserStatus(status) {
         setUserStatus(status);
         setVisible(false);
     }
 
-    function userAction(e) {
-        if (e.key === '0') {
-            console.log('注销！');
+    //用户相关操作
+    function userAction(e) {    
+        if(window.localStorage.userID){
+            switch (e.key) {
+                case '0':
+                    window.localStorage.clear();
+                    setUserStatus(false);
+                    //用于解决：用户没有注销直接关闭网页之后再次打开网页点击注销时无法触发更新
+                    setSimType(-2);
+                    break;
+                default:
+            }
+        }
+        else{
+            setVisible(true);
         }
     }
 
@@ -75,7 +89,11 @@ function PhysikaWeb() {
                     </Col>
                     <Col span={1} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                         <Dropdown overlay={userMenu} placement="bottomCenter" arrow>
-                            <Avatar size={40}>{window.localStorage.userID.substring(0, 1)}</Avatar>
+                            {
+                                window.localStorage.userID
+                                    ? <Avatar size={40}>{window.localStorage.userID.substring(0, 1)}</Avatar>
+                                    : <Avatar size={40} icon={<UserOutlined />} />
+                            }
                         </Dropdown>
                     </Col>
                 </Row>
@@ -107,6 +125,7 @@ function PhysikaWeb() {
             <div>
                 <LoginModal
                     visible={visible}
+                    hideModal={()=>setVisible(false)}
                     changeUserStatus={(status) => changeUserStatus(status)}
                 ></LoginModal>
             </div>
