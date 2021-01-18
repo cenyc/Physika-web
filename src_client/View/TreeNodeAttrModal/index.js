@@ -30,13 +30,6 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
             setFormInitialValues();
             form.resetFields();
         }
-        //当类型为上传文件时初始化为禁止保存
-        if (treeNodeAttr.class === 'File') {
-            setOkDisabled(true);
-        }
-        else {
-            setOkDisabled(false);
-        }
     }, [visible]);
 
     //捕获upload事件对象
@@ -44,6 +37,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         console.log('Upload event:', e);
         if (e.fileList.length > 1) {
             e.fileList.shift();
+        }
+        if (e.fileList[0].status !== 'done') {
+            setOkDisabled(true);
         }
         //如果文件上传成功，则可以保存
         if (e.fileList[0].status === 'done') {
@@ -138,8 +134,10 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     obj._text = value.checked ? 'true' : 'false';
                     break;
                 case 'File':
+                    if (!value.upload.uploadDate) {  
+                        value.upload.uploadDate = uploadBodyContent.uploadDate;
+                    }
                     obj._text = value.upload;
-                    obj._text[0].uploadDate = uploadBodyContent.uploadDate;
                     break;
             }
         }

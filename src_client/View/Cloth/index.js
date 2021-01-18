@@ -6,6 +6,7 @@ const { Panel } = Collapse;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
+import vtkFPSMonitor from '../Widget/FPSMonitor'
 //面片拾取
 import { physikaLoadConfig } from '../../IO/LoadConfig'
 import { physikaUploadConfig } from '../../IO/UploadConfig'
@@ -91,6 +92,7 @@ class ClothSimulation extends React.Component {
                     data: res,
                     uploadDisabled: false
                 });
+                this.clean();
             })
             .catch(err => {
                 console.log("Error loading: ", err);
@@ -187,7 +189,15 @@ class ClothSimulation extends React.Component {
         this.hideTreeNodeAttrModal();
     }
 
-
+    initFPS = () => {
+        let FPSContainer = document.getElementById("fps");
+        if (FPSContainer.children.length === 0) {
+            this.FPSWidget = vtkFPSMonitor.newInstance();
+            this.FPSWidget.setContainer(FPSContainer);
+            this.FPSWidget.setRenderWindow(this.renderWindow);
+            this.FPSWidget.setOrientation('vertical');
+        }
+    }
 
     upload = () => {
         if (!checkUploadConfig(this.state.data)) {
@@ -233,6 +243,7 @@ class ClothSimulation extends React.Component {
                 })
                 .then(res => {
                     this.updateScene(res);
+                    this.initFPS();
                     //显示方向标记部件
                     this.orientationMarkerWidget.setEnabled(true);
                     this.setState({
@@ -268,8 +279,11 @@ class ClothSimulation extends React.Component {
                             {this.renderDescriptions()}
                         </Descriptions>
                     </Panel>
-                    <Panel header="仿真展示控制" key="3">
+                    {/* forceRender为true，即折叠面板未打开时也渲染其中组件；若为false，则未打开面板前无法获得其中组件 */}
+                    <Panel header="绘制信息" key="3" forceRender="true">
+                        <div id="fps"></div>
                     </Panel>
+                    {/* <Panel header="仿真展示控制" key="3"></Panel> */}
                 </Collapse>
                 <div>
                     <PhysikaTreeNodeAttrModal
