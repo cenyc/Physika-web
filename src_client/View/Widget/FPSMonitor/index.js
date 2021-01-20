@@ -64,7 +64,7 @@ function vtkFPSMonitor(publicAPI, model) {
     if (!model.infoVisibility) {
       return;
     }
-    console.log('info',model,Object.isFrozen(model.renderWindow));
+    //console.log('outinfo');
     const infoItems = [];
     if (model.renderWindow) {
       const realView = model.renderWindow.getViews()[0];
@@ -75,13 +75,13 @@ function vtkFPSMonitor(publicAPI, model) {
           }">${realView.getSize().join('x')}</span>`
         );
       }
-      console.log('in.........');
+
       const stats = Object.assign(
         {},
         model.renderWindow.getStatistics(),
         model.addOnStats
       );
-      //console.log('info',stats);
+      //console.log('instates',stats);
       const keys = Object.keys(stats);
       keys.sort();
       for (let i = 0; i < keys.length; i++) {
@@ -96,6 +96,7 @@ function vtkFPSMonitor(publicAPI, model) {
           );
         }
       }
+      //console.log('ininfo',infoItems);
     }
     model.info.innerHTML = infoItems.join('');
   }

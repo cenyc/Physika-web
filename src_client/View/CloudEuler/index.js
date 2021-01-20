@@ -97,6 +97,8 @@ class CloudEulerSimulation extends React.Component {
         if (this.fetchModelTimer !== null) {
             clearInterval(this.fetchModelTimer);
         }
+        //是否需要？
+        this.FPSWidget.delete();
     }
 
     clean = () => {
@@ -234,11 +236,11 @@ class CloudEulerSimulation extends React.Component {
 
     initFPS = () => {
         let FPSContainer = document.getElementById("fps");
-        if(FPSContainer.children.length===0){
-            this.FPSWidget = vtkFPSMonitor.newInstance();
+        if (FPSContainer.children.length === 0) {
+            this.FPSWidget = vtkFPSMonitor.newInstance({infoVisibility: false});
             this.FPSWidget.setContainer(FPSContainer);
-            this.FPSWidget.setRenderWindow(this.renderWindow);
             this.FPSWidget.setOrientation('vertical');
+            this.FPSWidget.setRenderWindow(this.renderWindow);
         }
     }
 
@@ -311,10 +313,12 @@ class CloudEulerSimulation extends React.Component {
                 .then(res => {
                     this.frameStateArray[0] = 2;
                     this.updateScene(res);
+                    //初始化体素显示控制控件
                     this.initVolumeController();
-                    this.initFPS();
                     //显示方向标记部件
                     this.orientationMarkerWidget.setEnabled(true);
+                    //初始化fps控件
+                    this.initFPS();
                     this.setState({
                         inputFrameIndex: 0,
                         uploadDisabled: false,

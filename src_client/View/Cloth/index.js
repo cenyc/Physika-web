@@ -69,6 +69,8 @@ class ClothSimulation extends React.Component {
         //关闭WebSocket
         this.wsWorker.postMessage({ close: true });
         this.wsWorker.terminate();
+        //是否需要？
+        this.FPSWidget.delete();
     }
 
     clean = () => {
@@ -192,7 +194,7 @@ class ClothSimulation extends React.Component {
     initFPS = () => {
         let FPSContainer = document.getElementById("fps");
         if (FPSContainer.children.length === 0) {
-            this.FPSWidget = vtkFPSMonitor.newInstance();
+            this.FPSWidget = vtkFPSMonitor.newInstance({infoVisibility: false});
             this.FPSWidget.setContainer(FPSContainer);
             this.FPSWidget.setRenderWindow(this.renderWindow);
             this.FPSWidget.setOrientation('vertical');
@@ -243,9 +245,10 @@ class ClothSimulation extends React.Component {
                 })
                 .then(res => {
                     this.updateScene(res);
-                    this.initFPS();
                     //显示方向标记部件
                     this.orientationMarkerWidget.setEnabled(true);
+                    //初始化fps控件
+                    this.initFPS();
                     this.setState({
                         uploadDisabled: false,
                     });
