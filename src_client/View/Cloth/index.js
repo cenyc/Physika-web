@@ -70,7 +70,9 @@ class ClothSimulation extends React.Component {
         this.wsWorker.postMessage({ close: true });
         this.wsWorker.terminate();
         //是否需要？
-        this.FPSWidget.delete();
+        if(this.FPSWidget){
+            this.FPSWidget.delete();
+        }
     }
 
     clean = () => {

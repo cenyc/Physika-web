@@ -98,7 +98,9 @@ class CloudEulerSimulation extends React.Component {
             clearInterval(this.fetchModelTimer);
         }
         //是否需要？
-        this.FPSWidget.delete();
+        if(this.FPSWidget){
+            this.FPSWidget.delete();
+        }
     }
 
     clean = () => {
