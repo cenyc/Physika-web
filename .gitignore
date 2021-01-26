@@ -8,4 +8,4 @@ data/visualize_data
 
 data/config_file
 
-data/user_file/localUser/0/sim_data
+src_server/pathconfig.json
