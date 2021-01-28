@@ -10,6 +10,9 @@ const formItemLayout = {
     wrapperCol: { span: 20 },
 };
 
+//upload附带body内容
+const uploadBodyContent = {};
+
 //使用Hook实现的树结点属性显示Modal
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
     const [form] = Form.useForm();
@@ -17,11 +20,6 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     const formInitialValues = {};
     //存储Select控件的Options
     const selectOptions = [];
-    //upload附带body内容
-    const uploadBodyContent = {
-        userID: window.localStorage.userID,
-        uploadDate: Date.now(),
-    };
 
     const [okDisabled, setOkDisabled] = useState(false);
 
@@ -31,6 +29,18 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
             form.resetFields();
         }
     }, [visible]);
+
+    useEffect(() => {
+        if (visible) {
+            setUploadBodyContent();
+        }
+    }, [visible]);
+
+    function setUploadBodyContent() {
+        uploadBodyContent.userID = window.localStorage.userID;
+        uploadBodyContent.uploadDate = Date.now();
+        console.log(uploadBodyContent,'set');
+    }
 
     //捕获upload事件对象
     function normFile(e) {
@@ -134,8 +144,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     obj._text = value.checked ? 'true' : 'false';
                     break;
                 case 'File':
-                    if (!value.upload.uploadDate) {  
-                        value.upload.uploadDate = uploadBodyContent.uploadDate;
+                    if (!value.upload[0].uploadDate) {
+                        value.upload[0].uploadDate = uploadBodyContent.uploadDate;
                     }
                     obj._text = value.upload;
                     break;

@@ -11,7 +11,7 @@ const buildJson = (father, children) => children.forEach(item => {
         delete item.children;
     }
     //2020.12.7 使用文件名代替File标签中的_text内容
-    if (item.tag === 'File') {
+    if (item._attributes.class === 'File') {
         const tmp = item._text[0];
         item._text = tmp.uploadDate + '_' + tmp.name;
     }

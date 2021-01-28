@@ -8,4 +8,4 @@ data/visualize_data
 
 data/config_file
 
-src_server/pathconfig.json
+data/user_file

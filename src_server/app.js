@@ -89,6 +89,7 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
         .then(pathArray => {
             pathArray.shift();
             console.log(pathArray);
+            console.log('当前运行路径：',process.cwd());
             return callPython(pathArray);
         })
         .then(simConfigFileName => {

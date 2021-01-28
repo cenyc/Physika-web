@@ -18,7 +18,8 @@ import { parseSimulationResult, checkUploadConfig } from '../../Common'
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
-const simType = 1;
+//const simType = 1;
+const simType ="CloudMesh";
 
 class ClothSimulation extends React.Component {
     constructor(props) {
@@ -208,9 +209,9 @@ class ClothSimulation extends React.Component {
             return;
         }
         this.clean();
-        //this.uploadDate = Date.now();
+        this.uploadDate = Date.now();
         //测试就将uploadDate调为1；
-        this.uploadDate = 1;
+        //this.uploadDate = 1;
         this.setState({
             uploadDisabled: true,
         }, () => {

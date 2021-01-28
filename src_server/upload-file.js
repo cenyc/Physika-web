@@ -11,6 +11,7 @@ const pathConfigFileName = path.join(__dirname, 'pathconfig.json');
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const extraInfo = req.body;
+        console.log('extraInfo',extraInfo);
         fsPromise.readFile(pathConfigFileName, 'utf-8')
             .then(json => {
                 const config = JSON.parse(json);
