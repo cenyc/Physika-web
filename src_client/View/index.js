@@ -3,7 +3,9 @@ import { Layout, Menu, Dropdown, Button, Row, Col, Avatar } from 'antd';
 import { DownOutlined, UserOutlined } from '@ant-design/icons';
 import '../../static/css/antdesign.css'
 import { PhysikaCloudEuler } from './CloudEuler'
-import { PhysikaClothSimulation } from './CloudMesh'
+import { PhysikaCloudNature } from './CloudNature'
+import { PhysikaCloudSatellite } from './CloudSatellite'
+import { PhysikaCloudWRF } from './CloudWRF'
 import { LoginModal } from './LoginModal';
 
 const { Header, Content, Sider } = Layout;
@@ -22,6 +24,8 @@ function PhysikaWeb() {
         <Menu onClick={auth}>
             <Menu.Item key='0'>云欧拉仿真</Menu.Item>
             <Menu.Item key='1'>自然云图像建模</Menu.Item>
+            <Menu.Item key='2'>卫星云图建模</Menu.Item>
+            <Menu.Item key='3'>WRF数据建模</Menu.Item>
         </Menu>
     )
 
@@ -54,8 +58,8 @@ function PhysikaWeb() {
     }
 
     //用户相关操作
-    function userAction(e) {    
-        if(window.localStorage.userID){
+    function userAction(e) {
+        if (window.localStorage.userID) {
             switch (e.key) {
                 case '0':
                     window.localStorage.clear();
@@ -66,7 +70,7 @@ function PhysikaWeb() {
                 default:
             }
         }
-        else{
+        else {
             setVisible(true);
         }
     }
@@ -106,7 +110,15 @@ function PhysikaWeb() {
                     }
                     {
                         userStatus && (simType === "1") &&
-                        <PhysikaClothSimulation></PhysikaClothSimulation>
+                        <PhysikaCloudNature></PhysikaCloudNature>
+                    }
+                    {
+                        userStatus && (simType === "2") &&
+                        <PhysikaCloudSatellite></PhysikaCloudSatellite>
+                    }
+                    {
+                        userStatus && (simType === "3") &&
+                        <PhysikaCloudWRF></PhysikaCloudWRF>
                     }
                 </Sider>
                 <Layout style={{ padding: '24px 24px 24px' }}>
@@ -125,7 +137,7 @@ function PhysikaWeb() {
             <div>
                 <LoginModal
                     visible={visible}
-                    hideModal={()=>setVisible(false)}
+                    hideModal={() => setVisible(false)}
                     changeUserStatus={(status) => changeUserStatus(status)}
                 ></LoginModal>
             </div>

@@ -2,14 +2,14 @@
 <Scene class=" " name="场景">
     <MultiBand class="" name="多波段数据">
         <Upload class="" name="用户上传">
-            <VIS class="File" accept=".awx" name="可见光波" disabled="false">null</VIS>
-            <IR1 class="File" accept=".awx" name="长波红外光1" disabled="false">null</IR1>
-            <IR2 class="File" accept=".awx" name="长波红外光2" disabled="false">null</IR2>
-            <WV class="File" accept=".awx" name="水汽红外" disabled="false">null</WV>
-            <SWIR class="File" accept=".awx" name="短波红外" disabled="false">null</SWIR>
+            <VIS class="File" accept=".awx" name="可见光波" disabled="false">1611926795465_FY2E_SEC_VIS_MLS_20130625_0000.AWX</VIS>
+            <IR1 class="File" accept=".awx" name="长波红外光1" disabled="false">1611926880117_FY2E_SEC_IR1_MLS_20130625_0000.AWX</IR1>
+            <IR2 class="File" accept=".awx" name="长波红外光2" disabled="false">1611926896459_FY2E_SEC_IR2_MLS_20130625_0000.AWX</IR2>
+            <WV class="File" accept=".awx" name="水汽红外" disabled="false">1611926906648_FY2E_SEC_IR3_MLS_20130625_0000.AWX</WV>
+            <SWIR class="File" accept=".awx" name="短波红外" disabled="false">1611926920004_FY2E_SEC_IR4_MLS_20130625_0000.AWX</SWIR>
         </Upload>
     </MultiBand>
     <Display class="" name="显示控制">
-        <Range class="Vector2u" name="显示区域大小" disabled="false">200 200</Range>
+        <Range class="Vector2u" name="显示区域大小" disabled="false">180 220</Range>
     </Display>
 </Scene>

@@ -24,7 +24,7 @@ import db from '../../db';
 const simType = 0;
 
 //load:重新加载初始化文件，并清空界面；upload：只会清空界面。
-class CloudEulerSimulation extends React.Component {
+class CloudEuler extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -521,5 +521,5 @@ class CloudEulerSimulation extends React.Component {
 }
 
 export {
-    CloudEulerSimulation as PhysikaCloudEuler
+    CloudEuler as PhysikaCloudEuler
 }
