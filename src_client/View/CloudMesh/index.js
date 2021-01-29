@@ -19,7 +19,7 @@ import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
 //const simType = 1;
-const simType ="CloudMesh";
+const simType = "CloudMesh";
 
 class ClothSimulation extends React.Component {
     constructor(props) {
@@ -35,6 +35,7 @@ class ClothSimulation extends React.Component {
 
             isTreeNodeAttrModalShow: false,
             uploadDisabled: true,
+            simLoading: false,
         };
     }
 
@@ -71,7 +72,7 @@ class ClothSimulation extends React.Component {
         this.wsWorker.postMessage({ close: true });
         this.wsWorker.terminate();
         //是否需要？
-        if(this.FPSWidget){
+        if (this.FPSWidget) {
             this.FPSWidget.delete();
         }
     }
@@ -197,7 +198,7 @@ class ClothSimulation extends React.Component {
     initFPS = () => {
         let FPSContainer = document.getElementById("fps");
         if (FPSContainer.children.length === 0) {
-            this.FPSWidget = vtkFPSMonitor.newInstance({infoVisibility: false});
+            this.FPSWidget = vtkFPSMonitor.newInstance({ infoVisibility: false });
             this.FPSWidget.setContainer(FPSContainer);
             this.FPSWidget.setRenderWindow(this.renderWindow);
             this.FPSWidget.setOrientation('vertical');
@@ -214,6 +215,7 @@ class ClothSimulation extends React.Component {
         //this.uploadDate = 1;
         this.setState({
             uploadDisabled: true,
+            simLoading: true,
         }, () => {
             const extraInfo = {
                 userID: window.localStorage.userID,
@@ -254,6 +256,7 @@ class ClothSimulation extends React.Component {
                     this.initFPS();
                     this.setState({
                         uploadDisabled: false,
+                        simLoading: false,
                     });
                 })
                 .catch(err => {
@@ -270,7 +273,7 @@ class ClothSimulation extends React.Component {
         console.log("tree:", this.state.data);
         return (
             <div>
-                <Divider>单张图像构建三维云</Divider>
+                <Divider>自然云图像建模</Divider>
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="仿真初始化" key="1">
                         <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>
@@ -278,7 +281,8 @@ class ClothSimulation extends React.Component {
                             {this.renderTreeNodes(this.state.data)}
                         </Tree>
                         <br />
-                        <Button type="primary" size={'small'} block onClick={this.upload} disabled={this.state.uploadDisabled}>开始仿真</Button>
+                        <Button type="primary" size={'small'} block onClick={this.upload} disabled={this.state.uploadDisabled}
+                            loading={this.state.simLoading}>开始仿真</Button>
                     </Panel>
                     <Panel header="仿真结果信息" key="2">
                         <Descriptions column={1} layout={'horizontal'}>

@@ -3,7 +3,7 @@ import { Layout, Menu, Dropdown, Button, Row, Col, Avatar } from 'antd';
 import { DownOutlined, UserOutlined } from '@ant-design/icons';
 import '../../static/css/antdesign.css'
 import { PhysikaCloudEuler } from './CloudEuler'
-import { PhysikaClothSimulation } from './Cloth'
+import { PhysikaClothSimulation } from './CloudMesh'
 import { LoginModal } from './LoginModal';
 
 const { Header, Content, Sider } = Layout;
@@ -21,7 +21,7 @@ function PhysikaWeb() {
     const simTypeMenu = (
         <Menu onClick={auth}>
             <Menu.Item key='0'>云欧拉仿真</Menu.Item>
-            <Menu.Item key='1'>单张图像构建三维云</Menu.Item>
+            <Menu.Item key='1'>自然云图像建模</Menu.Item>
         </Menu>
     )
 
