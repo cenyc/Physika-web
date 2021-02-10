@@ -19,7 +19,8 @@ import { parseSimulationResult, checkUploadConfig } from '../../Common'
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
-const simType = 3;
+//const simType = 3;
+const simType = "CloudWRF";
 
 //load:重新加载初始化文件，并清空界面；upload：只会清空界面。
 class CloudWRF extends React.Component {
@@ -43,7 +44,7 @@ class CloudWRF extends React.Component {
     componentDidMount() {
         //---------初始化渲染窗口
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-            background: [0.75, 0.76, 0.79],
+            background: [0.0, 0.0, 0.0],
             rootContainer: geoViewer,
             //关键操作！！！能把canvas大小限制在div里了！
             containerStyle: { height: 'inherit', width: 'inherit' }
@@ -209,9 +210,9 @@ class CloudWRF extends React.Component {
             return;
         }
         this.clean();
-        //this.uploadDate = Date.now();
+        this.uploadDate = Date.now();
         //测试就将uploadDate调为3；
-        this.uploadDate = 3;
+        //this.uploadDate = 3;
         this.setState({
             uploadDisabled: true,
             simLoading: true,
@@ -248,6 +249,12 @@ class CloudWRF extends React.Component {
                 })
                 .then(res => {
                     this.updateScene(res);
+                    //------计算体素个数-------
+                    this.state.description.push({
+                        name: "粒子数",
+                        content: this.curScene.source.getNumberOfPoints()
+                    });
+                    //------------------------
                     this.initVolumeController();
                     this.orientationMarkerWidget.setEnabled(true);
                     this.initFPS();

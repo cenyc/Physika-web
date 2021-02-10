@@ -19,7 +19,8 @@ import { parseSimulationResult, checkUploadConfig } from '../../Common'
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
-const simType = 2;
+//const simType = 2;
+const simType = "CloudSatellite";
 
 //load:重新加载初始化文件，并清空界面；upload：只会清空界面。
 class CloudSatellite extends React.Component {
@@ -43,7 +44,7 @@ class CloudSatellite extends React.Component {
     componentDidMount() {
         //---------初始化渲染窗口
         this.fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-            background: [0.75, 0.76, 0.79],
+            background: [0.0, 0.0, 0.0],
             rootContainer: geoViewer,
             //关键操作！！！能把canvas大小限制在div里了！
             containerStyle: { height: 'inherit', width: 'inherit' }
@@ -209,9 +210,9 @@ class CloudSatellite extends React.Component {
             return;
         }
         this.clean();
-        //this.uploadDate = Date.now();
+        this.uploadDate = Date.now();
         //测试就将uploadDate调为2；
-        this.uploadDate = 2;
+        //this.uploadDate = 2;
         this.setState({
             uploadDisabled: true,
             simLoading: true,
@@ -270,7 +271,7 @@ class CloudSatellite extends React.Component {
         console.log("tree:", this.state.data);
         return (
             <div>
-                <Divider>卫星云图建模</Divider>
+                <Divider>卫星云图像建模</Divider>
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="仿真初始化" key="1">
                         <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>

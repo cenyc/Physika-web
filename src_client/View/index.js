@@ -24,7 +24,7 @@ function PhysikaWeb() {
         <Menu onClick={auth}>
             <Menu.Item key='0'>云欧拉仿真</Menu.Item>
             <Menu.Item key='1'>自然云图像建模</Menu.Item>
-            <Menu.Item key='2'>卫星云图建模</Menu.Item>
+            <Menu.Item key='2'>卫星云图像建模</Menu.Item>
             <Menu.Item key='3'>WRF数据建模</Menu.Item>
         </Menu>
     )

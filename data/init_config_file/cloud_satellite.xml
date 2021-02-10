@@ -10,6 +10,6 @@
         </Upload>
     </MultiBand>
     <Display class="" name="显示控制">
-        <Range class="Vector2u" name="显示区域大小" disabled="false">200 200</Range>
+        <Range class="Vector2u" name="显示区域大小" disabled="false">512 512</Range>
     </Display>
 </Scene>

@@ -29,6 +29,16 @@
         "simType":"CloudNature",
         "initConfigFileName":"./data/init_config_file/cloud_nature.xml",
         "callPythonFileName":"D:/Physika_test/build/Python/ImageCumulus/xml/sim_run.py"
+    },
+    "CloudSatellite":{
+        "simType":"CloudSatellite",
+        "initConfigFileName":"./data/init_config_file/cloud_satellite.xml",
+        "callPythonFileName":"D:/Physika_test/build/Python/Typhoon/xml/typhoon_run.py"
+    },
+    "CloudWRF":{
+        "simType":"CloudWRF",
+        "initConfigFileName":"./data/init_config_file/cloud_WRF.xml",
+        "callPythonFileName":"D:/Physika_test/build/Python/TCDSM/xml/tcdsm_run.py"
     }
     
 }

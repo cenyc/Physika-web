@@ -36,17 +36,19 @@ wss.on('connection', function connection(ws) {
                 });
             })
             .then(zipData => {
+                console.log('zipData', zipData);
+                ws.send(zipData);
                 //模拟网络延迟
-                if (Math.random() > 0.5) {
-                    console.log('zipData', zipData);
-                    ws.send(zipData);
-                }
-                else {
-                    setTimeout(() => {
-                        console.log('zipData', zipData);
-                        ws.send(zipData);
-                    }, 7000);
-                }
+                // if (Math.random() > 0.5) {
+                //     console.log('zipData', zipData);
+                //     ws.send(zipData);
+                // }
+                // else {
+                //     setTimeout(() => {
+                //         console.log('zipData', zipData);
+                //         ws.send(zipData);
+                //     }, 7000);
+                // }
             })
             .catch(err => {
                 console.log('Error in websocket! ', err);
