@@ -154,6 +154,17 @@ function vtkVolumeController(publicAPI, model) {
     const dataArray =
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
+    /*2021/3/6 按名字控制不同场量映射
+    const arrayLength=sourceDS.getPointData().getNumberOfArrays();
+    console.log(arrayLength);
+    let arrayName;
+    for(let id=0;id<arrayLength;++id){
+      arrayName=sourceDS.getPointData().getArrayName(id);
+      console.log(arrayName);
+    }
+    const dataArray=sourceDS.getPointData().getArrayByName(arrayName);
+    */
+
     const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
     const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
 

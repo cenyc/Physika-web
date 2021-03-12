@@ -184,6 +184,7 @@ class CloudNature extends React.Component {
             if (count === eachKey.length - 1) {
                 //找到treeNodeKey对应树结点，更新数据
                 if (obj.hasOwnProperty('_text')) {
+                    console.log("obj ", obj);
                     node[eachKey[count]]._text = obj._text;
                 }
                 //若以后需修改_attributes属性，则在此添加代码

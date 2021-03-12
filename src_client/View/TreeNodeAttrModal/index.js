@@ -12,6 +12,8 @@ const formItemLayout = {
 
 //upload附带body内容
 const uploadBodyContent = {};
+//存储上传文件内容
+let fileContent;
 
 //使用Hook实现的树结点属性显示Modal
 const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, changeData }) => {
@@ -39,7 +41,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     function setUploadBodyContent() {
         uploadBodyContent.userID = window.localStorage.userID;
         uploadBodyContent.uploadDate = Date.now();
-        console.log(uploadBodyContent,'set');
+        console.log(uploadBodyContent, 'set');
     }
 
     //捕获upload事件对象
@@ -148,6 +150,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         value.upload[0].uploadDate = uploadBodyContent.uploadDate;
                     }
                     obj._text = value.upload;
+                    obj.fileContent = fileContent;
                     break;
             }
         }
@@ -306,7 +309,17 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                         rules={[{ required: true, message: 'Please upload the corresponding file!' }]}
                     >
                         <Upload action="/uploadFile" listType="picture" showUploadList={{ showRemoveIcon: false }}
-                            accept={treeNodeAttr.accept} data={uploadBodyContent}>
+                            accept={treeNodeAttr.accept} data={uploadBodyContent}
+                            beforeUpload={file => {
+                                //获取文件内容
+                                const reader = new FileReader();
+                                reader.onload = e => {
+                                    fileContent = reader.result;
+                                };
+                                reader.readAsText(file);
+                                return true;
+                            }}
+                        >
                             <Button icon={<UploadOutlined />}>Click to upload</Button>
                         </Upload>
                     </Form.Item>

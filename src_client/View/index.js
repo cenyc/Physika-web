@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Dropdown, Button, Row, Col, Avatar } from 'antd';
 import { DownOutlined, UserOutlined } from '@ant-design/icons';
-import '../../static/css/antdesign.css'
-import { PhysikaCloudEuler } from './CloudEuler'
-import { PhysikaCloudNature } from './CloudNature'
-import { PhysikaCloudSatellite } from './CloudSatellite'
-import { PhysikaCloudWRF } from './CloudWRF'
+import '../../static/css/antdesign.css';
+import { PhysikaCloudEuler } from './CloudEuler';
+import { PhysikaCloudNature } from './CloudNature';
+import { PhysikaCloudSatellite } from './CloudSatellite';
+import { PhysikaCloudWRF } from './CloudWRF';
 import { LoginModal } from './LoginModal';
+import { MySPH } from './SPH';
 
 const { Header, Content, Sider } = Layout;
 
@@ -26,11 +27,12 @@ function PhysikaWeb() {
             <Menu.Item key='1'>自然云图像建模</Menu.Item>
             <Menu.Item key='2'>卫星云图像建模</Menu.Item>
             <Menu.Item key='3'>WRF数据建模</Menu.Item>
+            <Menu.Item key='4'>SPH流体模拟</Menu.Item>
         </Menu>
     )
 
     const userMenu = (
-        window.localStorage.userID
+        window.localStorage.userIDSPH
             ? <Menu onClick={userAction}>
                 <Menu.Item key="0">注销</Menu.Item>
             </Menu>
@@ -119,6 +121,10 @@ function PhysikaWeb() {
                     {
                         userStatus && (simType === "3") &&
                         <PhysikaCloudWRF></PhysikaCloudWRF>
+                    }
+                    {
+                        userStatus && (simType === "4") &&
+                        <MySPH></MySPH>
                     }
                 </Sider>
                 <Layout style={{ padding: '24px 24px 24px' }}>
