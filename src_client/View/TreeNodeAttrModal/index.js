@@ -33,7 +33,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     }, [visible]);
 
     useEffect(() => {
-        if (visible) {
+        if (visible && treeNodeAttr.class=='File') {
             setUploadBodyContent();
         }
     }, [visible]);
@@ -41,7 +41,6 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     function setUploadBodyContent() {
         uploadBodyContent.userID = window.localStorage.userID;
         uploadBodyContent.uploadDate = Date.now();
-        console.log(uploadBodyContent, 'set');
     }
 
     //捕获upload事件对象
@@ -111,6 +110,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                 case 'File':
                     formInitialValues.upload = (treeNodeText === 'null') ? [] : treeNodeText;
                     break;
+                case 'String':
+                    formInitialValues.string = treeNodeText;
             }
         }
     }
@@ -151,6 +152,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     }
                     obj._text = value.upload;
                     obj.fileContent = fileContent;
+                    break;
+                case 'String':
+                    obj._text = value.string;
                     break;
             }
         }
@@ -320,8 +324,14 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                                 return true;
                             }}
                         >
-                            <Button icon={<UploadOutlined />}>Click to upload</Button>
+                            <Button icon={<UploadOutlined />} disabled={isDisabled()}>Click to upload</Button>
                         </Upload>
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'String') &&
+                    <Form.Item name="string" label="Value" >
+                        <Input rules={[{ required: true, message: 'Value cannot be empty!' }]} disabled={isDisabled()} />
                     </Form.Item>
                 }
             </Form>

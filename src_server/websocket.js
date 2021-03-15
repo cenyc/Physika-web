@@ -25,6 +25,7 @@ wss.on('connection', function connection(ws) {
 
         const mObj = JSON.parse(message);
         console.log("mObj: ", mObj);
+        let queryCount=0;
 
         if (mObj.usePrefetch) {
             const fileInfo = prefetchFileInfo[mObj.simType];
@@ -57,8 +58,14 @@ wss.on('connection', function connection(ws) {
                         });
                 }
                 else {
-                    console.log("不存在");
-                    setTimeout(queryFile, 1000);
+                    console.log("File not found!");
+                    ++queryCount;
+                    if(queryCount<10){
+                        setTimeout(queryFile, 1000);
+                    }
+                    else{
+                        ws.send([]);
+                    } 
                 }
             }
             queryFile();
