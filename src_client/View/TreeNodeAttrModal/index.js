@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Modal, Form, InputNumber, Input, Row, Col, Select, Switch, Upload } from 'antd';
+import { Button, Modal, Form, InputNumber, Input, Row, Col, Select, Switch, Upload, Checkbox } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
+const CheckboxGroup = Checkbox.Group;
 
 //TreeNodeAttrModal组件中Form的样式
 const formItemLayout = {
@@ -22,6 +23,8 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     const formInitialValues = {};
     //存储Select控件的Options
     const selectOptions = [];
+    //存储Checkbox控件的Options
+    const checkboxOptions = [];
 
     const [okDisabled, setOkDisabled] = useState(false);
 
@@ -33,7 +36,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     }, [visible]);
 
     useEffect(() => {
-        if (visible && treeNodeAttr.class=='File') {
+        if (visible && treeNodeAttr.class == 'File') {
             setUploadBodyContent();
         }
     }, [visible]);
@@ -68,9 +71,18 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
             selectOptions.push(item);
         });
         //注意大小括号：Array.map(item=>(不需要return))；Array.map(item=>{需要return}) 
-        return selectOptions.map((value, index) => (
-            <Option value={index} key={index}>{value}</Option>
+        return selectOptions.map((item, index) => (
+            <Option value={index} key={index}>{item}</Option>
         ));
+    }
+
+    function setCheckboxOptions() {
+        console.log("setCheckboxOptions");
+        treeNodeAttr.check.split(' ').forEach(item => {
+            checkboxOptions.push(item);
+        });
+        console.log(checkboxOptions);
+        return checkboxOptions;
     }
 
     //设置Form的初始化值
@@ -86,32 +98,37 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     formInitialValues.unsigned = treeNodeText;
                     break;
                 case 'Vector2u':
-                    const vector2u = treeNodeText.split(' ');
-                    formInitialValues.v2u_X = vector2u[0];
-                    formInitialValues.v2u_Y = vector2u[1];
+                    formInitialValues.v2u_X = treeNodeText[0];
+                    formInitialValues.v2u_Y = treeNodeText[1];
                     break;
                 case 'Vector2f':
-                    const vector2f = treeNodeText.split(' ');
-                    formInitialValues.v2f_X = vector2f[0];
-                    formInitialValues.v2f_Y = vector2f[1];
+                    formInitialValues.v2f_X = treeNodeText[0];
+                    formInitialValues.v2f_Y = treeNodeText[1];
                     break;
                 case 'Vector3f':
-                    const vector3f = treeNodeText.split(' ');
-                    formInitialValues.v3f_X = vector3f[0];
-                    formInitialValues.v3f_Y = vector3f[1];
-                    formInitialValues.v3f_Z = vector3f[2];
+                    formInitialValues.v3f_X = treeNodeText[0];
+                    formInitialValues.v3f_Y = treeNodeText[1];
+                    formInitialValues.v3f_Z = treeNodeText[2];
                     break;
                 case 'Enum':
                     formInitialValues.enum_value = selectOptions[treeNodeText];
                     break;
                 case 'Bool':
-                    formInitialValues.checked = (treeNodeText === 'true');
+                    formInitialValues.checked = treeNodeText;
                     break;
                 case 'File':
                     formInitialValues.upload = (treeNodeText === 'null') ? [] : treeNodeText;
                     break;
                 case 'String':
                     formInitialValues.string = treeNodeText;
+                    break;
+                case 'Check':
+                    const checkedList = [];
+                    treeNodeText.split(';').forEach(item => {
+                        checkedList.push(item);
+                    });
+                    console.log(checkedList);
+                    formInitialValues.checkbox = checkedList;
             }
         }
     }
@@ -126,25 +143,33 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
         if (treeNodeText !== undefined) {
             switch (treeNodeAttr.class) {
                 case 'Real':
-                    obj._text = value.real + '';
+                    obj._text = value.real;
                     break;
                 case 'Unsigned':
-                    obj._text = value.unsigned + '';
+                    obj._text = value.unsigned;
                     break;
                 case 'Vector2u':
-                    obj._text = value.v2u_X + ' ' + value.v2u_Y;
+                    obj._text = [value.v2u_X, value.v2u_Y];
                     break;
                 case 'Vector2f':
-                    obj._text = value.v2f_X + ' ' + value.v2f_Y;
+                    obj._text = [value.v2f_X, value.v2f_Y];
                     break;
                 case 'Vector3f':
-                    obj._text = value.v3f_X + ' ' + value.v3f_Y + ' ' + value.v3f_Z;
+                    obj._text = [value.v3f_X, value.v3f_Y, value.v3f_Z];
                     break;
                 case 'Enum':
-                    obj._text = value.enum_value + '';
+                    if (typeof value.enum_value === 'number') {
+                        obj._text = value.enum_value;
+                    }
+                    else {
+                        selectOptions.forEach((item, index) => {
+                            if (item === value.enum_value)
+                                obj._text = index;
+                        });
+                    }
                     break;
                 case 'Bool':
-                    obj._text = value.checked ? 'true' : 'false';
+                    obj._text = value.checked;
                     break;
                 case 'File':
                     if (!value.upload[0].uploadDate) {
@@ -155,6 +180,16 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     break;
                 case 'String':
                     obj._text = value.string;
+                    break;
+                case 'Check':
+                    for (let i = 0; i < value.checkbox.length; ++i) {
+                        if (i == 0) {
+                            obj._text = value.checkbox[0];
+                        }
+                        else {
+                            obj._text += ';' + value.checkbox[i];
+                        }
+                    }
                     break;
             }
         }
@@ -169,7 +204,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
             onOk={() => {
                 form.validateFields()
                     .then(value => {
-                        console.log(value);
+                        console.log("validateFields", value);
                         returnTreeNodeData(value);
                     })
                     .catch(info => {
@@ -198,7 +233,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     <Form.Item name="real" label="Value"
                         rules={[{ required: true, message: 'Value cannot be empty!' }]}
                     >
-                        <InputNumber min={0} max={10000} step={0.1} disabled={isDisabled()} />
+                        <InputNumber step={0.001} disabled={isDisabled()} />
                     </Form.Item>
                 }
                 {
@@ -238,14 +273,14 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                                 <Form.Item name="v2f_X" label="X"
                                     rules={[{ required: true, message: 'X cannot be empty!' }]}
                                 >
-                                    <InputNumber min={1} max={100} step={1} disabled={isDisabled()} />
+                                    <InputNumber step={0.001} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
                                 <Form.Item name="v2f_Y" label="Y"
                                     rules={[{ required: true, message: 'Y cannot be empty!' }]}
                                 >
-                                    <InputNumber min={1} max={100} step={1} disabled={isDisabled()} />
+                                    <InputNumber step={0.001} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -259,21 +294,21 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                                 <Form.Item name="v3f_X" label="X"
                                     rules={[{ required: true, message: 'X cannot be empty!' }]}
                                 >
-                                    <InputNumber min={-10} max={10} step={0.1} disabled={isDisabled()} />
+                                    <InputNumber step={0.001} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
                                 <Form.Item name="v3f_Y" label="Y"
                                     rules={[{ required: true, message: 'Y cannot be empty!' }]}
                                 >
-                                    <InputNumber min={-10} max={10} step={0.1} disabled={isDisabled()} />
+                                    <InputNumber step={0.001} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
                                 <Form.Item name="v3f_Z" label="Z"
                                     rules={[{ required: true, message: 'Z cannot be empty!' }]}
                                 >
-                                    <InputNumber min={-10} max={10} step={0.1} disabled={isDisabled()} />
+                                    <InputNumber step={0.001} disabled={isDisabled()} />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -332,6 +367,12 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
                     (treeNodeAttr.class === 'String') &&
                     <Form.Item name="string" label="Value" >
                         <Input rules={[{ required: true, message: 'Value cannot be empty!' }]} disabled={isDisabled()} />
+                    </Form.Item>
+                }
+                {
+                    (treeNodeAttr.class === 'Check') &&
+                    <Form.Item name="checkbox" label="Options">
+                        <CheckboxGroup options={setCheckboxOptions()}></CheckboxGroup>
                     </Form.Item>
                 }
             </Form>

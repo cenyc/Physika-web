@@ -14,8 +14,8 @@
         <maxIterationsV class="Unsigned" name="散度最大迭代次数" disabled="true">100</maxIterationsV>
         <maxErrorV class="Real" name="散度最大误差" disabled="true">0.1</maxErrorV>
         <enableDivergenceSolver class="Bool" name="开启散度求解器" disabled="true">true</enableDivergenceSolver>
-        <!-- <particleAttributes class="Check" check="density velocity" name="粒子导出属性" disabled="false">density</particleAttributes> -->
-        <boundaryHandlingMethod class="Enum" enum="基于粒子边界 密度映射 体积映射" disabled="true">2</boundaryHandlingMethod>
+        <particleAttributes class="Check" check="density velocity" name="粒子导出属性" disabled="false">density</particleAttributes>
+        <boundaryHandlingMethod class="Enum" enum="基于粒子边界 密度映射 体积映射" name="边界处理方法" disabled="true">2</boundaryHandlingMethod>
         <enableVTIExport class="Bool" name="VTI格式导出" disabled="true">true</enableVTIExport>
         <stopAt class="Real" name="模拟时长" disabled="false">2.0</stopAt>
         <!-- <velocityUpdateMethod class="Enum" enum="一阶 二阶">0</velocityUpdateMethod>
@@ -35,7 +35,7 @@
     <RigidBodies name="刚体">
         <RigidBodies_0 name="刚体0">
             <geometryFile class="File" accept=".obj" name="几何文件" disabled="false">null</geometryFile>
-            <translation class="Vector3f" name="平移向量" disabled="false">0 3 0</translation>
+            <translation class="Vector3f" name="平移向量" disabled="false">0 1.5 0</translation>
             <rotationAxis class="Vector3f" name="旋转向量" disabled="false">1 0 0</rotationAxis>
             <rotationAngle class="Real" name="旋转角度" disabled="false">0</rotationAngle>
             <scale class="Vector3f" name="规模" disabled="false">4 3 1.5</scale>
@@ -48,8 +48,8 @@
     <FluidBlocks name="流体块">
         <FluidBlocks_0 name="流体块0">
             <denseMode class="Enum" enum="常规采样 大密集采样 密集采样" name="采样方式" disabled="true">0</denseMode>
-            <start class="Real" name="起始坐标" disabled="false">-0.5 0.0 -0.5</start>
-            <end class="Real" name="终止坐标" disabled="false">0.5 1.0 0.5</end>
+            <start class="Vector3f" name="起始坐标" disabled="false">-0.5 0.0 -0.5</start>
+            <end class="Vector3f" name="终止坐标" disabled="false">0.5 1.0 0.5</end>
             <translation class="Vector3f" name="平移向量" disabled="false">-1.45 0.0 0.0</translation>
             <scale class="Vector3f" name="规模" disabled="false">1 1 1</scale>
         </FluidBlocks_0>

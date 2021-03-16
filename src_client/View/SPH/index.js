@@ -147,7 +147,8 @@ class SPH extends React.Component {
         item.title = (
             <div>
                 {
-                    item._text
+                    //不要随便用item._text这种形式做判断，会自动把数值转为bool做判断
+                    item.hasOwnProperty('_text')
                         ? <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
                         : <span className="ant-rate-text">{item._attributes.name}</span>
                 }
@@ -259,8 +260,8 @@ class SPH extends React.Component {
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
         //this.uploadDate = Date.now();
-        //测试就将uploadDate调为0；
-        this.uploadDate = 0;
+        //测试就将uploadDate调为4；
+        this.uploadDate = 4;
         this.setState({
             uploadDisabled: true,
         }, () => {
@@ -496,7 +497,7 @@ class SPH extends React.Component {
                                         <InputNumber min={0} max={this.state.maxFrameIndex} value={this.state.curFrameIndex} onChange={this.changeInput} disabled={this.state.isPlay} />
                                     </Col>
                                 </Row>
-                                <br />
+                                <Divider />
                                 <Row>
                                     <Col span={13} style={{ alignItems: 'center', display: 'flex' }}>
                                         <span className="ant-rate-text">逐帧播放：</span>

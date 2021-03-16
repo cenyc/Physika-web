@@ -8,10 +8,26 @@ function buildNode(node, tag) {
         if (nodeKey === '_attributes') {
             //如果存在'_text'属性，则为叶子结点
             if (Object.keys(node).includes('_text')) {
+                let _text;
+                if (node._attributes.class === 'Vector2u' || node._attributes.class === 'Vector2f' || node._attributes.class === 'Vector3f') {
+                    _text = [];
+                    node._text.split(' ').forEach(item => {
+                        _text.push(Number(item));
+                    })
+                }
+                else if (node._attributes.class === 'Real' || node._attributes.class === 'Unsigned' || node._attributes.class === 'Enum') {
+                    _text = Number(node._text);
+                }
+                else if (node._attributes.class === 'Bool') {
+                    _text = (node._text === 'true');
+                }
+                else {
+                    _text = node._text;
+                }
                 childNode.push(
                     {
                         _attributes: node._attributes,
-                        _text: node._text,
+                        _text: _text,
                         tag: tag
                     }
                 );

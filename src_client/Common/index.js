@@ -123,7 +123,7 @@ function checkUploadConfig(data) {
         for (const item of children) {
             if (item.children) {
                 const path = check(item.children);
-                if(errorTag){
+                if (errorTag) {
                     return item._attributes.name + '->' + path;
                 }
                 continue;
@@ -132,7 +132,7 @@ function checkUploadConfig(data) {
                 errorTag = true;
                 return item._attributes.name + '不能为空！';
             }
-            if(!item._text){
+            if (item._text === undefined) {
                 errorTag = true;
                 return item._attributes.name + '不能为空！';
             }

@@ -13,7 +13,7 @@ const jsonParser = bodyParser.json();
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 const callPython = require('./call-python');
-const uplaodFile =require('./upload-file');
+const uplaodFile = require('./upload-file');
 
 //读取路径配置文件
 const pathConfigFileName = path.join(__dirname, 'pathconfig.json');
@@ -50,9 +50,16 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
     console.log('/uploadConfig: \nreq.body: ', req.body);
     const extraInfo = req.body.extraInfo;
     const jsonObj = req.body.jsonObj;
-    //将json转化为xml
-    const options = { compact: true, ignoreComment: true, spaces: 4 };
-    const xml = xml2js.json2xml(jsonObj, options);
+    let uploadConfigFile = null;
+    if (extraInfo.simType == 4) {
+        uploadConfigFile = JSON.stringify(jsonObj);
+    }
+    else {
+        //将json转化为xml
+        const options = { compact: true, ignoreComment: true, spaces: 4 };
+        uploadConfigFile = xml2js.json2xml(jsonObj, options);
+    }
+
     fsPromise.readFile(pathConfigFileName, 'utf-8')
         .then(json => {
             const config = JSON.parse(json);
@@ -69,7 +76,13 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
                 fs.mkdirSync(uploadDateDir);
             }
             //上传仿真配置文件
-            const uploadConfigFileName = path.join(uploadDateDir, 'upload_config_file.xml');
+            let uploadConfigFileName = null;
+            if (extraInfo.simType == 4) {
+                uploadConfigFileName = path.join(uploadDateDir, 'upload_config_file.json');
+            }
+            else {
+                uploadConfigFileName = path.join(uploadDateDir, 'upload_config_file.xml');
+            }
             //仿真数据存储路径
             const simDataDir = path.join(uploadDateDir, 'sim_data');
             if (!fs.existsSync(simDataDir)) {
@@ -78,7 +91,7 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
             //上传文件目录
             const uploadFileDir = path.join(userDir, 'upload_file');
             return Promise.all([
-                fsPromise.writeFile(uploadConfigFileName, xml),
+                fsPromise.writeFile(uploadConfigFileName, uploadConfigFile),
                 callPythonFileName,
                 uploadConfigFileName,
                 uploadFileDir,
@@ -89,7 +102,7 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
         .then(pathArray => {
             pathArray.shift();
             console.log(pathArray);
-            console.log('当前运行路径：',process.cwd());
+            console.log('当前运行路径：', process.cwd());
             return callPython(pathArray);
         })
         .then(simConfigFileName => {
@@ -107,6 +120,6 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
         });
 });
 
-app.post('/uploadFile',uplaodFile);
+app.post('/uploadFile', uplaodFile);
 
 module.exports = app;

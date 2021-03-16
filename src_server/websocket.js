@@ -16,7 +16,7 @@ const userPath = path.join(__dirname, '../data/user_file');
 
 const prefetchFileInfo = {
     0: ['cloud', '.vti'],
-    5: ['ParticleData', '.vti']
+    4: ['ParticleData', '.vti']
 };
 
 wss.on('connection', function connection(ws) {
@@ -29,7 +29,7 @@ wss.on('connection', function connection(ws) {
 
         if (mObj.usePrefetch) {
             const fileInfo = prefetchFileInfo[mObj.simType];
-            const fileName = fileInfo[0] + '_' + mObj.frameIndex + fileInfo[1];
+            const fileName = fileInfo[mObj.simType] + '_' + mObj.frameIndex + fileInfo[1];
             const filePath = path.join(userPath, mObj.userID, mObj.uploadDate.toString(), 'sim_data', fileName);
             const queryFile = () => {
                 if (fs.existsSync(filePath)) {
@@ -71,7 +71,6 @@ wss.on('connection', function connection(ws) {
             queryFile();
         }
         else {
-            console.log("1111");
             const filePath = path.join(userPath, mObj.userID, mObj.uploadDate.toString(), 'sim_data', mObj.fileName);
             fsPromise.readFile(filePath)
                 .then(data => {
