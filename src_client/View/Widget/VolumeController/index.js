@@ -43,6 +43,11 @@ function vtkVolumeController(publicAPI, model) {
     const dataArray =
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
+
+    // const dataArray =
+    //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
+    //   sourceDS.getPointData().getScalars();
+
     const dataRange = model.rescaleColorMap
       ? model.colorDataRange
       : dataArray.getRange();
@@ -82,6 +87,11 @@ function vtkVolumeController(publicAPI, model) {
       const dataArray =
         sourceDS.getPointData().getScalars() ||
         sourceDS.getPointData().getArrays()[0];
+
+      // const dataArray =
+      //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
+      //   sourceDS.getPointData().getScalars();
+
       const dataRange = dataArray.getRange();
       model.actor.getProperty().setUseGradientOpacity(0, true);
       const minV = Math.max(0.0, value - 0.3) / 0.7;
@@ -103,14 +113,22 @@ function vtkVolumeController(publicAPI, model) {
 
   //在不同数据切换时，更改actor所触发的操作!
   publicAPI.changeActor = (actor) => {
-    publicAPI.setActor(actor);
+    if (actor) {
+      publicAPI.setActor(actor);
+    }
 
     const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
     const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
+    //console.log(model.actor.getProperty().getScalarOpacity(model.dataArrayIndex).getRange());
     const sourceDS = model.actor.getMapper().getInputData();
+
     const dataArray =
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
+
+    // const dataArray =
+    //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
+    //   sourceDS.getPointData().getScalars();
 
     model.widget.setDataArray(dataArray.getData());
     model.widget.setColorTransferFunction(lookupTable);
@@ -154,16 +172,13 @@ function vtkVolumeController(publicAPI, model) {
     const dataArray =
       sourceDS.getPointData().getScalars() ||
       sourceDS.getPointData().getArrays()[0];
-    /*2021/3/6 按名字控制不同场量映射
-    const arrayLength=sourceDS.getPointData().getNumberOfArrays();
-    console.log(arrayLength);
-    let arrayName;
-    for(let id=0;id<arrayLength;++id){
-      arrayName=sourceDS.getPointData().getArrayName(id);
-      console.log(arrayName);
-    }
-    const dataArray=sourceDS.getPointData().getArrayByName(arrayName);
-    */
+
+    // const dataArray =
+    //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
+    //   sourceDS.getPointData().getScalars();
+
+    //console.log(dataArray.getRange());
+
 
     const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
     const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
@@ -329,6 +344,13 @@ function vtkVolumeController(publicAPI, model) {
   // Trigger rendering for any modified event
   publicAPI.onModified(publicAPI.render);
   publicAPI.setSize(...model.size);
+
+  //设置dataArrayIndex
+  publicAPI.setDataArrayIndex = (index) => {
+    model.dataArrayIndex = index;
+    publicAPI.changeActor();
+  }
+
 }
 
 // ----------------------------------------------------------------------------
@@ -339,6 +361,7 @@ const DEFAULT_VALUES = {
   size: [600, 300],
   expanded: true,
   rescaleColorMap: false,
+  dataArrayIndex: 0,
 };
 
 // ----------------------------------------------------------------------------

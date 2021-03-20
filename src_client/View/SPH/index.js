@@ -1,7 +1,8 @@
 import React from 'react';
-import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber } from 'antd';
+import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber, Select } from 'antd';
 const { TreeNode } = Tree;
 const { Panel } = Collapse;
+const { Option } = Select;
 //antd样式
 import 'antd/dist/antd.css';
 //渲染窗口
@@ -21,7 +22,8 @@ import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-const simType = 4;
+const simType = "SPH";
+const filetype = 'zip';
 
 //一些想法：
 //一次是否可以获取多帧？获取到zip有几个文件后再进行下一次获取？目前按照一个一个传
@@ -36,6 +38,9 @@ class SPH extends React.Component {
             treeNodeText: "",
             treeNodeKey: -1,
 
+            simLoading: false,
+            //渲染粒子属性
+            particlAttributes: [],
             //结果展示信息
             description: [],
             //当前帧索引
@@ -70,7 +75,7 @@ class SPH extends React.Component {
         this.frameSum = 0;
         //curScene=[{source, mapper, actor},{source, mapper, actor}...]
         this.curScene = [];
-        //frameStateArray保存每一帧仿真模型的当前状态：0（已获取，未存入indexedDB）、1（在indexedDB中）
+        //frameStateArray保存每一帧仿真模型的当前状态：0（已发获取请求）、1（已获取，未存入indexedDB）、2（在indexedDB中）
         this.frameStateArray = [];
         //记录本次upload的时间
         this.uploadDate = null;
@@ -83,6 +88,8 @@ class SPH extends React.Component {
         console.log('子组件将卸载');
         let renderWindowDOM = document.getElementById("geoViewer");
         renderWindowDOM.innerHTML = ``;
+        this.curScene = [];
+        this.frameStateArray = [];
         //关闭WebSocket
         if (this.wsWorker) {
             this.wsWorker.postMessage({ close: true });
@@ -212,7 +219,7 @@ class SPH extends React.Component {
             this.renderer.removeActor(this.curScene[key].actor);
         });
         this.curScene = newScene;
-        console.log(this.curScene);
+        //console.log(this.curScene);
         //添加新场景actor
         Object.keys(this.curScene).forEach(key => {
             this.renderer.addActor(this.curScene[key].actor);
@@ -259,11 +266,12 @@ class SPH extends React.Component {
         this.wsWorker.postMessage({ init: true });
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
-        //this.uploadDate = Date.now();
+        this.uploadDate = Date.now();
         //测试就将uploadDate调为4；
-        this.uploadDate = 4;
+        //this.uploadDate = 4;
         this.setState({
             uploadDisabled: true,
+            simLoading: true
         }, () => {
             //设置后端存储使用的额外信息
             const extraInfo = {
@@ -272,8 +280,8 @@ class SPH extends React.Component {
                 simType: simType,
             }
 
-            //开始预取缓存？
-            setTimeout(this.startPrefetch, 0);
+            //开始预取缓存
+            setTimeout(this.fetchModel(0, false), 0);
 
             //第一个参数data，第二个参数仿真类型
             physikaUploadConfig(this.state.data, extraInfo)
@@ -283,42 +291,80 @@ class SPH extends React.Component {
                     this.frameSum = resultInfo.frameSum;
                     this.setState({
                         description: resultInfo.description,
-                        uploadDisabled: false
+                        uploadDisabled: false,
+                        simLoading: false
                     });
                 })
                 .catch(err => {
                     console.log("Error uploading: ", err);
+                    this.setState({
+                        uploadDisabled: false,
+                        simLoading: false
+                    });
                 })
         });
     }
 
-    startPrefetch = () => {
+    fetchModel = (frameIndex, isEnd) => {
+        this.frameStateArray[frameIndex] = 0;
         this.wsWorker.postMessage({
             data: {
                 userID: window.localStorage.userID,
                 uploadDate: this.uploadDate,
                 usePrefetch: true,
                 simType: simType,
-                frameIndex: 0
+                frameIndex: frameIndex,
+                isEnd: isEnd
             }
         })
-            .then(res => {
-                if (res.byteLength === 0) {
+            .then(arrayBuffer => {
+                if (arrayBuffer.byteLength === 0) {
+                    //在预取最后一帧时若发生超时，则重新取一次
+                    if (frameIndex == this.frameSum - 1) {
+                        this.fetchModel(this.nextFetchFrameIndex, true);
+                    }
                     throw ("Prefetch timed out!");
                 }
                 else {
-                    this.fetchModel(++this.nextFetchFrameIndex);
-                    this.frameStateArray[0] = 0;
-                    console.log('获取到第', 0, '帧，', this.frameStateArray);
-                    //存入indexedDB
-                    //注意：先执行完下一个then中的updateScene等操作才会执行写数据（writeModel中的异步操作放在当前微任务队列最后）
-                    this.writeModel(0, res);
-                    //注意后缀！
-                    return physikaInitVti(res, 'zip');
+                    //设定当前帧状态为已获取但未存入indexedDB
+                    this.frameStateArray[frameIndex] = 1;
+                    console.log('获取到第' + frameIndex + '帧，', this.frameStateArray);
+                    //将数据写入indexDB
+                    return db.table('model').add({
+                        userID: window.localStorage.userID, uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
+                    });
                 }
+            })
+            .then(id => {
+                this.frameStateArray[frameIndex] = 2;
+                console.log(id, '成功存入第' + frameIndex + '帧！', this.frameStateArray);
+                ++this.nextFetchFrameIndex;
+                this.setState({
+                    maxFrameIndex: this.nextFetchFrameIndex - 1
+                });
+                //判断是否为最后一帧
+                if (this.nextFetchFrameIndex == this.frameSum - 1) {
+                    this.fetchModel(this.nextFetchFrameIndex, true);
+                }
+                else if (this.nextFetchFrameIndex != this.frameSum) {
+                    this.fetchModel(this.nextFetchFrameIndex, false);
+                }
+                //第0帧特殊处理
+                if (frameIndex == 0) {
+                    return db.table('model').where('[uploadDate+frameIndex]').equals([this.uploadDate, frameIndex]).toArray();
+                }
+                else {
+                    //不是第0帧直接终止Promise链
+                    return Promise.reject(0);
+                }
+            })
+            .then(model => {
+                //注意后缀！
+                return physikaInitVti(model[0].arrayBuffer, filetype);
             })
             .then(res => {
                 this.updateScene([res]);
+                this.initParticlAttributes(res);
                 //初始化体素显示控制控件
                 this.initVolumeController();
                 //显示方向标记部件
@@ -326,71 +372,37 @@ class SPH extends React.Component {
                 //初始化fps控件
                 this.initFPS();
                 this.setState({
-                    isSliderShow: true,
-                    maxFrameIndex: this.nextFetchFrameIndex - 1
+                    isSliderShow: true
                 });
             })
-            .catch(err => {
-                console.log("Error startPrefetch: ", err);
-            })
-    }
-
-    fetchModel = (frameIndex) => {
-        this.wsWorker.postMessage({
-            data: {
-                userID: window.localStorage.userID,
-                uploadDate: this.uploadDate,
-                usePrefetch: true,
-                simType: simType,
-                frameIndex: frameIndex
-            }
-        })
-            .then(res => {
-                //添加判断
-                if (res.byteLength === 0) {
-                    //为什么不能===严格相等？
-                    if (this.nextFetchFrameIndex == this.frameSum) {
-                        console.log("Prefetch finish.")
-                    }
-                    else {
-                        throw ("Prefetch timed out!");
-                    }
+            .catch(state => {
+                if (state == 0) {
+                    console.log("FrameIndex is not 0.");
                 }
                 else {
-                    this.fetchModel(++this.nextFetchFrameIndex);
-                    //设定当前帧状态为已获取但未存入indexedDB
-                    this.frameStateArray[frameIndex] = 0;
-                    console.log('获取到第', frameIndex, '帧，', this.frameStateArray);
-                    //将模型写入indexedDB
-                    this.writeModel(frameIndex, res);
-                    this.setState({
-                        maxFrameIndex: this.nextFetchFrameIndex - 1
-                    });
+                    console.log("Error fetchModel: ", state);
                 }
-            })
-            .catch(err => {
-                console.log("Error fetchModel: ", err);
             });
     }
 
-    writeModel = (frameIndex, arrayBuffer) => {
-        db.table('model').add({
-            userID: window.localStorage.userID, uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
-        }).then(id => {
-            this.frameStateArray[frameIndex] = 1;
-            console.log(id, '成功存入第' + frameIndex + '帧！', this.frameStateArray);
-        }).catch(err => {
-            console.log(err);
-        })
-    }
+    // writeModel = (frameIndex, arrayBuffer) => {
+    //     db.table('model').add({
+    //         userID: window.localStorage.userID, uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
+    //     }).then(id => {
+    //         this.frameStateArray[frameIndex] = 1;
+    //         console.log(id, '成功存入第' + frameIndex + '帧！', this.frameStateArray);
+    //     }).catch(err => {
+    //         console.log(err);
+    //     })
+    // }
 
     readModel = (uploadDate, frameIndex) => {
         db.table('model').where('[uploadDate+frameIndex]').equals([uploadDate, frameIndex]).toArray()
             .then(model => {
-                return physikaInitVti(model[0].arrayBuffer, 'zip');
+                return physikaInitVti(model[0].arrayBuffer, filetype);
             })
             .then(res => {
-                if (uploadDate === this.uploadDate && frameIndex === this.state.curFrameIndex) {
+                if (frameIndex === this.state.curFrameIndex && uploadDate === this.uploadDate) {
                     this.updateScene([res]);
                     this.controllerWidget.changeActor(this.curScene[0].actor);
                 }
@@ -409,9 +421,12 @@ class SPH extends React.Component {
         this.setState({ curFrameIndex: value }, () => {
             switch (this.frameStateArray[value]) {
                 case 0:
-                    setTimeout(this.changeInput(value), 1000);
+                    //
                     break;
                 case 1:
+                    setTimeout(this.changeInput(value), 1000);
+                    break;
+                case 2:
                     this.readModel(this.uploadDate, value);
                     break;
                 default:
@@ -421,6 +436,7 @@ class SPH extends React.Component {
     }
 
     playClick = () => {
+        //若当前帧为所能获取的最大帧数，则忽略点击操作
         if (this.state.curFrameIndex < this.state.maxFrameIndex) {
             if (!this.state.isPlay) {
                 this.setState({
@@ -429,7 +445,7 @@ class SPH extends React.Component {
                     const playNextFrame = () => {
                         db.table('model').where('[uploadDate+frameIndex]').equals([this.uploadDate, this.state.curFrameIndex + 1]).toArray()
                             .then(model => {
-                                return physikaInitVti(model[0].arrayBuffer, 'zip');
+                                return physikaInitVti(model[0].arrayBuffer, filetype);
                             })
                             .then(res => {
                                 this.updateScene([res]);
@@ -444,7 +460,7 @@ class SPH extends React.Component {
                                     this.setState({
                                         curFrameIndex: ++this.state.curFrameIndex
                                     }, () => {
-                                        setTimeout(playNextFrame, 500);
+                                        setTimeout(playNextFrame, 10);
                                     })
                                 }
                             })
@@ -460,6 +476,26 @@ class SPH extends React.Component {
             }
         }
     }
+
+    initParticlAttributes = (model) => {
+        const attributes = [];
+        const dataArray = model.source.getPointData().getArrays();
+        for (let i = 0; i < dataArray.length; ++i) {
+            attributes.push(dataArray[i].getName());
+        }
+        this.setState({
+            particlAttributes: attributes
+        });
+    }
+
+    selectParticlAttribute = (value) => {
+        this.controllerWidget.setDataArrayIndex(value);
+        //
+    }
+
+    renderParticlAttributes = () => this.state.particlAttributes.map((item, index) => {
+        return <Option value={index} key={index}>{item}</Option>
+    })
 
     renderDescriptions = () => this.state.description.map((item, index) => {
         return <Descriptions.Item label={item.name} key={index}>{item.content}</Descriptions.Item>
@@ -477,9 +513,26 @@ class SPH extends React.Component {
                             {this.renderTreeNodes(this.state.data)}
                         </Tree>
                         <br />
-                        <Button type="primary" size={'small'} block onClick={this.upload} disabled={this.state.uploadDisabled}>开始仿真</Button>
+                        <Button type="primary" size={'small'} block onClick={this.upload} disabled={this.state.uploadDisabled}
+                            loading={this.state.simLoading}>开始仿真</Button>
                     </Panel>
                     <Panel header="仿真结果信息" key="2">
+                        {
+                            (this.state.isSliderShow) &&
+                            <div>
+                                <Row>
+                                    <Col span={13} style={{ alignItems: 'center', display: 'flex' }}>
+                                        <span className="ant-rate-text">显示属性：</span>
+                                    </Col>
+                                    <Col span={3}>
+                                        <Select defaultValue={this.state.particlAttributes[0]} onChange={this.selectParticlAttribute}>
+                                            {this.renderParticlAttributes()}
+                                        </Select>
+                                    </Col>
+                                </Row>
+                                <Divider />
+                            </div>
+                        }
                         <Descriptions column={1} layout={'horizontal'}>
                             {this.renderDescriptions()}
                         </Descriptions>

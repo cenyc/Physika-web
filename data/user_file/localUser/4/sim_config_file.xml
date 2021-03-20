@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Scene name="场景"><SimulationRun name="模拟运行结果"><FrameSum name="帧总数">51</FrameSum><Animation name="是否支持动画">true</Animation><Item name="流体粒子总数">16859</Item></SimulationRun></Scene>

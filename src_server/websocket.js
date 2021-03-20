@@ -16,7 +16,7 @@ const userPath = path.join(__dirname, '../data/user_file');
 
 const prefetchFileInfo = {
     0: ['cloud', '.vti'],
-    4: ['ParticleData', '.vti']
+    'SPH': ['ParticleData', '.vti']
 };
 
 wss.on('connection', function connection(ws) {
@@ -24,21 +24,29 @@ wss.on('connection', function connection(ws) {
         ws.binaryType = 'arraybuffer';
 
         const mObj = JSON.parse(message);
-        console.log("mObj: ", mObj);
-        let queryCount=0;
+        //console.log("mObj: ", mObj);
+        let queryCount = 0;
 
         if (mObj.usePrefetch) {
             const fileInfo = prefetchFileInfo[mObj.simType];
-            const fileName = fileInfo[mObj.simType] + '_' + mObj.frameIndex + fileInfo[1];
-            const filePath = path.join(userPath, mObj.userID, mObj.uploadDate.toString(), 'sim_data', fileName);
+            const fileDir = path.join(userPath, mObj.userID, mObj.uploadDate.toString(), 'sim_data/');
+            const fileName = fileDir + fileInfo[0] + '_' + mObj.frameIndex + fileInfo[1];
+            let queryFileName;
+            if (!mObj.isEnd) {
+                queryFileName = fileDir + fileInfo[0] + '_' + (mObj.frameIndex + 1) + fileInfo[1];
+                console.log(queryFileName);
+            }
+            else {
+                queryFileName = fileName;
+            }
             const queryFile = () => {
-                if (fs.existsSync(filePath)) {
-                    fsPromise.readFile(filePath)
+                if (fs.existsSync(queryFileName)) {
+                    fsPromise.readFile(fileName)
                         .then(data => {
-                            console.log(data.buffer);
+                            console.log('Data size: ', data.byteLength);
                             //对文件进行压缩
                             const zip = new JSZip();
-                            zip.file(fileName, data.buffer);
+                            zip.file(fileName, data);
                             return zip.generateAsync({
                                 type: 'arraybuffer',
                                 compression: "DEFLATE",
@@ -48,24 +56,25 @@ wss.on('connection', function connection(ws) {
                             });
                         })
                         .then(zipData => {
-                            console.log('zipData', zipData);
+                            console.log('ZipData size: ', zipData.byteLength);
                             ws.send(zipData);
                         })
                         .catch(err => {
-                            console.log('Error in websocket! ', err);
+                            console.log('Error in readFile: ', err);
                             //出错如何处理？
                             ws.send([]);
                         });
                 }
                 else {
-                    console.log("File not found!");
+                    console.log("File not ready!");
                     ++queryCount;
-                    if(queryCount<10){
+                    if (queryCount < 20) {
                         setTimeout(queryFile, 1000);
                     }
-                    else{
+                    else {
+                        console.log("Query file timed out!");
                         ws.send([]);
-                    } 
+                    }
                 }
             }
             queryFile();

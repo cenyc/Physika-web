@@ -94,7 +94,7 @@ function uploadConfig(data, extraInfo) {
     //如果不去掉html，将会产生循环引用
     buildJson(obj, deepCopy(data));
 
-    if (extraInfo.simType == 4) {
+    if (extraInfo.simType == 'SPH' || extraInfo.simType == 4) {
         buildSPHJson(obj, jsonObj);
     }
     else {
@@ -134,7 +134,7 @@ function uploadConfig(data, extraInfo) {
             console.log(res);
             resolve(buildDataStructure(res));
         }).catch(err => {
-            console.log(err);
+            reject(err);
         });
     });
 }

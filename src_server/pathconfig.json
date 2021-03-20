@@ -44,6 +44,11 @@
         "simType":"CloudWRF",
         "initConfigFileName":"./data/init_config_file/cloud_WRF.xml",
         "callPythonFileName":"D:/Physika_test/build/Python/TCDSM/xml/tcdsm_run.py"
+    },
+    "SPH":{
+        "simType":"SPH",
+        "initConfigFileName":"./data/init_config_file/SPH.xml",
+        "callPythonFileName":"E:/20210205ok/pyTest/sph_run.py"
     }
     
 }

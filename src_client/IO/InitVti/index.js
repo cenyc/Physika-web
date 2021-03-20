@@ -63,7 +63,6 @@ function initializeVti(vtiReader) {
     actor.getProperty().setSpecular(0.3);
     actor.getProperty().setSpecularPower(8.0);
 
-
     //后期若实现模型导出功能，则需考虑返回对象中添加reader
     return { source, mapper, actor };
 }

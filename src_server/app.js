@@ -51,7 +51,7 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
     const extraInfo = req.body.extraInfo;
     const jsonObj = req.body.jsonObj;
     let uploadConfigFile = null;
-    if (extraInfo.simType == 4) {
+    if (extraInfo.simType == 'SPH' || extraInfo.simType == 4) {
         uploadConfigFile = JSON.stringify(jsonObj);
     }
     else {
@@ -77,7 +77,7 @@ app.post('/uploadConfig', jsonParser, function (req, res, next) {
             }
             //上传仿真配置文件
             let uploadConfigFileName = null;
-            if (extraInfo.simType == 4) {
+            if (extraInfo.simType == 'SPH' || extraInfo.simType == 4) {
                 uploadConfigFileName = path.join(uploadDateDir, 'upload_config_file.json');
             }
             else {

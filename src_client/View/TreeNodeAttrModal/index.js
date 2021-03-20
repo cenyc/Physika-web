@@ -77,11 +77,9 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
     }
 
     function setCheckboxOptions() {
-        console.log("setCheckboxOptions");
         treeNodeAttr.check.split(' ').forEach(item => {
             checkboxOptions.push(item);
         });
-        console.log(checkboxOptions);
         return checkboxOptions;
     }
 
