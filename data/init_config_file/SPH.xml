@@ -24,7 +24,7 @@
         <numberOfStepsPerRenderUpdate class="Unsigned" name="">4</numberOfStepsPerRenderUpdate> -->
     </Configuration>
     <Materials name="材质">
-        <Materials_0 name="材质0">
+        <Materials_0 name="流体">
             <id class="String" name="类型" disabled="true">Fluid</id>
             <surfaceTension class="Real" name="表面张力" disabled="true">0</surfaceTension>
             <surfaceTensionMethod class="Enum" enum="None B-2007 A-2013 He-2014" name="表面张力方法" disabled="true">0</surfaceTensionMethod>
@@ -33,7 +33,7 @@
         </Materials_0>
     </Materials>
     <RigidBodies name="刚体">
-        <RigidBodies_0 name="刚体0">
+        <RigidBody_0 name="包围盒">
             <geometryFile class="File" accept=".obj" name="几何文件" disabled="false">null</geometryFile>
             <translation class="Vector3f" name="平移向量" disabled="false">0 1.5 0</translation>
             <rotationAxis class="Vector3f" name="旋转向量" disabled="false">1 0 0</rotationAxis>
@@ -43,15 +43,17 @@
             <isWall class="Bool" name="是否为包围盒" disabled="true">true</isWall>
             <mapInvert class="Bool" name="映射反转" disabled="true">true</mapInvert>
             <mapResolution class="Vector3f" name="映射分辨率" disabled="false">40 30 15</mapResolution>
-        </RigidBodies_0>
+        </RigidBody_0>
+        <AddNode name="+"></AddNode>
     </RigidBodies>
     <FluidBlocks name="流体块">
-        <FluidBlocks_0 name="流体块0">
+        <FluidBlock_0 name="默认流体块">
             <denseMode class="Enum" enum="常规采样 大密集采样 密集采样" name="采样方式" disabled="true">0</denseMode>
             <start class="Vector3f" name="起始坐标" disabled="false">-0.5 0.0 -0.5</start>
             <end class="Vector3f" name="终止坐标" disabled="false">0.5 1.0 0.5</end>
             <translation class="Vector3f" name="平移向量" disabled="false">-1.45 0.0 0.0</translation>
             <scale class="Vector3f" name="规模" disabled="false">1 1 1</scale>
-        </FluidBlocks_0>
+        </FluidBlock_0>
+        <AddNode name="+"></AddNode>
     </FluidBlocks>
 </Scene>

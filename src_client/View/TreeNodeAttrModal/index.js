@@ -202,7 +202,7 @@ const TreeNodeAttrModal = ({ treeNodeAttr, treeNodeText, visible, hideModal, cha
             onOk={() => {
                 form.validateFields()
                     .then(value => {
-                        console.log("validateFields", value);
+                        //console.log("validateFields", value);
                         returnTreeNodeData(value);
                     })
                     .catch(info => {

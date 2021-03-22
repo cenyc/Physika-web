@@ -132,7 +132,7 @@ function checkUploadConfig(data) {
                 errorTag = true;
                 return item._attributes.name + '不能为空！';
             }
-            if (item._text === undefined) {
+            if (item._text === undefined && item.tag !== 'AddNode') {
                 errorTag = true;
                 return item._attributes.name + '不能为空！';
             }
@@ -146,4 +146,98 @@ function checkUploadConfig(data) {
     return passTag;
 }
 
-export { deepCopy, isObject, parseSimulationResult, addPickedCell, checkUploadConfig };
+//---------------删除添加树结点（目前只支持操作结点的子结点没有孩子）-----------------------
+//newNode为新增加的结点，addNodeFinalKey为点击增加新结点的结点的最后一个key值
+function initNewNode(newNode, fatherKey, sonKey) {
+    newNode._attributes.name = '新结点'
+    const tagArray = newNode.tag.split('_');
+    newNode.tag = tagArray[0] + '_' + sonKey;
+    newNode.key = fatherKey + '-' + sonKey;
+    if (newNode.children) {
+        newNode.children.forEach((item, index) => {
+            if (item._attributes.class === 'File') {
+                item._text = 'null';
+            }
+            if (item.tag === 'isWall') {
+                item._text = false;
+            }
+            if (item.tag === 'mapInvert') {
+                item._text = false;
+            }
+            item.key = fatherKey + '-' + sonKey + '-' + index;
+        })
+    }
+    newNode.deletable = true;
+}
+
+function addNewNode(tree, item) {
+    let eachKey = item.key.split('-');
+    let count = 0;
+    const findTreeNodeKey = (node) => {
+        if (count === eachKey.length - 1) {
+            node.pop();
+            const newNode = deepCopy(node[0]);
+            let sonKey = '';
+            for (let i = item.key.length - 1; i > 0; --i) {
+                if (item.key[i] !== '-') {
+                    sonKey = item.key[i] + sonKey;
+                }
+                else {
+                    sonKey = Number(sonKey);
+                    const fatherKey = item.key.substring(0, i);
+                    initNewNode(newNode, fatherKey, sonKey);
+                    node.push(newNode);
+                    item.key = fatherKey + '-' + (sonKey + 1);
+                    node.push(item);
+                    break;
+                }
+            }
+            return;
+        }
+        findTreeNodeKey(node[eachKey[count++]].children);
+    };
+    findTreeNodeKey(tree);
+    return tree;
+}
+
+function changeNodeKeyAfterDelete(node, sonKey, sonKeyIndex) {
+    for (let i = sonKey; i < node.length; ++i) {
+        const nodeKeyArray = node[i].key.split('-');
+        let newKey = nodeKeyArray[0];
+        for (let keyIndex = 1; keyIndex < nodeKeyArray.length; ++keyIndex) {
+            if (keyIndex === sonKeyIndex) {
+                newKey += '-' + (nodeKeyArray[keyIndex] - 1);
+            }
+            else {
+                newKey += '-' + nodeKeyArray[keyIndex];
+            }
+
+        }
+        node[i].key = newKey;
+        if (node[i].children) {
+            const tagArray = node[i].tag.split('_');
+            node[i].tag = tagArray[0] + '_' + sonKey;
+            changeNodeKeyAfterDelete(node[i].children, 0, sonKeyIndex);
+        }
+    }
+}
+
+function deleteNode(tree, item) {
+    let eachKey = item.key.split('-');
+    let count = 0;
+    const findTreeNodeKey = (node) => {
+        if (count === eachKey.length - 1) {
+            node.splice(eachKey[count], 1);
+            const sonKey = eachKey[count];
+            const sonKeyIndex = count;
+            changeNodeKeyAfterDelete(node, sonKey, sonKeyIndex);
+            return;
+        }
+        findTreeNodeKey(node[eachKey[count++]].children);
+    };
+    findTreeNodeKey(tree);
+    return tree;
+}
+//----------------------------------------------------------------------------------
+
+export { deepCopy, isObject, parseSimulationResult, addPickedCell, checkUploadConfig, addNewNode, deleteNode };

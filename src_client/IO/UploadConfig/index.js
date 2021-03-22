@@ -2,6 +2,10 @@ import { deepCopy } from '../../Common'
 import { buildDataStructure } from '../BuildDataStructure'
 
 const buildJson = (father, children) => children.forEach(item => {
+    //删除增加结点的结点
+    if (item.tag === 'AddNode') {
+        return;
+    }
     if (!father.hasOwnProperty(item.tag)) {
         father[item.tag] = [];
     }
@@ -10,18 +14,27 @@ const buildJson = (father, children) => children.forEach(item => {
         buildJson(item, item.children);
         delete item.children;
     }
-    //2020.12.7 使用文件名代替File标签中的_text内容
-    if (item._attributes.class === 'File') {
-        const tmp = item._text[0];
-        item._text = tmp.uploadDate + '_' + tmp.name;
+
+    //2021.3.20 若上传文件为xml，则需要在这里将_text值改为字符串！
+    switch (item._attributes.class) {
+        case 'File':
+            const fileInfo = item._text[0];
+            item._text = fileInfo.uploadDate + '_' + fileInfo.name;
+            break;
+        case 'Vector2u':
+            item._text = item._text[0] + ' ' + item._text[1];
+            break;
+        default:
+            break;
     }
 
+    delete item.deletable
     delete item.key;
     delete item.tag;
 });
 
 function buildSPHJson(obj, jsonObj) {
-    console.log(obj);
+    console.log('buildSPHJson: ', obj);
     Object.keys(obj.Scene[0]).forEach(key => {
         switch (key) {
             case 'Configuration':
