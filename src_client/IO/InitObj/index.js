@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import vtkOBJReader from 'vtk.js/Sources/IO/Misc/OBJReader';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
+import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
 
 function initializeObj(objReader) {
     let curFrame = {};
@@ -51,9 +52,17 @@ function initObj(arrayBuffer, ext) {
                         }
                     });
                 })
-                .catch (err => {
+                .catch(err => {
                     console.log("Failed to init obj: ", err);
                 })
+        }
+        else if (ext === 'vtkCube') {
+            const source = vtkCubeSource.newInstance();
+            const actor = vtkActor.newInstance();
+            const mapper = vtkMapper.newInstance();
+            actor.setMapper(mapper);
+            mapper.setInputConnection(source.getOutputPort());
+            resolve([{ source, mapper, actor }]);
         }
         else {
             reject('数据格式错误！')

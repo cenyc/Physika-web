@@ -148,6 +148,70 @@ function checkUploadConfig(data) {
 
 //---------------删除添加树结点（目前只支持操作结点的子结点没有孩子）-----------------------
 //newNode为新增加的结点，addNodeFinalKey为点击增加新结点的结点的最后一个key值
+//流体块初始化对象
+function buildFluidBlockObj() {
+    const obj = {};
+    obj.tag = "FluidBlock_0";
+    obj._attributes = { name: "默认流体块" };
+    obj.children = [];
+    obj.children.push({
+        tag: "denseMode",
+        _attributes: {
+            class: "Enum",
+            disabled: "true",
+            enum: "常规采样 大密集采样 密集采样",
+            name: "采样方式"
+        },
+        _text: 0
+    });
+    obj.children.push({
+        tag: "start",
+        _attributes: {
+            class: "Vector3f",
+            disabled: "false",
+            name: "起始坐标"
+        },
+        _text: [-0.5, 0, -0.5]
+    });
+    obj.children.push({
+        tag: "end",
+        _attributes: {
+            class: "Vector3f",
+            disabled: "false",
+            name: "终止坐标"
+        },
+        _text: [0.5, 1, 0.5]
+    });
+    obj.children.push({
+        tag: "translation",
+        _attributes: {
+            class: "Vector3f",
+            disabled: "false",
+            name: "平移向量"
+        },
+        _text: [-1.45, 0, 0]
+    });
+    obj.children.push({
+        tag: "scale",
+        _attributes: {
+            class: "Vector3f",
+            disabled: "true",
+            name: "规模"
+        },
+        _text: [1, 1, 1]
+    });
+    obj.children.push({
+        tag: "initialVelocity",
+        _attributes: {
+            class: "Vector3f",
+            disabled: "false",
+            name: "初始速度"
+        },
+        _text: [0, 0, 0]
+    });
+    return obj;
+}
+
 function initNewNode(newNode, fatherKey, sonKey) {
     newNode._attributes.name = '新结点'
     const tagArray = newNode.tag.split('_');
@@ -171,12 +235,12 @@ function initNewNode(newNode, fatherKey, sonKey) {
 }
 
 function addNewNode(tree, item) {
+    let newNode;
     let eachKey = item.key.split('-');
     let count = 0;
     const findTreeNodeKey = (node) => {
         if (count === eachKey.length - 1) {
             node.pop();
-            const newNode = deepCopy(node[0]);
             let sonKey = '';
             for (let i = item.key.length - 1; i > 0; --i) {
                 if (item.key[i] !== '-') {
@@ -185,6 +249,21 @@ function addNewNode(tree, item) {
                 else {
                     sonKey = Number(sonKey);
                     const fatherKey = item.key.substring(0, i);
+                    //根据父节点tag选择新结点属性
+                    let tmpNode = tree;
+                    for (let i = 0; i < count - 1; ++i) {
+                        tmpNode = tmpNode[eachKey[i]].children;
+                    }
+                    switch (tmpNode[eachKey[count - 1]].tag) {
+                        case 'RigidBodies':
+                            newNode = deepCopy(node[0]);
+                            break;
+                        case 'FluidBlocks':
+                            newNode = buildFluidBlockObj();
+                            break;
+                        default:
+                            break;
+                    }
                     initNewNode(newNode, fatherKey, sonKey);
                     node.push(newNode);
                     item.key = fatherKey + '-' + (sonKey + 1);
@@ -197,7 +276,7 @@ function addNewNode(tree, item) {
         findTreeNodeKey(node[eachKey[count++]].children);
     };
     findTreeNodeKey(tree);
-    return tree;
+    return { tree, newNode };
 }
 
 function changeNodeKeyAfterDelete(node, sonKey, sonKeyIndex) {

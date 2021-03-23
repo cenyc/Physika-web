@@ -47,13 +47,13 @@
         <AddNode name="+"></AddNode>
     </RigidBodies>
     <FluidBlocks name="流体块">
-        <FluidBlock_0 name="默认流体块">
+        <!-- <FluidBlock_0 name="默认流体块">
             <denseMode class="Enum" enum="常规采样 大密集采样 密集采样" name="采样方式" disabled="true">0</denseMode>
             <start class="Vector3f" name="起始坐标" disabled="false">-0.5 0.0 -0.5</start>
             <end class="Vector3f" name="终止坐标" disabled="false">0.5 1.0 0.5</end>
             <translation class="Vector3f" name="平移向量" disabled="false">-1.45 0.0 0.0</translation>
             <scale class="Vector3f" name="规模" disabled="false">1 1 1</scale>
-        </FluidBlock_0>
+        </FluidBlock_0> -->
         <AddNode name="+"></AddNode>
     </FluidBlocks>
 </Scene>

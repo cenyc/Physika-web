@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber, Select, Input } from 'antd';
+import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber, Select, Input, Radio } from 'antd';
 const { TreeNode } = Tree;
 const { Panel } = Collapse;
 const { Option } = Select;
@@ -7,6 +7,7 @@ const { Option } = Select;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
+import { degreesFromRadians } from 'vtk.js/Sources/Common/Core/Math';
 import vtkVolumeController from '../Widget/VolumeController';
 import vtkFPSMonitor from '../Widget/FPSMonitor';
 
@@ -22,10 +23,11 @@ import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
-import { degreesFromRadians } from 'vtk.js/Sources/Common/Core/Math';
 
 const simType = "SPH";
 const filetype = 'zip';
+
+const representationOptions = ['V', 'W', 'S'];
 
 //一些想法：
 //一次是否可以获取多帧？获取到zip有几个文件后再进行下一次获取？目前按照一个一个传
@@ -88,6 +90,8 @@ class SPH extends React.Component {
         this.wsWorker = null;
         //RigidBodies所组成的场景
         this.rBScene = [];
+        //流体块模型
+        this.fBScene = [];
 
     }
 
@@ -97,6 +101,8 @@ class SPH extends React.Component {
         renderWindowDOM.innerHTML = ``;
         this.curScene = [];
         this.frameStateArray = [];
+        this.rBScene = [];
+        this.fBScene = [];
         //关闭WebSocket
         if (this.wsWorker) {
             this.wsWorker.postMessage({ close: true });
@@ -143,6 +149,8 @@ class SPH extends React.Component {
             console.log("wsworker", this.wsWorker);
         }
         this.clean();
+        this.rBScene = [];
+        this.fBScene = [];
         physikaLoadConfig(simType)
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -157,8 +165,36 @@ class SPH extends React.Component {
     }
 
     addNewNode = (item) => {
+        const resObj = addNewNode(this.state.data, item);
         this.setState({
-            data: addNewNode(this.state.data, item)
+            data: resObj.tree
+        }, () => {
+            if (resObj.newNode.tag.split('_')[0] === 'FluidBlock') {
+                physikaInitObj(null, 'vtkCube')
+                    .then(res => {
+                        res[0].actor.getProperty().setColor(0.757, 0.823, 0.941);
+                        this.renderer.addActor(res[0].actor);
+                        if (this.state.isShowResult) {
+                            res[0].actor.setVisibility(false);
+                        }
+                        //只有在第一次加载actor时初始化
+                        if (this.rBScene.length === 0 && this.fBScene.length === 0) {
+                            //显示方向标记部件
+                            this.orientationMarkerWidget.setEnabled(true);
+                            //初始化fps控件
+                            this.initFPS();
+                        }
+                        this.fBScene.push(res[0]);
+                        resObj.newNode.children.forEach(i => {
+                            this.editFluidBlock(i.tag, i, this.fBScene.length - 1, resObj.newNode.children);
+                        })
+                        this.renderer.resetCamera();
+                        this.renderWindow.render();
+                    })
+                    .catch(err => {
+                        console.log('Error in vtkCube importing: ', err);
+                    });
+            }
         });
     }
 
@@ -166,6 +202,27 @@ class SPH extends React.Component {
         this.setState({
             data: deleteNode(this.state.data, item)
         });
+    }
+
+    changeRepresentation = (e, key) => {
+        const eachKey = key.split('-');
+        //简单粗暴但不通用
+        switch (this.state.data[eachKey[0]].children[eachKey[1]].tag) {
+            case 'RigidBodies':
+                if (this.rBScene[eachKey[2]]) {
+                    this.rBScene[eachKey[2]].actor.getProperty().setRepresentation(e);
+                }
+                break;
+            case 'FluidBlocks':
+                if (this.fBScene[eachKey[2]]) {
+                    this.fBScene[eachKey[2]].actor.getProperty().setRepresentation(e);
+                }
+                break;
+            default:
+                break;
+        }
+        this.renderer.resetCamera();
+        this.renderWindow.render();
     }
 
     //递归渲染每个树节点（这里必须用map遍历！因为需要返回数组）
@@ -176,19 +233,32 @@ class SPH extends React.Component {
                     //不要随便用item._text这种形式做判断，会自动把数值转为bool做判断
                     item.hasOwnProperty('_text') ? <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
                         : (item.tag === 'AddNode') ? <Button type="text" size="small" onClick={() => this.addNewNode(item)}>{item._attributes.name}</Button>
-                            : item.deletable ?
+                            : item.deletable
+                                ?
                                 <div>
-                                    <Input placeholder={item._attributes.name} bordered={false} style={{ width: '80px' }}></Input>
+                                    <Input placeholder={item._attributes.name} bordered={false} size={'small'} style={{ width: '65px' }}></Input>
+                                    <Select defaultValue={'S'} onChange={(e) => this.changeRepresentation(e, item.key)} bordered={false} size={'small'}>
+                                        {this.renderRepresentationOptions()}
+                                    </Select>
                                     <Button type="text" size="small" onClick={() => this.deleteNode(item)}>  -</Button>
                                 </div>
-                                : <span className="ant-rate-text">{item._attributes.name}</span>
+                                :
+                                <div>
+                                    <span className="ant-rate-text">{item._attributes.name}</span>
+                                    {
+                                        (item.tag === 'RigidBody_0' || item.tag === 'FluidBlock_0') &&
+                                        <Select defaultValue={'S'} onChange={(e) => this.changeRepresentation(e, item.key)} bordered={false} size={'small'}>
+                                            {this.renderRepresentationOptions()}
+                                        </Select>
+                                    }
+                                </div>
                 }
-            </div>
+            </div >
         );
 
         if (item.children) {
             return (
-                <TreeNode title={item.title} key={item.key} >
+                <TreeNode title={item.title} key={item.key}>
                     {this.renderTreeNodes(item.children)}
                 </TreeNode>
             );
@@ -227,7 +297,7 @@ class SPH extends React.Component {
                             this.rBScene[index].source.delete();
                         }
                         //只有在第一次加载actor时初始化
-                        if (this.rBScene.length === 0) {
+                        if (this.rBScene.length === 0 && this.fBScene.length === 0) {
                             //显示方向标记部件
                             this.orientationMarkerWidget.setEnabled(true);
                             //初始化fps控件
@@ -248,7 +318,6 @@ class SPH extends React.Component {
                 this.rBScene[index].actor.setPosition(item._text);
                 break;
             case 'scale':
-                console.log(item._text);
                 this.rBScene[index].actor.setScale(item._text);
                 break;
             case 'rotationAxis':
@@ -276,7 +345,70 @@ class SPH extends React.Component {
     }
 
     editFluidBlock = (tag, item, index, attributes) => {
-
+        switch (tag) {
+            case 'start':
+                const scale0 = [0, 0, 0];
+                const position0 = [0, 0, 0];
+                for (let i = 0; i < attributes.length; ++i) {
+                    if (attributes[i].tag === 'end') {
+                        for (let j = 0; j < 3; ++j) {
+                            scale0[j] = attributes[i]._text[j] - item._text[j];
+                            position0[j] += (attributes[i]._text[j] + item._text[j]) / 2.0;
+                        }
+                    }
+                    if (attributes[i].tag === 'translation') {
+                        for (let j = 0; j < 3; ++j) {
+                            position0[j] += attributes[i]._text[j];
+                        }
+                    }
+                }
+                this.fBScene[index].actor.setPosition(position0);
+                this.fBScene[index].actor.setScale(scale0);
+                break;
+            case 'end':
+                const scale1 = [0, 0, 0];
+                const position1 = [0, 0, 0];
+                for (let i = 0; i < attributes.length; ++i) {
+                    if (attributes[i].tag === 'start') {
+                        for (let j = 0; j < 3; ++j) {
+                            scale1[j] = item._text[j] - attributes[i]._text[j];
+                            position1[j] += (item._text[j] + attributes[i]._text[j]) / 2.0;
+                        }
+                    }
+                    if (attributes[i].tag === 'translation') {
+                        for (let j = 0; j < 3; ++j) {
+                            position1[j] += attributes[i]._text[j];
+                        }
+                    }
+                }
+                this.fBScene[index].actor.setPosition(position1);
+                this.fBScene[index].actor.setScale(scale1);
+                break;
+            case 'translation':
+                let start;
+                let end;
+                const position2 = [0, 0, 0];
+                for (let i = 0; i < attributes.length; ++i) {
+                    if (attributes[i].tag === 'start') {
+                        start = attributes[i]._text;
+                    }
+                    if (attributes[i].tag === 'end') {
+                        end = attributes[i]._text;
+                    }
+                }
+                for (let j = 0; j < 3; ++j) {
+                    position2[j] += item._text[j] + (end[j] + start[j]) / 2.0;
+                }
+                this.fBScene[index].actor.setPosition(position2);
+                break;
+            case 'scale':
+                //老子不搞这个！
+                break;
+            default:
+                break;
+        }
+        this.renderer.resetCamera();
+        this.renderWindow.render();
     }
 
     //接收TreeNodeAttrModal返回的结点数据并更新树
@@ -593,12 +725,18 @@ class SPH extends React.Component {
                 this.rBScene.forEach(item => {
                     item.actor.setVisibility(false);
                 });
+                this.fBScene.forEach(item => {
+                    item.actor.setVisibility(false);
+                });
                 this.curScene.forEach(item => {
                     item.actor.setVisibility(true);
                 });
             }
             else {
                 this.rBScene.forEach(item => {
+                    item.actor.setVisibility(true);
+                });
+                this.fBScene.forEach(item => {
                     item.actor.setVisibility(true);
                 });
                 this.curScene.forEach(item => {
@@ -627,6 +765,10 @@ class SPH extends React.Component {
     }
 
     renderParticlAttributes = () => this.state.particlAttributes.map((item, index) => {
+        return <Option value={index} key={index}>{item}</Option>
+    })
+
+    renderRepresentationOptions = () => representationOptions.map((item, index) => {
         return <Option value={index} key={index}>{item}</Option>
     })
 
