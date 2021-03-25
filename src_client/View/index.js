@@ -8,6 +8,7 @@ import { PhysikaCloudSatellite } from './CloudSatellite';
 import { PhysikaCloudWRF } from './CloudWRF';
 import { LoginModal } from './LoginModal';
 import { MySPH } from './SPH';
+import { PhysikaCloth } from './Cloth';
 
 const { Header, Content, Sider } = Layout;
 
@@ -27,7 +28,8 @@ function PhysikaWeb() {
             <Menu.Item key='1'>自然云图像建模</Menu.Item>
             <Menu.Item key='2'>卫星云图像建模</Menu.Item>
             <Menu.Item key='3'>WRF数据建模</Menu.Item>
-            <Menu.Item key='4'>SPH流体模拟</Menu.Item>
+            <Menu.Item key='4'>SPH流体仿真</Menu.Item>
+            <Menu.Item key='5'>布料仿真</Menu.Item>
         </Menu>
     )
 
@@ -125,6 +127,10 @@ function PhysikaWeb() {
                     {
                         userStatus && (simType === "4") &&
                         <MySPH></MySPH>
+                    }
+                    {
+                        userStatus && (simType === "5") &&
+                        <PhysikaCloth></PhysikaCloth>
                     }
                 </Sider>
                 <Layout style={{ padding: '24px 24px 24px' }}>

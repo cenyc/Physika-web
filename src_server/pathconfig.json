@@ -25,6 +25,11 @@
         "initConfigFileName":"./data/init_config_file/SPH.xml",
         "callPythonFileName":"./src_server/Python/SPH.py"
     },
+    "5":{
+        "simType":"Cloth",
+        "initConfigFileName":"./data/init_config_file/cloth.xml",
+        "callPythonFileName":"./src_server/Python/cloth.py"
+    },
     "CloudEuler":{
         "simType":"CloudEuler",
         "initConfigFileName":"./data/init_config_file/cloud_euler.xml",

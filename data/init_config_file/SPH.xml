@@ -24,13 +24,13 @@
         <numberOfStepsPerRenderUpdate class="Unsigned" name="">4</numberOfStepsPerRenderUpdate> -->
     </Configuration>
     <Materials name="材质">
-        <Materials_0 name="流体">
+        <Material_0 name="流体">
             <id class="String" name="类型" disabled="true">Fluid</id>
             <surfaceTension class="Real" name="表面张力" disabled="true">0</surfaceTension>
             <surfaceTensionMethod class="Enum" enum="None B-2007 A-2013 He-2014" name="表面张力方法" disabled="true">0</surfaceTensionMethod>
             <viscosity class="Real" name="粘性" disabled="false">0.01</viscosity>
             <viscosityMethod class="Enum" enum="None Standard" name="粘性方法" disabled="false">1</viscosityMethod>
-        </Materials_0>
+        </Material_0>
     </Materials>
     <RigidBodies name="刚体">
         <RigidBody_0 name="包围盒">

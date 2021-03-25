@@ -261,6 +261,9 @@ function addNewNode(tree, item) {
                         case 'FluidBlocks':
                             newNode = buildFluidBlockObj();
                             break;
+                        case 'Cloths':
+                            newNode = deepCopy(node[0]);
+                            break;
                         default:
                             break;
                     }
@@ -302,11 +305,12 @@ function changeNodeKeyAfterDelete(node, sonKey, sonKeyIndex) {
 }
 
 function deleteNode(tree, item) {
+    let deletedNode;
     let eachKey = item.key.split('-');
     let count = 0;
     const findTreeNodeKey = (node) => {
         if (count === eachKey.length - 1) {
-            node.splice(eachKey[count], 1);
+            deletedNode = node.splice(eachKey[count], 1);
             const sonKey = eachKey[count];
             const sonKeyIndex = count;
             changeNodeKeyAfterDelete(node, sonKey, sonKeyIndex);
@@ -315,7 +319,7 @@ function deleteNode(tree, item) {
         findTreeNodeKey(node[eachKey[count++]].children);
     };
     findTreeNodeKey(tree);
-    return tree;
+    return { tree, deletedNode };
 }
 //----------------------------------------------------------------------------------
 

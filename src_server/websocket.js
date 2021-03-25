@@ -12,11 +12,15 @@ const wss = new WSServer({
 });
 server.on('request', app);
 
+//用户文件路径
 const userPath = path.join(__dirname, '../data/user_file');
+//轮询次数，每次间隔1秒
+const queryCountMax = 100;
 
 const prefetchFileInfo = {
     0: ['cloud', '.vti'],
-    'SPH': ['ParticleData', '.vti']
+    'SPH': ['ParticleData', '.vti'],
+    5: ['mesh', '.obj']
 };
 
 wss.on('connection', function connection(ws) {
@@ -34,7 +38,7 @@ wss.on('connection', function connection(ws) {
             let queryFileName;
             if (!mObj.isEnd) {
                 queryFileName = fileDir + fileInfo[0] + '_' + (mObj.frameIndex + 1) + fileInfo[1];
-                console.log(queryFileName);
+                //console.log(queryFileName);
             }
             else {
                 queryFileName = fileName;
@@ -57,6 +61,7 @@ wss.on('connection', function connection(ws) {
                         })
                         .then(zipData => {
                             console.log('ZipData size: ', zipData.byteLength);
+                            console.log("Time:",queryCount);
                             ws.send(zipData);
                         })
                         .catch(err => {
@@ -66,9 +71,9 @@ wss.on('connection', function connection(ws) {
                         });
                 }
                 else {
-                    console.log("File not ready!");
+                    //console.log("File not ready!");
                     ++queryCount;
-                    if (queryCount < 20) {
+                    if (queryCount < queryCountMax) {
                         setTimeout(queryFile, 1000);
                     }
                     else {

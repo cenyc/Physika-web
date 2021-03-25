@@ -7,14 +7,11 @@ const { Option } = Select;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-import { degreesFromRadians } from 'vtk.js/Sources/Common/Core/Math';
-import vtkVolumeController from '../Widget/VolumeController';
 import vtkFPSMonitor from '../Widget/FPSMonitor';
 
 import { physikaLoadConfig } from '../../IO/LoadConfig';
 import { physikaUploadConfig } from '../../IO/UploadConfig';
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal';
-import { physikaInitVti } from '../../IO/InitVti';
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget';
 import { parseSimulationResult, checkUploadConfig, addNewNode, deleteNode } from '../../Common';
 import { physikaInitObj } from '../../IO/InitObj';
@@ -24,15 +21,12 @@ import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-const simType = "SPH";
+const simType = "5";
 const filetype = 'zip';
 
 const representationOptions = ['V', 'W', 'S'];
 
-//一些想法：
-//一次是否可以获取多帧？获取到zip有几个文件后再进行下一次获取？目前按照一个一个传
-//如何更好地处理重复load？
-class SPH extends React.Component {
+class Cloth extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -43,8 +37,6 @@ class SPH extends React.Component {
             treeNodeKey: -1,
 
             simLoading: false,
-            //渲染粒子属性
-            particlAttributes: [],
             //结果展示信息
             description: [],
             //当前帧索引
@@ -89,9 +81,7 @@ class SPH extends React.Component {
         //worker创建及WebSocket初始化
         this.wsWorker = null;
         //RigidBodies所组成的场景
-        this.rBScene = [];
-        //流体块模型
-        this.fBScene = [];
+        this.cScene = [];
 
     }
 
@@ -101,8 +91,7 @@ class SPH extends React.Component {
         renderWindowDOM.innerHTML = ``;
         this.curScene = [];
         this.frameStateArray = [];
-        this.rBScene = [];
-        this.fBScene = [];
+        this.cScene = [];
         //关闭WebSocket
         if (this.wsWorker) {
             this.wsWorker.postMessage({ close: true });
@@ -149,8 +138,7 @@ class SPH extends React.Component {
             console.log("wsworker", this.wsWorker);
         }
         this.clean();
-        this.rBScene = [];
-        this.fBScene = [];
+        this.cScene = [];
         physikaLoadConfig(simType)
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -169,32 +157,7 @@ class SPH extends React.Component {
         this.setState({
             data: resObj.tree
         }, () => {
-            if (resObj.newNode.tag.split('_')[0] === 'FluidBlock') {
-                physikaInitObj(null, 'vtkCube')
-                    .then(res => {
-                        res[0].actor.getProperty().setColor(0.757, 0.823, 0.941);
-                        this.renderer.addActor(res[0].actor);
-                        if (this.state.isShowResult) {
-                            res[0].actor.setVisibility(false);
-                        }
-                        //只有在第一次加载actor时初始化
-                        if (this.rBScene.length === 0 && this.fBScene.length === 0) {
-                            //显示方向标记部件
-                            this.orientationMarkerWidget.setEnabled(true);
-                            //初始化fps控件
-                            this.initFPS();
-                        }
-                        this.fBScene.push(res[0]);
-                        resObj.newNode.children.forEach(i => {
-                            this.editFluidBlock(i.tag, i, this.fBScene.length - 1, resObj.newNode.children);
-                        })
-                        this.renderer.resetCamera();
-                        this.renderWindow.render();
-                    })
-                    .catch(err => {
-                        console.log('Error in vtkCube importing: ', err);
-                    });
-            }
+            //
         });
     }
 
@@ -205,17 +168,12 @@ class SPH extends React.Component {
         }, () => {
             const deletedNode = resObj.deletedNode[0];
             const index = Number(deletedNode.key.split('-').pop());
-            if (this.rBScene[index]) {
+            if (this.cScene[index]) {
                 switch (deletedNode.tag.split('_')[0]) {
-                    case 'RigidBody':
-                        this.renderer.removeActor(this.rBScene[index].actor);
-                        this.rBScene[index].source.delete();
-                        this.rBScene.splice(index, 1);
-                        break;
-                    case 'FluidBlock':
-                        this.renderer.removeActor(this.fBScene[index].actor);
-                        this.fBScene[index].source.delete();
-                        this.fBScene.splice(index, 1);
+                    case 'Cloth':
+                        this.renderer.removeActor(this.cScene[index].actor);
+                        this.cScene[index].source.delete();
+                        this.cScene.splice(index, 1);
                         break;
                     default:
                         break;
@@ -230,14 +188,9 @@ class SPH extends React.Component {
         const eachKey = key.split('-');
         //简单粗暴但不通用
         switch (this.state.data[eachKey[0]].children[eachKey[1]].tag) {
-            case 'RigidBodies':
-                if (this.rBScene[eachKey[2]]) {
-                    this.rBScene[eachKey[2]].actor.getProperty().setRepresentation(e);
-                }
-                break;
-            case 'FluidBlocks':
-                if (this.fBScene[eachKey[2]]) {
-                    this.fBScene[eachKey[2]].actor.getProperty().setRepresentation(e);
+            case 'Cloths':
+                if (this.cScene[eachKey[2]]) {
+                    this.cScene[eachKey[2]].actor.getProperty().setRepresentation(e);
                 }
                 break;
             default:
@@ -268,7 +221,7 @@ class SPH extends React.Component {
                                 <div>
                                     <span className="ant-rate-text">{item._attributes.name}</span>
                                     {
-                                        (item.tag === 'RigidBody_0') &&
+                                        (item.tag === 'Cloth_0') &&
                                         <Select defaultValue={'S'} onChange={(e) => this.changeRepresentation(e, item.key)} bordered={false} size={'small'}>
                                             {this.renderRepresentationOptions()}
                                         </Select>
@@ -313,118 +266,31 @@ class SPH extends React.Component {
                         if (this.state.isShowResult) {
                             res[0].actor.setVisibility(false);
                         }
-                        if (this.rBScene[index]) {
+                        if (this.cScene[index]) {
                             //必须先从renderer中移除该对象，否则会报错
-                            this.renderer.removeActor(this.rBScene[index].actor);
-                            this.rBScene[index].source.delete();
+                            this.renderer.removeActor(this.cScene[index].actor);
+                            this.cScene[index].source.delete();
                         }
                         //只有在第一次加载actor时初始化
-                        if (this.rBScene.length === 0 && this.fBScene.length === 0) {
+                        if (this.cScene.length === 0) {
                             //显示方向标记部件
                             this.orientationMarkerWidget.setEnabled(true);
                             //初始化fps控件
                             this.initFPS();
                         }
-                        this.rBScene[index] = res[0];
+                        this.cScene[index] = res[0];
                         attributes.forEach(i => {
                             if (i.tag === 'geometryFile')
                                 return;
                             this.editRigidBody(i.tag, i, index, attributes);
                         });
+                        //因为没有别的属性，所以场景刷新只能放在then中
+                        this.renderer.resetCamera();
+                        this.renderWindow.render();
                     })
                     .catch(err => {
                         console.log('Error in obj importing: ', err);
                     })
-                break;
-            case 'translation':
-                this.rBScene[index].actor.setPosition(item._text);
-                break;
-            case 'scale':
-                this.rBScene[index].actor.setScale(item._text);
-                break;
-            case 'rotationAxis':
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'rotationAngle') {
-                        //输入为弧度，需要转为角度
-                        this.rBScene[index].actor.rotateWXYZ(degreesFromRadians(attributes[i]._text), item._text[0], item._text[1], item._text[2]);
-                        break;
-                    }
-                }
-                break;
-            case 'rotationAngle':
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'rotationAxis') {
-                        this.rBScene[index].actor.rotateWXYZ(degreesFromRadians(item._text), attributes[i]._text[0], attributes[i]._text[1], attributes[i]._text[2]);
-                        break;
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-        this.renderer.resetCamera();
-        this.renderWindow.render();
-    }
-
-    editFluidBlock = (tag, item, index, attributes) => {
-        switch (tag) {
-            case 'start':
-                const scale0 = [0, 0, 0];
-                const position0 = [0, 0, 0];
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'end') {
-                        for (let j = 0; j < 3; ++j) {
-                            scale0[j] = attributes[i]._text[j] - item._text[j];
-                            position0[j] += (attributes[i]._text[j] + item._text[j]) / 2.0;
-                        }
-                    }
-                    if (attributes[i].tag === 'translation') {
-                        for (let j = 0; j < 3; ++j) {
-                            position0[j] += attributes[i]._text[j];
-                        }
-                    }
-                }
-                this.fBScene[index].actor.setPosition(position0);
-                this.fBScene[index].actor.setScale(scale0);
-                break;
-            case 'end':
-                const scale1 = [0, 0, 0];
-                const position1 = [0, 0, 0];
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'start') {
-                        for (let j = 0; j < 3; ++j) {
-                            scale1[j] = item._text[j] - attributes[i]._text[j];
-                            position1[j] += (item._text[j] + attributes[i]._text[j]) / 2.0;
-                        }
-                    }
-                    if (attributes[i].tag === 'translation') {
-                        for (let j = 0; j < 3; ++j) {
-                            position1[j] += attributes[i]._text[j];
-                        }
-                    }
-                }
-                this.fBScene[index].actor.setPosition(position1);
-                this.fBScene[index].actor.setScale(scale1);
-                break;
-            case 'translation':
-                let start;
-                let end;
-                const position2 = [0, 0, 0];
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'start') {
-                        start = attributes[i]._text;
-                    }
-                    if (attributes[i].tag === 'end') {
-                        end = attributes[i]._text;
-                    }
-                }
-                for (let j = 0; j < 3; ++j) {
-                    position2[j] += item._text[j] + (end[j] + start[j]) / 2.0;
-                }
-                this.fBScene[index].actor.setPosition(position2);
-                break;
-            case 'scale':
-                //老子不搞这个！
                 break;
             default:
                 break;
@@ -462,11 +328,8 @@ class SPH extends React.Component {
         }
         const fatherNode = node[eachKey[count - 1]];
         switch (fatherNode.tag.split('_')[0]) {
-            case 'RigidBody':
+            case 'Cloth':
                 this.editRigidBody(fatherNode.children[eachKey[count]].tag, obj, eachKey[count - 1], fatherNode.children);
-                break;
-            case 'FluidBlock':
-                this.editFluidBlock(fatherNode.children[eachKey[count]].tag, obj, eachKey[count - 1], fatherNode.children);
                 break;
             default:
                 break;
@@ -479,35 +342,24 @@ class SPH extends React.Component {
     updateScene = (newScene) => {
         //移除旧场景actor
         this.curScene.forEach(item => {
-            this.renderer.removeActor(item.actor);
-            item.source.delete();
+            Object.keys(item).forEach(key => {
+                this.renderer.removeActor(item[key].actor);
+                item[key].source.delete();
+            });
         });
         this.curScene = newScene;
         //console.log(this.curScene);
         //添加新场景actor
         this.curScene.forEach(item => {
-            this.renderer.addActor(item.actor);
-            if (!this.state.isShowResult) {
-                item.actor.setVisibility(false);
-            }
-        })
+            Object.keys(item).forEach(key => {
+                this.renderer.addActor(item[key].actor);
+                if (!this.state.isShowResult) {
+                    item[key].actor.setVisibility(false);
+                }
+            });
+        });
         this.renderer.resetCamera();
         this.renderWindow.render();
-    }
-
-    initVolumeController = () => {
-        //动态删除添加volume这个div
-        let geoViewer = document.getElementById("geoViewer");
-        let volumeControllerContainer = document.createElement("div");
-        volumeControllerContainer.id = "volumeController";
-        geoViewer.append(volumeControllerContainer);
-
-        this.controllerWidget = vtkVolumeController.newInstance({
-            size: [400, 150],
-            rescaleColorMap: true,
-        });
-        this.controllerWidget.setContainer(volumeControllerContainer);
-        this.controllerWidget.setupContent(this.renderWindow, this.curScene[0].actor, true);
     }
 
     initFPS = () => {
@@ -533,9 +385,9 @@ class SPH extends React.Component {
         this.wsWorker.postMessage({ init: true });
         this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
-        this.uploadDate = Date.now();
-        //测试就将uploadDate调为4；
-        //this.uploadDate = 4;
+        //this.uploadDate = Date.now();
+        //测试就将uploadDate调为5；
+        this.uploadDate = 5;
         this.setState({
             uploadDisabled: true,
             simLoading: true
@@ -627,13 +479,10 @@ class SPH extends React.Component {
             })
             .then(model => {
                 //注意后缀！
-                return physikaInitVti(model[0].arrayBuffer, filetype);
+                return physikaInitObj(model[0].arrayBuffer, filetype);
             })
             .then(res => {
                 this.updateScene([res]);
-                this.initParticlAttributes(res);
-                //初始化体素显示控制控件
-                this.initVolumeController();
                 this.setState({
                     isSliderShow: true
                 });
@@ -648,26 +497,14 @@ class SPH extends React.Component {
             });
     }
 
-    // writeModel = (frameIndex, arrayBuffer) => {
-    //     db.table('model').add({
-    //         userID: window.localStorage.userID, uploadDate: this.uploadDate, frameIndex: frameIndex, arrayBuffer: arrayBuffer
-    //     }).then(id => {
-    //         this.frameStateArray[frameIndex] = 1;
-    //         console.log(id, '成功存入第' + frameIndex + '帧！', this.frameStateArray);
-    //     }).catch(err => {
-    //         console.log(err);
-    //     })
-    // }
-
     readModel = (uploadDate, frameIndex) => {
         db.table('model').where('[uploadDate+frameIndex]').equals([uploadDate, frameIndex]).toArray()
             .then(model => {
-                return physikaInitVti(model[0].arrayBuffer, filetype);
+                return physikaInitObj(model[0].arrayBuffer, filetype);
             })
             .then(res => {
                 if (frameIndex === this.state.curFrameIndex && uploadDate === this.uploadDate) {
                     this.updateScene([res]);
-                    this.controllerWidget.changeActor(this.curScene[0].actor);
                 }
                 else {
                     //快速改变已获取帧数可以看到如下显示
@@ -708,11 +545,10 @@ class SPH extends React.Component {
                     const playNextFrame = () => {
                         db.table('model').where('[uploadDate+frameIndex]').equals([this.uploadDate, this.state.curFrameIndex + 1]).toArray()
                             .then(model => {
-                                return physikaInitVti(model[0].arrayBuffer, filetype);
+                                return physikaInitObj(model[0].arrayBuffer, filetype);
                             })
                             .then(res => {
                                 this.updateScene([res]);
-                                this.controllerWidget.changeActor(this.curScene[0].actor);
                                 if (this.state.curFrameIndex == this.state.maxFrameIndex - 1 || !this.state.isPlay) {
                                     this.setState({
                                         curFrameIndex: ++this.state.curFrameIndex,
@@ -744,52 +580,31 @@ class SPH extends React.Component {
         this.setState({
             isShowResult: !this.state.isShowResult
         }, () => {
+            console.log(this.curScene);
             if (this.state.isShowResult) {
-                this.rBScene.forEach(item => {
-                    item.actor.setVisibility(false);
-                });
-                this.fBScene.forEach(item => {
+                this.cScene.forEach(item => {
                     item.actor.setVisibility(false);
                 });
                 this.curScene.forEach(item => {
-                    item.actor.setVisibility(true);
+                    Object.keys(item).forEach(key => {
+                        item[key].actor.setVisibility(true);
+                    });
                 });
             }
             else {
-                this.rBScene.forEach(item => {
-                    item.actor.setVisibility(true);
-                });
-                this.fBScene.forEach(item => {
+                this.cScene.forEach(item => {
                     item.actor.setVisibility(true);
                 });
                 this.curScene.forEach(item => {
-                    item.actor.setVisibility(false);
+                    Object.keys(item).forEach(key => {
+                        item[key].actor.setVisibility(false);
+                    });
                 });
             }
             this.renderer.resetCamera();
             this.renderWindow.render();
         });
     }
-
-    initParticlAttributes = (model) => {
-        const attributes = [];
-        const dataArray = model.source.getPointData().getArrays();
-        for (let i = 0; i < dataArray.length; ++i) {
-            attributes.push(dataArray[i].getName());
-        }
-        this.setState({
-            particlAttributes: attributes
-        });
-    }
-
-    selectParticlAttribute = (value) => {
-        this.controllerWidget.setDataArrayIndex(value);
-        //
-    }
-
-    renderParticlAttributes = () => this.state.particlAttributes.map((item, index) => {
-        return <Option value={index} key={index}>{item}</Option>
-    })
 
     renderRepresentationOptions = () => representationOptions.map((item, index) => {
         return <Option value={index} key={index}>{item}</Option>
@@ -803,7 +618,7 @@ class SPH extends React.Component {
         console.log("tree:", this.state.data);
         return (
             <div>
-                <Divider>SPH流体仿真</Divider>
+                <Divider>布料仿真</Divider>
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="仿真初始化" key="1">
                         <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>
@@ -815,22 +630,6 @@ class SPH extends React.Component {
                             loading={this.state.simLoading}>开始仿真</Button>
                     </Panel>
                     <Panel header="仿真结果信息" key="2">
-                        {
-                            (this.state.isSliderShow) &&
-                            <div>
-                                <Row>
-                                    <Col span={13} style={{ alignItems: 'center', display: 'flex' }}>
-                                        <span className="ant-rate-text">显示属性：</span>
-                                    </Col>
-                                    <Col span={3}>
-                                        <Select defaultValue={this.state.particlAttributes[0]} onChange={this.selectParticlAttribute}>
-                                            {this.renderParticlAttributes()}
-                                        </Select>
-                                    </Col>
-                                </Row>
-                                <Divider />
-                            </div>
-                        }
                         <Descriptions column={1} layout={'horizontal'}>
                             {this.renderDescriptions()}
                         </Descriptions>
@@ -889,5 +688,5 @@ class SPH extends React.Component {
 }
 
 export {
-    SPH as MySPH
+    Cloth as PhysikaCloth
 }
