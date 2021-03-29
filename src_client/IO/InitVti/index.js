@@ -58,6 +58,14 @@ function initializeVti(vtiReader) {
     actor.getProperty().setGradientOpacityMaximumOpacity(0, 1.0);
     */
 
+    const dataArray = source.getPointData().getArrays();
+    for (let i = 0; i < dataArray.length; ++i) {
+        const ctfun = vtkColorTransferFunction.newInstance();
+        actor.getProperty().setRGBTransferFunction(i, ctfun);
+        const ofun = vtkPiecewiseFunction.newInstance();
+        actor.getProperty().setScalarOpacity(i, ofun);
+    }
+
     actor.getProperty().setAmbient(0.2);
     actor.getProperty().setDiffuse(0.7);
     actor.getProperty().setSpecular(0.3);

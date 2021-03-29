@@ -108,9 +108,18 @@ class Cloth extends React.Component {
         }
     }
 
-    clean = () => {
+    clean = (tag) => {
+        if (tag === 0) {
+            Object.keys(this.cScene).forEach(key => {
+                this.renderer.removeActor(this.cScene[key].actor);
+                this.cScene[key].source.delete();
+            });
+            this.cScene = [];
+        }
         Object.keys(this.curScene).forEach(key => {
             this.renderer.removeActor(this.curScene[key].actor);
+            this.curScene[key].source.delete();
+            this.curScene = [];
         });
         let geoViewer = document.getElementById("geoViewer");
         if (document.getElementById("volumeController")) {
@@ -128,7 +137,6 @@ class Cloth extends React.Component {
         });
         this.nextFetchFrameIndex = 0;
         this.frameSum = 0;
-        this.curScene = [];
         this.frameStateArray = [];
     }
 
@@ -137,8 +145,7 @@ class Cloth extends React.Component {
             this.wsWorker.terminate();
             console.log("wsworker", this.wsWorker);
         }
-        this.clean();
-        this.cScene = [];
+        this.clean(0);
         physikaLoadConfig(simType)
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -383,7 +390,7 @@ class Cloth extends React.Component {
         }
         this.wsWorker = new WebworkerPromise(new WSWorker());
         this.wsWorker.postMessage({ init: true });
-        this.clean();
+        this.clean(1);
         //存储提交日期用于区分新旧数据，并删除旧数据
         //this.uploadDate = Date.now();
         //测试就将uploadDate调为5；

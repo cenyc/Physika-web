@@ -30,6 +30,11 @@
         "initConfigFileName":"./data/init_config_file/cloth.xml",
         "callPythonFileName":"./src_server/Python/cloth.py"
     },
+    "6":{
+        "simType":"ParticleEvolution",
+        "initConfigFileName":"./data/init_config_file/particle_evolution.xml",
+        "callPythonFileName":"./src_server/Python/particle_evolution.py"
+    },
     "CloudEuler":{
         "simType":"CloudEuler",
         "initConfigFileName":"./data/init_config_file/cloud_euler.xml",

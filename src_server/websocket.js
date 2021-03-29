@@ -20,7 +20,8 @@ const queryCountMax = 100;
 const prefetchFileInfo = {
     0: ['cloud', '.vti'],
     'SPH': ['ParticleData', '.vti'],
-    5: ['mesh', '.obj']
+    5: ['mesh', '.obj'],
+    6: ['ParticleData', '.vti']
 };
 
 wss.on('connection', function connection(ws) {
@@ -61,7 +62,7 @@ wss.on('connection', function connection(ws) {
                         })
                         .then(zipData => {
                             console.log('ZipData size: ', zipData.byteLength);
-                            console.log("Time:",queryCount);
+                            console.log("Time:", queryCount);
                             ws.send(zipData);
                         })
                         .catch(err => {

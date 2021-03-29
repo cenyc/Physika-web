@@ -40,21 +40,23 @@ function vtkVolumeController(publicAPI, model) {
 
   function updateColorMapPreset() {
     const sourceDS = model.actor.getMapper().getInputData();
-    const dataArray =
-      sourceDS.getPointData().getScalars() ||
-      sourceDS.getPointData().getArrays()[0];
-
+    if (!sourceDS) {
+      return;
+    }
     // const dataArray =
-    //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
-    //   sourceDS.getPointData().getScalars();
+    //   sourceDS.getPointData().getScalars() ||
+    //   sourceDS.getPointData().getArrays()[0];
+
+    const dataArray = sourceDS.getPointData().getArrays()[model.dataArrayIndex];
 
     const dataRange = model.rescaleColorMap
       ? model.colorDataRange
       : dataArray.getRange();
+
     const preset = vtkColorMaps.getPresetByName(
       model.el.querySelector('.js-color-preset').value
     );
-    const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
+    const lookupTable = model.actor.getProperty().getRGBTransferFunction(model.dataArrayIndex);
     lookupTable.applyColorMap(preset);
     lookupTable.setMappingRange(...dataRange);
     lookupTable.updateRange();
@@ -81,30 +83,28 @@ function vtkVolumeController(publicAPI, model) {
   function updateEdgeGradient() {
     const value = Number(model.el.querySelector('.js-edge').value);
     if (value === 0) {
-      model.actor.getProperty().setUseGradientOpacity(0, false);
+      model.actor.getProperty().setUseGradientOpacity(model.dataArrayIndex, false);
     } else {
       const sourceDS = model.actor.getMapper().getInputData();
-      const dataArray =
-        sourceDS.getPointData().getScalars() ||
-        sourceDS.getPointData().getArrays()[0];
-
       // const dataArray =
-      //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
-      //   sourceDS.getPointData().getScalars();
+      //   sourceDS.getPointData().getScalars() ||
+      //   sourceDS.getPointData().getArrays()[0];
+
+      const dataArray = sourceDS.getPointData().getArrays()[model.dataArrayIndex];
 
       const dataRange = dataArray.getRange();
-      model.actor.getProperty().setUseGradientOpacity(0, true);
+      model.actor.getProperty().setUseGradientOpacity(model.dataArrayIndex, true);
       const minV = Math.max(0.0, value - 0.3) / 0.7;
       model.actor
         .getProperty()
         .setGradientOpacityMinimumValue(
-          0,
+          model.dataArrayIndex,
           (dataRange[1] - dataRange[0]) * 0.2 * minV * minV
         );
       model.actor
         .getProperty()
         .setGradientOpacityMaximumValue(
-          0,
+          model.dataArrayIndex,
           (dataRange[1] - dataRange[0]) * 1.0 * value * value
         );
     }
@@ -117,18 +117,15 @@ function vtkVolumeController(publicAPI, model) {
       publicAPI.setActor(actor);
     }
 
-    const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
-    const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
-    //console.log(model.actor.getProperty().getScalarOpacity(model.dataArrayIndex).getRange());
+    const lookupTable = model.actor.getProperty().getRGBTransferFunction(model.dataArrayIndex);
+    const piecewiseFunction = model.actor.getProperty().getScalarOpacity(model.dataArrayIndex);
     const sourceDS = model.actor.getMapper().getInputData();
 
-    const dataArray =
-      sourceDS.getPointData().getScalars() ||
-      sourceDS.getPointData().getArrays()[0];
-
     // const dataArray =
-    //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
-    //   sourceDS.getPointData().getScalars();
+    //   sourceDS.getPointData().getScalars() ||
+    //   sourceDS.getPointData().getArrays()[0];
+
+    const dataArray = sourceDS.getPointData().getArrays()[model.dataArrayIndex];
 
     model.widget.setDataArray(dataArray.getData());
     model.widget.setColorTransferFunction(lookupTable);
@@ -169,19 +166,15 @@ function vtkVolumeController(publicAPI, model) {
     publicAPI.setRenderWindow(renderWindow);
 
     const sourceDS = model.actor.getMapper().getInputData();
-    const dataArray =
-      sourceDS.getPointData().getScalars() ||
-      sourceDS.getPointData().getArrays()[0];
-
     // const dataArray =
-    //   sourceDS.getPointData().getArrays()[model.dataArrayIndex] ||
-    //   sourceDS.getPointData().getScalars();
+    //   sourceDS.getPointData().getScalars() ||
+    //   sourceDS.getPointData().getArrays()[0];
 
-    //console.log(dataArray.getRange());
+    const dataArray =
+      sourceDS.getPointData().getArrays()[model.dataArrayIndex];
 
-
-    const lookupTable = model.actor.getProperty().getRGBTransferFunction(0);
-    const piecewiseFunction = model.actor.getProperty().getScalarOpacity(0);
+    const lookupTable = model.actor.getProperty().getRGBTransferFunction(model.dataArrayIndex);
+    const piecewiseFunction = model.actor.getProperty().getScalarOpacity(model.dataArrayIndex);
 
     const stylePostFix = isBackgroundDark ? 'DarkBG' : 'BrightBG';
     const localStyle = {};

@@ -7,7 +7,6 @@ const { Option } = Select;
 import 'antd/dist/antd.css';
 //渲染窗口
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-import { degreesFromRadians } from 'vtk.js/Sources/Common/Core/Math';
 import vtkVolumeController from '../Widget/VolumeController';
 import vtkFPSMonitor from '../Widget/FPSMonitor';
 
@@ -16,23 +15,21 @@ import { physikaUploadConfig } from '../../IO/UploadConfig';
 import { PhysikaTreeNodeAttrModal } from '../TreeNodeAttrModal';
 import { physikaInitVti } from '../../IO/InitVti';
 import { getOrientationMarkerWidget } from '../Widget/OrientationMarkerWidget';
-import { parseSimulationResult, checkUploadConfig, addNewNode, deleteNode } from '../../Common';
-import { physikaInitObj } from '../../IO/InitObj';
+import { parseSimulationResult, checkUploadConfig } from '../../Common';
 
 import WebworkerPromise from 'webworker-promise';
 import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-const simType = "SPH";
+//const simType = "ParticleEvolution";
+const simType = 6;
 const filetype = 'zip';
-
-const representationOptions = ['V', 'W', 'S'];
 
 //一些想法：
 //一次是否可以获取多帧？获取到zip有几个文件后再进行下一次获取？目前按照一个一个传
 //如何更好地处理重复load？
-class SPH extends React.Component {
+class ParticleEvolution extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -43,8 +40,6 @@ class SPH extends React.Component {
             treeNodeKey: -1,
 
             simLoading: false,
-            //渲染粒子属性
-            particlAttributes: [],
             //结果展示信息
             description: [],
             //当前帧索引
@@ -57,8 +52,6 @@ class SPH extends React.Component {
             isSliderShow: false,
             //控制播放动画按钮
             isPlay: false,
-            //控制显示场景切换
-            isShowResult: false
         };
     }
 
@@ -88,10 +81,6 @@ class SPH extends React.Component {
         this.uploadDate = null;
         //worker创建及WebSocket初始化
         this.wsWorker = null;
-        //RigidBodies所组成的场景
-        this.rBScene = [];
-        //流体块模型
-        this.fBScene = [];
 
     }
 
@@ -101,8 +90,6 @@ class SPH extends React.Component {
         renderWindowDOM.innerHTML = ``;
         this.curScene = [];
         this.frameStateArray = [];
-        this.rBScene = [];
-        this.fBScene = [];
         //关闭WebSocket
         if (this.wsWorker) {
             this.wsWorker.postMessage({ close: true });
@@ -119,19 +106,7 @@ class SPH extends React.Component {
         }
     }
 
-    clean = (tag) => {
-        if (tag === 0) {
-            Object.keys(this.rBScene).forEach(key => {
-                this.renderer.removeActor(this.rBScene[key].actor);
-                this.rBScene[key].source.delete();
-            });
-            Object.keys(this.fBScene).forEach(key => {
-                this.renderer.removeActor(this.fBScene[key].actor);
-                this.fBScene[key].source.delete();
-            });
-            this.rBScene = [];
-            this.fBScene = [];
-        }
+    clean = () => {
         Object.keys(this.curScene).forEach(key => {
             this.renderer.removeActor(this.curScene[key].actor);
             this.curScene[key].source.delete();
@@ -161,7 +136,7 @@ class SPH extends React.Component {
             this.wsWorker.terminate();
             console.log("wsworker", this.wsWorker);
         }
-        this.clean(0);
+        this.clean();
         physikaLoadConfig(simType)
             .then(res => {
                 console.log("成功获取初始化配置");
@@ -175,116 +150,14 @@ class SPH extends React.Component {
             })
     }
 
-    addNewNode = (item) => {
-        const resObj = addNewNode(this.state.data, item);
-        this.setState({
-            data: resObj.tree
-        }, () => {
-            if (resObj.newNode.tag.split('_')[0] === 'FluidBlock') {
-                physikaInitObj(null, 'vtkCube')
-                    .then(res => {
-                        res[0].actor.getProperty().setColor(0.757, 0.823, 0.941);
-                        this.renderer.addActor(res[0].actor);
-                        if (this.state.isShowResult) {
-                            res[0].actor.setVisibility(false);
-                        }
-                        //只有在第一次加载actor时初始化
-                        if (this.rBScene.length === 0 && this.fBScene.length === 0) {
-                            //显示方向标记部件
-                            this.orientationMarkerWidget.setEnabled(true);
-                            //初始化fps控件
-                            this.initFPS();
-                        }
-                        this.fBScene.push(res[0]);
-                        resObj.newNode.children.forEach(i => {
-                            this.editFluidBlock(i.tag, i, this.fBScene.length - 1, resObj.newNode.children);
-                        })
-                        this.renderer.resetCamera();
-                        this.renderWindow.render();
-                    })
-                    .catch(err => {
-                        console.log('Error in vtkCube importing: ', err);
-                    });
-            }
-        });
-    }
-
-    deleteNode = (item) => {
-        const resObj = deleteNode(this.state.data, item);
-        this.setState({
-            data: resObj.tree
-        }, () => {
-            const deletedNode = resObj.deletedNode[0];
-            const index = Number(deletedNode.key.split('-').pop());
-            if (this.rBScene[index]) {
-                switch (deletedNode.tag.split('_')[0]) {
-                    case 'RigidBody':
-                        this.renderer.removeActor(this.rBScene[index].actor);
-                        this.rBScene[index].source.delete();
-                        this.rBScene.splice(index, 1);
-                        break;
-                    case 'FluidBlock':
-                        this.renderer.removeActor(this.fBScene[index].actor);
-                        this.fBScene[index].source.delete();
-                        this.fBScene.splice(index, 1);
-                        break;
-                    default:
-                        break;
-                }
-                this.renderer.resetCamera();
-                this.renderWindow.render();
-            }
-        });
-    }
-
-    changeRepresentation = (e, key) => {
-        const eachKey = key.split('-');
-        //简单粗暴但不通用
-        switch (this.state.data[eachKey[0]].children[eachKey[1]].tag) {
-            case 'RigidBodies':
-                if (this.rBScene[eachKey[2]]) {
-                    this.rBScene[eachKey[2]].actor.getProperty().setRepresentation(e);
-                }
-                break;
-            case 'FluidBlocks':
-                if (this.fBScene[eachKey[2]]) {
-                    this.fBScene[eachKey[2]].actor.getProperty().setRepresentation(e);
-                }
-                break;
-            default:
-                break;
-        }
-        this.renderer.resetCamera();
-        this.renderWindow.render();
-    }
-
     //递归渲染每个树节点（这里必须用map遍历！因为需要返回数组）
     renderTreeNodes = (data) => data.map((item, index) => {
         item.title = (
             <div>
                 {
-                    //不要随便用item._text这种形式做判断，会自动把数值转为bool做判断
-                    item.hasOwnProperty('_text') ? <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
-                        : (item.tag === 'AddNode') ? <Button type="text" size="small" onClick={() => this.addNewNode(item)}>{item._attributes.name}</Button>
-                            : item.deletable
-                                ?
-                                <div>
-                                    <Input placeholder={item._attributes.name} bordered={false} size={'small'} style={{ width: '65px' }}></Input>
-                                    <Select defaultValue={'S'} onChange={(e) => this.changeRepresentation(e, item.key)} bordered={false} size={'small'}>
-                                        {this.renderRepresentationOptions()}
-                                    </Select>
-                                    <Button type="text" size="small" onClick={() => this.deleteNode(item)}>  -</Button>
-                                </div>
-                                :
-                                <div>
-                                    <span className="ant-rate-text">{item._attributes.name}</span>
-                                    {
-                                        (item.tag === 'RigidBody_0') &&
-                                        <Select defaultValue={'S'} onChange={(e) => this.changeRepresentation(e, item.key)} bordered={false} size={'small'}>
-                                            {this.renderRepresentationOptions()}
-                                        </Select>
-                                    }
-                                </div>
+                    item.hasOwnProperty('_text')
+                        ? <Button type="text" size="small" onClick={() => this.showTreeNodeAttrModal(item)}>{item._attributes.name}</Button>
+                        : <span className="ant-rate-text">{item._attributes.name}</span>
                 }
             </div >
         );
@@ -315,135 +188,6 @@ class SPH extends React.Component {
         });
     }
 
-    editRigidBody = (tag, item, index, attributes) => {
-        switch (tag) {
-            case 'geometryFile':
-                physikaInitObj(item.fileContent, 'obj')
-                    .then(res => {
-                        this.renderer.addActor(res[0].actor);
-                        if (this.state.isShowResult) {
-                            res[0].actor.setVisibility(false);
-                        }
-                        if (this.rBScene[index]) {
-                            //必须先从renderer中移除该对象，否则会报错
-                            this.renderer.removeActor(this.rBScene[index].actor);
-                            this.rBScene[index].source.delete();
-                        }
-                        //只有在第一次加载actor时初始化
-                        if (this.rBScene.length === 0 && this.fBScene.length === 0) {
-                            //显示方向标记部件
-                            this.orientationMarkerWidget.setEnabled(true);
-                            //初始化fps控件
-                            this.initFPS();
-                        }
-                        this.rBScene[index] = res[0];
-                        attributes.forEach(i => {
-                            if (i.tag === 'geometryFile')
-                                return;
-                            this.editRigidBody(i.tag, i, index, attributes);
-                        });
-                    })
-                    .catch(err => {
-                        console.log('Error in obj importing: ', err);
-                    })
-                break;
-            case 'translation':
-                this.rBScene[index].actor.setPosition(item._text);
-                break;
-            case 'scale':
-                this.rBScene[index].actor.setScale(item._text);
-                break;
-            case 'rotationAxis':
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'rotationAngle') {
-                        //输入为弧度，需要转为角度
-                        this.rBScene[index].actor.rotateWXYZ(degreesFromRadians(attributes[i]._text), item._text[0], item._text[1], item._text[2]);
-                        break;
-                    }
-                }
-                break;
-            case 'rotationAngle':
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'rotationAxis') {
-                        this.rBScene[index].actor.rotateWXYZ(degreesFromRadians(item._text), attributes[i]._text[0], attributes[i]._text[1], attributes[i]._text[2]);
-                        break;
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-        this.renderer.resetCamera();
-        this.renderWindow.render();
-    }
-
-    editFluidBlock = (tag, item, index, attributes) => {
-        switch (tag) {
-            case 'start':
-                const scale0 = [0, 0, 0];
-                const position0 = [0, 0, 0];
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'end') {
-                        for (let j = 0; j < 3; ++j) {
-                            scale0[j] = attributes[i]._text[j] - item._text[j];
-                            position0[j] += (attributes[i]._text[j] + item._text[j]) / 2.0;
-                        }
-                    }
-                    if (attributes[i].tag === 'translation') {
-                        for (let j = 0; j < 3; ++j) {
-                            position0[j] += attributes[i]._text[j];
-                        }
-                    }
-                }
-                this.fBScene[index].actor.setPosition(position0);
-                this.fBScene[index].actor.setScale(scale0);
-                break;
-            case 'end':
-                const scale1 = [0, 0, 0];
-                const position1 = [0, 0, 0];
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'start') {
-                        for (let j = 0; j < 3; ++j) {
-                            scale1[j] = item._text[j] - attributes[i]._text[j];
-                            position1[j] += (item._text[j] + attributes[i]._text[j]) / 2.0;
-                        }
-                    }
-                    if (attributes[i].tag === 'translation') {
-                        for (let j = 0; j < 3; ++j) {
-                            position1[j] += attributes[i]._text[j];
-                        }
-                    }
-                }
-                this.fBScene[index].actor.setPosition(position1);
-                this.fBScene[index].actor.setScale(scale1);
-                break;
-            case 'translation':
-                let start;
-                let end;
-                const position2 = [0, 0, 0];
-                for (let i = 0; i < attributes.length; ++i) {
-                    if (attributes[i].tag === 'start') {
-                        start = attributes[i]._text;
-                    }
-                    if (attributes[i].tag === 'end') {
-                        end = attributes[i]._text;
-                    }
-                }
-                for (let j = 0; j < 3; ++j) {
-                    position2[j] += item._text[j] + (end[j] + start[j]) / 2.0;
-                }
-                this.fBScene[index].actor.setPosition(position2);
-                break;
-            case 'scale':
-                //老子不搞这个！
-                break;
-            default:
-                break;
-        }
-        this.renderer.resetCamera();
-        this.renderWindow.render();
-    }
-
     //接收TreeNodeAttrModal返回的结点数据并更新树
     changeData = (obj) => {
         //注意：这里直接改变this.state.data本身不会触发渲染，
@@ -465,24 +209,6 @@ class SPH extends React.Component {
             findTreeNodeKey(node[eachKey[count++]].children);
         };
         findTreeNodeKey(this.state.data);
-
-        //编辑初始化模型
-        let node = this.state.data;
-        for (let i = 0; i < count - 1; ++i) {
-            node = node[eachKey[i]].children;
-        }
-        const fatherNode = node[eachKey[count - 1]];
-        switch (fatherNode.tag.split('_')[0]) {
-            case 'RigidBody':
-                this.editRigidBody(fatherNode.children[eachKey[count]].tag, obj, eachKey[count - 1], fatherNode.children);
-                break;
-            case 'FluidBlock':
-                this.editFluidBlock(fatherNode.children[eachKey[count]].tag, obj, eachKey[count - 1], fatherNode.children);
-                break;
-            default:
-                break;
-        }
-
         this.hideTreeNodeAttrModal();
     }
 
@@ -498,9 +224,6 @@ class SPH extends React.Component {
         //添加新场景actor
         this.curScene.forEach(item => {
             this.renderer.addActor(item.actor);
-            if (!this.state.isShowResult) {
-                item.actor.setVisibility(false);
-            }
         })
         this.renderer.resetCamera();
         this.renderWindow.render();
@@ -534,7 +257,7 @@ class SPH extends React.Component {
     //现在upload不更新data！
     upload = () => {
         if (!checkUploadConfig(this.state.data)) {
-            return;
+            //return;
         }
         if (this.wsWorker) {
             this.wsWorker.terminate();
@@ -542,11 +265,11 @@ class SPH extends React.Component {
         }
         this.wsWorker = new WebworkerPromise(new WSWorker());
         this.wsWorker.postMessage({ init: true });
-        this.clean(1);
+        this.clean();
         //存储提交日期用于区分新旧数据，并删除旧数据
-        this.uploadDate = Date.now();
-        //测试就将uploadDate调为4；
-        //this.uploadDate = 4;
+        //this.uploadDate = Date.now();
+        //测试就将uploadDate调为；
+        this.uploadDate = 6;
         this.setState({
             uploadDisabled: true,
             simLoading: true
@@ -642,9 +365,10 @@ class SPH extends React.Component {
             })
             .then(res => {
                 this.updateScene([res]);
-                this.initParticlAttributes(res);
                 //初始化体素显示控制控件
                 this.initVolumeController();
+                //显示方向标记部件
+                this.orientationMarkerWidget.setEnabled(true);
                 this.setState({
                     isSliderShow: true
                 });
@@ -751,62 +475,6 @@ class SPH extends React.Component {
         }
     }
 
-    switchScene = () => {
-        this.setState({
-            isShowResult: !this.state.isShowResult
-        }, () => {
-            if (this.state.isShowResult) {
-                this.rBScene.forEach(item => {
-                    item.actor.setVisibility(false);
-                });
-                this.fBScene.forEach(item => {
-                    item.actor.setVisibility(false);
-                });
-                this.curScene.forEach(item => {
-                    item.actor.setVisibility(true);
-                });
-            }
-            else {
-                this.rBScene.forEach(item => {
-                    item.actor.setVisibility(true);
-                });
-                this.fBScene.forEach(item => {
-                    item.actor.setVisibility(true);
-                });
-                this.curScene.forEach(item => {
-                    item.actor.setVisibility(false);
-                });
-            }
-            this.renderer.resetCamera();
-            this.renderWindow.render();
-        });
-    }
-
-    initParticlAttributes = (model) => {
-        const attributes = [];
-        const dataArray = model.source.getPointData().getArrays();
-        for (let i = 0; i < dataArray.length; ++i) {
-            attributes.push(dataArray[i].getName());
-        }
-        this.setState({
-            particlAttributes: attributes
-        });
-    }
-
-    selectParticlAttribute = (value) => {
-        this.controllerWidget.setDataArrayIndex(value);;
-        this.renderer.resetCamera();
-        this.renderWindow.render();
-    }
-
-    renderParticlAttributes = () => this.state.particlAttributes.map((item, index) => {
-        return <Option value={index} key={index}>{item}</Option>
-    })
-
-    renderRepresentationOptions = () => representationOptions.map((item, index) => {
-        return <Option value={index} key={index}>{item}</Option>
-    })
-
     renderDescriptions = () => this.state.description.map((item, index) => {
         return <Descriptions.Item label={item.name} key={index}>{item.content}</Descriptions.Item>
     })
@@ -815,7 +483,7 @@ class SPH extends React.Component {
         console.log("tree:", this.state.data);
         return (
             <div>
-                <Divider>SPH流体仿真</Divider>
+                <Divider>基于PBF的形状演化</Divider>
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="仿真初始化" key="1">
                         <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>
@@ -827,22 +495,6 @@ class SPH extends React.Component {
                             loading={this.state.simLoading}>开始仿真</Button>
                     </Panel>
                     <Panel header="仿真结果信息" key="2">
-                        {
-                            (this.state.isSliderShow) &&
-                            <div>
-                                <Row>
-                                    <Col span={13} style={{ alignItems: 'center', display: 'flex' }}>
-                                        <span className="ant-rate-text">显示属性：</span>
-                                    </Col>
-                                    <Col span={3}>
-                                        <Select defaultValue={this.state.particlAttributes[0]} onChange={this.selectParticlAttribute}>
-                                            {this.renderParticlAttributes()}
-                                        </Select>
-                                    </Col>
-                                </Row>
-                                <Divider />
-                            </div>
-                        }
                         <Descriptions column={1} layout={'horizontal'}>
                             {this.renderDescriptions()}
                         </Descriptions>
@@ -874,14 +526,6 @@ class SPH extends React.Component {
                     </Panel>
                     {/* forceRender为true，即折叠面板未打开时也渲染其中组件；若为false，则未打开面板前无法获得其中组件 */}
                     <Panel header="绘制信息" key="4" forceRender="true">
-                        <Row>
-                            <Col span={13} style={{ alignItems: 'center', display: 'flex' }}>
-                                <span className="ant-rate-text">场景切换：</span>
-                            </Col>
-                            <Col span={3}>
-                                <Button onClick={this.switchScene}>{this.state.isShowResult ? '模拟结果场景' : '初始化场景'}</Button>
-                            </Col>
-                        </Row>
                         <div id="fps"></div>
                     </Panel>
                 </Collapse>
@@ -901,5 +545,5 @@ class SPH extends React.Component {
 }
 
 export {
-    SPH as MySPH
+    ParticleEvolution as ParticleEvolution
 }

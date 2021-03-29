@@ -9,6 +9,7 @@ import { PhysikaCloudWRF } from './CloudWRF';
 import { LoginModal } from './LoginModal';
 import { MySPH } from './SPH';
 import { PhysikaCloth } from './Cloth';
+import { ParticleEvolution } from './ParticleEvolution';
 
 const { Header, Content, Sider } = Layout;
 
@@ -30,6 +31,7 @@ function PhysikaWeb() {
             <Menu.Item key='3'>WRF数据建模</Menu.Item>
             <Menu.Item key='4'>SPH流体仿真</Menu.Item>
             <Menu.Item key='5'>布料仿真</Menu.Item>
+            <Menu.Item key='6'>基于PBF的形状演化</Menu.Item>
         </Menu>
     )
 
@@ -131,6 +133,10 @@ function PhysikaWeb() {
                     {
                         userStatus && (simType === "5") &&
                         <PhysikaCloth></PhysikaCloth>
+                    }
+                    {
+                        userStatus && (simType === "6") &&
+                        <ParticleEvolution></ParticleEvolution>
                     }
                 </Sider>
                 <Layout style={{ padding: '24px 24px 24px' }}>
