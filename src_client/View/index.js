@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Dropdown, Button, Row, Col, Avatar } from 'antd';
 import { DownOutlined, UserOutlined } from '@ant-design/icons';
 import '../../static/css/antdesign.css';
-import { PhysikaCloudEuler } from './CloudEuler';
+
 import { PhysikaCloudNature } from './CloudNature';
 import { PhysikaCloudSatellite } from './CloudSatellite';
 import { PhysikaCloudWRF } from './CloudWRF';
@@ -10,6 +10,7 @@ import { LoginModal } from './LoginModal';
 import { MySPH } from './SPH';
 import { PhysikaCloth } from './Cloth';
 import { ParticleEvolution } from './ParticleEvolution';
+import { Glance } from './Glance';
 
 const { Header, Content, Sider } = Layout;
 
@@ -25,7 +26,7 @@ function PhysikaWeb() {
 
     const simTypeMenu = (
         <Menu onClick={auth}>
-            {/* <Menu.Item key='0'>云欧拉仿真</Menu.Item> */}
+            <Menu.Item key='0'>模型查看</Menu.Item>
             <Menu.Item key='1'>自然云图像建模</Menu.Item>
             <Menu.Item key='2'>卫星云图像建模</Menu.Item>
             <Menu.Item key='3'>WRF数据建模</Menu.Item>
@@ -112,7 +113,7 @@ function PhysikaWeb() {
                 <Sider width={270} className="site-layout-background" style={{ overflow: 'scroll' }}>
                     {
                         userStatus && (simType === "0") &&
-                        <PhysikaCloudEuler></PhysikaCloudEuler>
+                        <Glance></Glance>
                     }
                     {
                         userStatus && (simType === "1") &&
