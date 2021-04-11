@@ -88,7 +88,7 @@ function PhysikaWeb() {
                 <Row>
                     <Col span={3} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                         <div className="logo" style={{ textAlign: "center", fontSize: "20px", background: "inherit", width: "200px" }}>
-                            云建模/流体仿真平台
+                            云建模/物理仿真平台
                         </div>
                     </Col>
                     <Col span={17}></Col>

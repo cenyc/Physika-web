@@ -324,6 +324,7 @@ class SPH extends React.Component {
                         if (this.state.isShowResult) {
                             res[0].actor.setVisibility(false);
                         }
+                        console.log(res[0].source.getNumberOfPolys(),"******");
                         if (this.rBScene[index]) {
                             //必须先从renderer中移除该对象，否则会报错
                             this.renderer.removeActor(this.rBScene[index].actor);
