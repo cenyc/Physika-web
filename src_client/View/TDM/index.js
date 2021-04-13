@@ -1,8 +1,7 @@
 import React from 'react';
-import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber, Select, Input } from 'antd';
+import { Tree, Button, Slider, Divider, Descriptions, Collapse, Row, Col, InputNumber, Select} from 'antd';
 const { TreeNode } = Tree;
 const { Panel } = Collapse;
-const { Option } = Select;
 //antd样式
 import 'antd/dist/antd.css';
 //渲染窗口
@@ -22,14 +21,11 @@ import WSWorker from '../../Worker/ws.worker';
 
 import db from '../../db';
 
-//const simType = "ParticleEvolution";
-const simType = 6;
+//const simType = "TDM";
+const simType = 7;
 const filetype = 'zip';
 
-//一些想法：
-//一次是否可以获取多帧？获取到zip有几个文件后再进行下一次获取？目前按照一个一个传
-//如何更好地处理重复load？
-class ParticleEvolution extends React.Component {
+class TDM extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -269,7 +265,7 @@ class ParticleEvolution extends React.Component {
         //存储提交日期用于区分新旧数据，并删除旧数据
         //this.uploadDate = Date.now();
         //测试就将uploadDate调为；
-        this.uploadDate = 6;
+        this.uploadDate = 7;
         this.setState({
             uploadDisabled: true,
             simLoading: true
@@ -367,9 +363,9 @@ class ParticleEvolution extends React.Component {
                 this.updateScene([res]);
                 //初始化体素显示控制控件
                 this.initVolumeController();
-                this.initFPS();
                 //显示方向标记部件
                 this.orientationMarkerWidget.setEnabled(true);
+                this.initFPS();
                 this.setState({
                     isSliderShow: true
                 });
@@ -473,7 +469,7 @@ class ParticleEvolution extends React.Component {
         console.log("tree:", this.state.data);
         return (
             <div>
-                <Divider>基于PBF的形状演化</Divider>
+                <Divider>台风动态建模</Divider>
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="仿真初始化" key="1">
                         <Button type="primary" size={'small'} block onClick={this.load}>加载场景</Button>
@@ -535,5 +531,5 @@ class ParticleEvolution extends React.Component {
 }
 
 export {
-    ParticleEvolution as ParticleEvolution
+    TDM as TDM
 }

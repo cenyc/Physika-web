@@ -21,7 +21,8 @@ const prefetchFileInfo = {
     0: ['cloud', '.vti'],
     'SPH': ['ParticleData', '.vti'],
     5: ['mesh', '.obj'],
-    6: ['ParticleData', '.vti']
+    6: ['ParticleData', '.vti'],
+    7: ['TDM','.vti']
 };
 
 wss.on('connection', function connection(ws) {

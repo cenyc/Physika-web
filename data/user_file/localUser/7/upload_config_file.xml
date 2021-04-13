@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Scene name="场景">
+    <STSD name="卫星时序数据">
+        <Upload name="用户上传">
+            <VIS class="File" accept=".zip" name="卫星云图" disabled="false">1618313650416_Physika_BUAA_12_29.zip</VIS>
+        </Upload>
+    </STSD>
+    <IC class="Unsigned" name="插值系数" disabled="false">1</IC>
+    <CH class="Unsigned" name="云高" disabled="false">10</CH>
+</Scene>

@@ -8,4 +8,5 @@
         <Particle class="File" accept=".dat" name="粒子对象" disabled="false">undefined_undefined</Particle>
         <CDF class="File" accept=".cdf" name="CDF" disabled="false">undefined_undefined</CDF>
     </GoalState>
+    <Frame class="Unsigned" name="生成帧数" disabled="false">100</Frame>
 </Scene>

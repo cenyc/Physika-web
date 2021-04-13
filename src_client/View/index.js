@@ -11,6 +11,7 @@ import { MySPH } from './SPH';
 import { PhysikaCloth } from './Cloth';
 import { ParticleEvolution } from './ParticleEvolution';
 import { Glance } from './Glance';
+import { TDM } from './TDM';
 
 const { Header, Content, Sider } = Layout;
 
@@ -33,6 +34,7 @@ function PhysikaWeb() {
             <Menu.Item key='4'>SPH流体仿真</Menu.Item>
             <Menu.Item key='5'>布料仿真</Menu.Item>
             <Menu.Item key='6'>基于PBF的形状演化</Menu.Item>
+            <Menu.Item key='7'>台风动态建模</Menu.Item>
         </Menu>
     )
 
@@ -138,6 +140,10 @@ function PhysikaWeb() {
                     {
                         userStatus && (simType === "6") &&
                         <ParticleEvolution></ParticleEvolution>
+                    }
+                    {
+                        userStatus && (simType === "7") &&
+                        <TDM></TDM>
                     }
                 </Sider>
                 <Layout style={{ padding: '24px 24px 24px' }}>
