@@ -39,7 +39,7 @@ function PhysikaWeb() {
     )
 
     const userMenu = (
-        window.localStorage.userIDSPH
+        window.localStorage.userID
             ? <Menu onClick={userAction}>
                 <Menu.Item key="0">注销</Menu.Item>
             </Menu>

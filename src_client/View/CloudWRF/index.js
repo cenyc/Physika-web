@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tree, Button, Divider, Descriptions, Collapse} from 'antd';
+import { Tree, Button, Divider, Descriptions, Collapse } from 'antd';
 const { TreeNode } = Tree;
 const { Panel } = Collapse;
 //antd样式
@@ -71,7 +71,7 @@ class CloudWRF extends React.Component {
         this.wsWorker.postMessage({ close: true });
         this.wsWorker.terminate();
         //是否需要？
-        if(this.FPSWidget){
+        if (this.FPSWidget) {
             this.FPSWidget.delete();
         }
     }
@@ -197,7 +197,7 @@ class CloudWRF extends React.Component {
     initFPS = () => {
         let FPSContainer = document.getElementById("fps");
         if (FPSContainer.children.length === 0) {
-            this.FPSWidget = vtkFPSMonitor.newInstance({infoVisibility: false});
+            this.FPSWidget = vtkFPSMonitor.newInstance({ infoVisibility: false });
             this.FPSWidget.setContainer(FPSContainer);
             this.FPSWidget.setRenderWindow(this.renderWindow);
             this.FPSWidget.setOrientation('vertical');
@@ -250,9 +250,10 @@ class CloudWRF extends React.Component {
                 .then(res => {
                     this.updateScene(res);
                     //------计算体素个数-------
+                    const dimensions = this.curScene.source.getDimensions();
                     this.state.description.push({
-                        name: "粒子数",
-                        content: this.curScene.source.getNumberOfPoints()
+                        name: "体素数",
+                        content: dimensions[0] * dimensions[1] * dimensions[2]
                     });
                     //------------------------
                     this.initVolumeController();
@@ -260,7 +261,7 @@ class CloudWRF extends React.Component {
                     this.initFPS();
                     this.setState({
                         uploadDisabled: false,
-                        simLoading:false,
+                        simLoading: false,
                     });
                 })
                 .catch(err => {

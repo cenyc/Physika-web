@@ -673,7 +673,7 @@ class Cloth extends React.Component {
                                 <span className="ant-rate-text">场景切换：</span>
                             </Col>
                             <Col span={3}>
-                                <Button onClick={this.switchScene}>{this.state.isShowResult ? '模拟结果场景' : '初始化场景'}</Button>
+                                <Button onClick={this.switchScene}>{this.state.isShowResult ? '初始化场景' : '模拟结果场景'}</Button>
                             </Col>
                         </Row>
                         <div id="fps"></div>

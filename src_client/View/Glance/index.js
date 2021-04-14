@@ -165,7 +165,10 @@ class Glance extends React.Component {
 
             if (picker.getActors().length === 0) {
                 const pickedPoint = picker.getPickPosition();
-                console.log(`No cells picked, default: ${pickedPoint}`);
+                notification['warning']({
+                    message: '面片拾取',
+                    description: '没有面片被拾取！'
+                });
             }
             else {
                 const pickedCellId = picker.getCellId();
@@ -176,8 +179,8 @@ class Glance extends React.Component {
                     console.log(`Picked: ${pickedPoint}`);
                 }
                 notification['info']({
-                    message: '面片选取',
-                    description: '所选面片id： ' + pickedCellId
+                    message: '面片拾取',
+                    description: '拾取面片id： ' + pickedCellId
                 });
             }
             //取消鼠标右键点击的订阅（2020.10.17）

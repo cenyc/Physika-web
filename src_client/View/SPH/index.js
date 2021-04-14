@@ -324,7 +324,7 @@ class SPH extends React.Component {
                         if (this.state.isShowResult) {
                             res[0].actor.setVisibility(false);
                         }
-                        console.log(res[0].source.getNumberOfPolys(),"******");
+                        console.log(res[0].source.getNumberOfPolys(), "******");
                         if (this.rBScene[index]) {
                             //必须先从renderer中移除该对象，否则会报错
                             this.renderer.removeActor(this.rBScene[index].actor);
@@ -880,7 +880,7 @@ class SPH extends React.Component {
                                 <span className="ant-rate-text">场景切换：</span>
                             </Col>
                             <Col span={3}>
-                                <Button onClick={this.switchScene}>{this.state.isShowResult ? '模拟结果场景' : '初始化场景'}</Button>
+                                <Button onClick={this.switchScene}>{this.state.isShowResult ? '初始化场景' : '模拟结果场景'}</Button>
                             </Col>
                         </Row>
                         <div id="fps"></div>
