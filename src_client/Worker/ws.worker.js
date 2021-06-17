@@ -6,7 +6,8 @@ registerWebworker(async function (wwMessage, emit) {
 
         if (wwMessage.init) {
             console.log('Creating socket');
-            ws = new WebSocket('ws://localhost:8888/');
+            //ws = new WebSocket('ws://jp-tyo-ilj-2.natfrp.cloud:31853');
+            ws = new WebSocket('ws://localhost:8888');
             ws.binaryType = 'arraybuffer';
             ws.onopen = function () {
                 console.log('Socket open.');
