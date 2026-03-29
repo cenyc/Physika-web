@@ -25,7 +25,7 @@
     "dexie": "^3.0.3",
     "ejs": "^3.0.2",
     "esm": "^3.2.25",
-    "express": "^4.17.1",
+    "express": "^4.22.1",
     "express-generator": "^4.16.1",
     "fs": "0.0.1-security",
     "glyphicons": "^0.2.0",
